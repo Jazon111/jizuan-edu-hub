@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>机动法绘制简支梁影响线（支座反力 + 截面内力）</title>
+<style>
+  :root{ --ink:#0f172a; --sub:#64748b; --line:#e2e8f0; --bg:#eef2f7; --blue:#2563eb; --orange:#ea580c; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:var(--bg); }
+  body{ font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; color:var(--ink); line-height:1.6; }
+  .topbar{
+    position:sticky; top:0; z-index:100; background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 2px 8px rgba(15,23,42,.06);
+  }
+  .topbar-inner{
+    max-width:1080px; margin:0 auto; padding:11px 16px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .brand{ font-size:16px; font-weight:700; line-height:1.25; }
+  .brand small{ display:block; font-size:11.5px; color:var(--sub); font-weight:400; margin-top:1px; }
+  .tabs{ display:flex; gap:8px; margin-left:auto; }
+  .tab{
+    padding:9px 16px; font-size:14px; font-weight:600; border-radius:10px; cursor:pointer;
+    border:1.5px solid var(--line); background:#fff; color:var(--sub); transition:.15s; white-space:nowrap;
+    text-align:left; line-height:1.2;
+  }
+  .tab small{ display:block; font-weight:400; font-size:11px; opacity:.75; }
+  .tab.active{ background:#0f172a; color:#fff; border-color:#0f172a; }
+  .tab.active small{ opacity:.85; }
+  .tab.t1.active{ background:var(--blue); border-color:var(--blue); }
+  .tab.t2.active{ background:var(--orange); border-color:var(--orange); }
+  .stage{ max-width:1080px; margin:0 auto; padding:10px 12px 44px; }
+  .frame{ width:100%; border:0; display:block; background:transparent; }
+  .frame.hidden{ display:none; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">机动法绘制简支梁影响线<small>虚功原理 · 单位虚位移 · 机构虚位移图 = 影响线</small></div>
+      <div class="tabs">
+        <button class="tab t1 active" data-t="1">支座反力影响线<small>求 F<sub>yA</sub> / F<sub>yB</sub>（转动刚体）</small></button>
+        <button class="tab t2" data-t="2">截面内力影响线<small>求 V<sub>C</sub> / M<sub>C</sub>（两段刚体）</small></button>
+      </div>
+    </div>
+  </div>
+  <div class="stage">
+    <iframe class="frame" id="f1" srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;机动法绘制简支梁支座反力影响线&lt;/title&gt;
+&lt;style&gt;
+  :root{
+    --red:#dc2626; --blue:#2563eb; --orange:#ea580c;
+    --ink:#1e293b; --sub:#475569; --line:#e2e8f0; --bg:#f5f7fa;
+    --card:#ffffff; --accent:#0ea5e9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:&quot;Microsoft YaHei&quot;,&quot;PingFang SC&quot;,&quot;Segoe UI&quot;,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    padding:20px 16px 48px;
+  }
+  .wrap{max-width:1020px; margin:0 auto;}
+  header{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    margin-bottom:14px;
+  }
+  h1{font-size:21px; font-weight:700; letter-spacing:.5px;}
+  h1 .tag{font-size:13px; color:var(--sub); font-weight:400; margin-left:8px;}
+  .mode-toggle{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff;}
+  .mode-toggle button{
+    border:0; background:transparent; padding:9px 18px; font-size:14px; cursor:pointer;
+    color:var(--sub); font-weight:600; transition:.18s;
+  }
+  .mode-toggle button.active-b{background:var(--blue); color:#fff;}
+  .mode-toggle button.active-a{background:var(--orange); color:#fff;}
+  /* 步骤指示 */
+  .steps{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .step-chip{
+    flex:1; min-width:130px; background:#fff; border:1.5px solid var(--line); border-radius:10px;
+    padding:9px 10px; font-size:13px; color:var(--sub); text-align:center; transition:.18s;
+  }
+  .step-chip b{display:block; font-size:15px; color:var(--ink); margin-bottom:2px;}
+  .step-chip.on{border-color:var(--accent); color:var(--ink); background:#f0faff;}
+  .step-chip.on b{color:var(--accent);}
+  .step-chip.done{border-color:#c7e9d0; background:#f0fdf4;}
+  .step-chip.done b{color:#16a34a;}
+  /* 面板 */
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .panel h2{font-size:15px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px;}
+  .panel h2 .dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  canvas{display:block; width:100%; height:auto; touch-action:none; cursor:crosshair;}
+  /* 读数 */
+  .readouts{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .ro{flex:1; min-width:150px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px;}
+  .ro .k{font-size:12px; color:var(--sub);}
+  .ro .v{font-size:22px; font-weight:700; margin-top:2px;}
+  .ro .v small{font-size:13px; font-weight:400; color:var(--sub); margin-left:3px;}
+  .v.blue{color:var(--blue);} .v.orange{color:var(--orange);} .v.red{color:var(--red);}
+  /* 控制条 */
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .controls button{
+    border:0; border-radius:10px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer;
+    color:#fff; transition:.18s; box-shadow:0 2px 5px rgba(15,23,42,.12);
+  }
+  .controls button:disabled{background:#cbd5e1 !important; color:#f1f5f9 !important; cursor:not-allowed; box-shadow:none;}
+  .btn-release{background:var(--blue);} .btn-disp{background:#7c3aed;} .btn-gen{background:var(--orange);} .btn-reset{background:#64748b;}
+  .controls button:not(:disabled):hover{filter:brightness(1.08);}
+  .slider-row{display:flex; align-items:center; gap:10px; flex:1; min-width:260px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px;}
+  .slider-row label{font-size:13px; color:var(--sub); white-space:nowrap;}
+  .slider-row input[type=range]{flex:1;}
+  .slider-row .v{font-size:14px; font-weight:700; min-width:52px; text-align:right;}
+  /* 弹窗 */
+  .modal-mask{position:fixed; inset:0; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px;}
+  .modal-mask.hidden{display:none;}
+  .modal{background:#fff; border-radius:16px; max-width:460px; width:100%; padding:26px 28px; text-align:center; box-shadow:0 20px 50px rgba(15,23,42,.3); animation:pop .25s ease;}
+  @keyframes pop{from{transform:scale(.9); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .modal h3{font-size:17px; margin-bottom:16px; color:var(--ink);}
+  .modal .eq{font-size:19px; font-weight:700; color:var(--ink); margin:8px 0;}
+  .modal .eq.blue{color:var(--blue);} .modal .eq.orange{color:var(--orange);}
+  .modal .arr{color:var(--sub); font-size:18px; margin:4px 0;}
+  .modal .note{font-size:13px; color:var(--sub); margin:14px 0 18px; text-align:left; background:#f8fafc; border-radius:10px; padding:12px 14px;}
+  .modal button{border:0; border-radius:10px; padding:11px 22px; font-size:14px; font-weight:600; color:#fff; cursor:pointer;}
+  .btn-cont{background:var(--orange);}
+  .hint{font-size:12px; color:#94a3b8; margin-top:6px;}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;wrap&quot;&gt;
+
+  &lt;header&gt;
+    &lt;h1&gt;机动法绘制简支梁支座反力影响线&lt;span class=&quot;tag&quot;&gt;虚功原理 · 单位虚位移&lt;/span&gt;&lt;/h1&gt;
+    &lt;div class=&quot;mode-toggle&quot;&gt;
+      &lt;button id=&quot;modeB&quot; class=&quot;active-b&quot; onclick=&quot;setMode('B')&quot;&gt;求 F&lt;sub&gt;yB&lt;/sub&gt;&lt;/button&gt;
+      &lt;button id=&quot;modeA&quot; onclick=&quot;setMode('A')&quot;&gt;求 F&lt;sub&gt;yA&lt;/sub&gt;&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;div class=&quot;steps&quot;&gt;
+    &lt;div class=&quot;step-chip&quot; id=&quot;chip1&quot;&gt;&lt;b&gt;① 初始&lt;/b&gt;完整水平简支梁&lt;/div&gt;
+    &lt;div class=&quot;step-chip&quot; id=&quot;chip2&quot;&gt;&lt;b&gt;② 解除约束&lt;/b&gt;支座消失 · 反力成外力&lt;/div&gt;
+    &lt;div class=&quot;step-chip&quot; id=&quot;chip3&quot;&gt;&lt;b&gt;③ 单位虚位移&lt;/b&gt;绕转动中心转角&lt;/div&gt;
+    &lt;div class=&quot;step-chip&quot; id=&quot;chip4&quot;&gt;&lt;b&gt;④ 生成影响线&lt;/b&gt;虚位移图 = 影响线&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;panel&quot;&gt;
+    &lt;h2&gt;&lt;span class=&quot;dot&quot; id=&quot;beamDot&quot; style=&quot;background:#64748b&quot;&gt;&lt;/span&gt;梁与机构虚位移&lt;span id=&quot;beamStage&quot; style=&quot;font-weight:400;font-size:12px;color:#94a3b8&quot;&gt;&lt;/span&gt;&lt;/h2&gt;
+    &lt;canvas id=&quot;beamCanvas&quot;&gt;&lt;/canvas&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;panel&quot;&gt;
+    &lt;h2&gt;&lt;span class=&quot;dot&quot; id=&quot;ilDot&quot; style=&quot;background:#64748b&quot;&gt;&lt;/span&gt;影响线&lt;span id=&quot;ilStage&quot; style=&quot;font-weight:400;font-size:12px;color:#94a3b8&quot;&gt;&lt;/span&gt;&lt;/h2&gt;
+    &lt;canvas id=&quot;ilCanvas&quot;&gt;&lt;/canvas&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;readouts&quot;&gt;
+    &lt;div class=&quot;ro&quot;&gt;&lt;div class=&quot;k&quot;&gt;荷载位置 x&lt;/div&gt;&lt;div class=&quot;v red&quot; id=&quot;xVal&quot;&gt;2.00&lt;small&gt;m&lt;/small&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;ro&quot;&gt;&lt;div class=&quot;k&quot;&gt;荷载点竖向虚位移 δ&lt;sub&gt;P&lt;/sub&gt;&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;dpVal&quot;&gt;0.250&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;ro&quot;&gt;&lt;div class=&quot;k&quot; id=&quot;fkLabel&quot;&gt;支座反力 F&lt;sub&gt;yB&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;&lt;/div&gt;&lt;div class=&quot;v blue&quot; id=&quot;fVal&quot;&gt;0.250&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;ro&quot;&gt;&lt;div class=&quot;k&quot;&gt;虚功校核 F×1 − F&lt;sub&gt;P&lt;/sub&gt;×δ&lt;sub&gt;P&lt;/sub&gt; = 0&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;chkVal&quot; style=&quot;color:#16a34a&quot;&gt;✓&lt;/div&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;controls&quot;&gt;
+    &lt;button id=&quot;btnRelease&quot; class=&quot;btn-release&quot; onclick=&quot;doRelease()&quot;&gt;解除 B 支座约束&lt;/button&gt;
+    &lt;button id=&quot;btnDisp&quot; class=&quot;btn-disp&quot; onclick=&quot;doDisplace()&quot; disabled&gt;施加单位虚位移&lt;/button&gt;
+    &lt;button id=&quot;btnGen&quot; class=&quot;btn-gen&quot; onclick=&quot;doGenerate()&quot; disabled&gt;生成影响线&lt;/button&gt;
+    &lt;button id=&quot;btnReset&quot; class=&quot;btn-reset&quot; onclick=&quot;doReset()&quot;&gt;重置&lt;/button&gt;
+    &lt;div class=&quot;slider-row&quot;&gt;
+      &lt;label&gt;拖动荷载 F&lt;sub&gt;P&lt;/sub&gt;=1：&lt;/label&gt;
+      &lt;input type=&quot;range&quot; id=&quot;xSlider&quot; min=&quot;0&quot; max=&quot;8&quot; step=&quot;0.1&quot; value=&quot;2&quot; oninput=&quot;setX(parseFloat(this.value))&quot;&gt;
+      &lt;span class=&quot;v red&quot; id=&quot;xSliderVal&quot;&gt;x = 2.00 m&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;p class=&quot;hint&quot;&gt;提示：也可直接在梁上拖动红色荷载圆点，或在下图影响线上点击 / 拖动定位荷载位置。&lt;/p&gt;
+
+  &lt;div class=&quot;modal-mask hidden&quot; id=&quot;formulaModal&quot;&gt;
+    &lt;div class=&quot;modal&quot;&gt;
+      &lt;h3 id=&quot;modalTitle&quot;&gt;虚功原理&lt;/h3&gt;
+      &lt;p class=&quot;eq&quot; id=&quot;eq1&quot;&gt;F&lt;sub&gt;yB&lt;/sub&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; · δ&lt;sub&gt;P&lt;/sub&gt; = 0&lt;/p&gt;
+      &lt;div class=&quot;arr&quot;&gt;⇒&lt;/div&gt;
+      &lt;p class=&quot;eq blue&quot; id=&quot;eq2&quot;&gt;F&lt;sub&gt;yB&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;&lt;/p&gt;
+      &lt;p class=&quot;note&quot; id=&quot;modalNote&quot;&gt;解除 B 支座竖向约束后，梁变为可绕 A 铰转动的刚体机构（内力虚功为零）。令机构沿 F&lt;sub&gt;yB&lt;/sub&gt; 正方向发生单位虚位移（B 点向上 δ=1），由虚功方程：外力虚功 = 0，即得支座反力等于荷载点虚位移。&lt;/p&gt;
+      &lt;button class=&quot;btn-cont&quot; onclick=&quot;closeModal()&quot;&gt;继续 → 生成影响线&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;script&gt;
+/* ================= 常量 ================= */
+const L = 8;                     // 跨长 (m)
+const FONT = '&quot;Microsoft YaHei&quot;,&quot;PingFang SC&quot;,sans-serif';
+const RED = '#dc2626', BLUE = '#2563eb', ORANGE = '#ea580c';
+const GRAY = '#94a3b8', INK = '#1e293b', SUB = '#475569', LINE = '#e2e8f0';
+
+/* ================= 状态 ================= */
+let mode = 'B';          // 'B' 求 F_yB | 'A' 求 F_yA
+let stage = 0;           // 0初始 1解除约束 2施加虚位移 3公式弹窗 4生成影响线
+let xp = 2.0;            // 荷载位置 (m)
+let dispAnim = 0;        // 虚位移动画进度 0..1
+let animId = null;
+
+/* ================= 画布 ================= */
+const beamCanvas = document.getElementById('beamCanvas');
+const ilCanvas    = document.getElementById('ilCanvas');
+function setupCanvas(c, W, H){
+  const dpr = window.devicePixelRatio || 1;
+  c._logicalW = W; c._logicalH = H;
+  c.width = W * dpr; c.height = H * dpr;
+  c._dpr = dpr;
+}
+function initCanvas(){
+  setupCanvas(beamCanvas, 980, 340);
+  setupCanvas(ilCanvas, 980, 320);
+}
+
+/* ================= 工具 ================= */
+function hexA(hex, a){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function easeInOut(t){ return t&lt;0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+function drawArrow(ctx, x1,y1,x2,y2, color, w){
+  ctx.save();
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w||2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang=Math.atan2(y2-y1,x2-x1), ah=9;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-ah*Math.cos(ang-Math.PI/6), y2-ah*Math.sin(ang-Math.PI/6));
+  ctx.lineTo(x2-ah*Math.cos(ang+Math.PI/6), y2-ah*Math.sin(ang+Math.PI/6));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function subLabel(ctx, x, y, base, sub, color, size, align){
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.font = 'bold '+size+'px '+FONT;
+  ctx.fillText(base, x, y);
+  const bw = ctx.measureText(base).width;
+  ctx.font = Math.round(size*0.68)+'px '+FONT;
+  ctx.fillText(sub, x + bw, y + size*0.26);
+  return x + bw + ctx.measureText(sub).width;
+}
+/* 支座 */
+function drawHinge(ctx, x, y, color, removed){
+  const s=16;
+  if(removed){
+    ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=0.35;
+    ctx.beginPath(); ctx.moveTo(x-18,y+s); ctx.lineTo(x+18,y+s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); ctx.closePath(); ctx.stroke();
+    ctx.restore(); return;
+  }
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-20,y+s+1); ctx.lineTo(x+20,y+s+1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawRoller(ctx, x, y, color, removed){
+  const s=16;
+  if(removed){
+    ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=0.35;
+    ctx.beginPath(); ctx.moveTo(x-18,y+s+9); ctx.lineTo(x+18,y+s+9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x-6,y+s+5,4,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x+6,y+s+5,4,0,Math.PI*2); ctx.stroke();
+    ctx.restore(); return;
+  }
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-20,y+s+9); ctx.lineTo(x+20,y+s+9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-s,y+s); ctx.lineTo(x+s,y+s); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(x-6,y+s+5,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+6,y+s+5,4,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+/* ================= 力学 ================= */
+function deltaAt(x){ return mode==='B' ? x/L : 1 - x/L; }   // 虚位移（= 影响线纵标）
+function modeColor(){ return mode==='B' ? BLUE : ORANGE; }
+
+/* ================= 梁图 ================= */
+function drawBeam(){
+  const c = beamCanvas, ctx = c.getContext('2d');
+  const W=c._logicalW, H=c._logicalH, dpr=c._dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const ml=64, mr=64;
+  const xL=ml, xR=W-mr;
+  const pxPerM=(xR-xL)/L;
+  const X = x =&gt; xL + x*pxPerM;
+  const beamY = H*0.62;               // 梁轴线
+  const dispPx = 122;                 // δ=1 对应的像素位移
+
+  /* 荷载点竖向位移（含动画进度） */
+  const dy = deltaAt(xp) * dispPx * dispAnim;
+
+  /* 机构位移后的梁端点（绕转动中心） */
+  const pivX = (mode==='B') ? X(0) : X(L);
+  const pivY = beamY;
+  const endX = (mode==='B') ? X(L) : X(0);
+  const endY = beamY - dispPx*dispAnim;   // 自由端向上位移
+
+  /* 原位置（灰色细实线） */
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(X(0), beamY); ctx.lineTo(X(L), beamY); ctx.stroke();
+
+  /* 机构变形图（彩色虚线粗线，stage&gt;=2 且动画&gt;0） */
+  if(dispAnim &gt; 0){
+    ctx.save(); ctx.setLineDash([10,7]);
+    ctx.strokeStyle = modeColor(); ctx.lineWidth = 6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(pivX, pivY); ctx.lineTo(endX, endY); ctx.stroke();
+    ctx.restore();
+    /* 竖直虚线：显示某点竖向位移 */
+    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle = hexA(modeColor(),0.4); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(endX, beamY); ctx.lineTo(endX, endY); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 支座 */
+  const supColor = '#334155';
+  if(mode==='B'){
+    drawHinge(ctx, X(0), beamY, supColor, false);           // A 保留（转动中心）
+    drawRoller(ctx, X(L), beamY, supColor, stage&gt;=1);       // B 解除
+  }else{
+    drawHinge(ctx, X(0), beamY, supColor, stage&gt;=1);        // A 解除
+    drawRoller(ctx, X(L), beamY, supColor, false);          // B 保留（转动中心）
+  }
+
+  /* 转动中心标记 */
+  const pivot = mode==='B' ? 'A' : 'B';
+  ctx.fillStyle='#334155'; ctx.font='bold 13px '+FONT; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('转动中心 '+pivot, (mode==='B'?X(0):X(L)), beamY+34);
+
+  /* 支座反力作为外力（stage&gt;=1，画在梁下方、向上，替代被解除的支座） */
+  if(stage&gt;=1){
+    const fx = (mode==='B') ? X(L) : X(0);
+    drawArrow(ctx, fx, beamY+30, fx, beamY+3, modeColor(), 3);
+    if(mode==='B') subLabel(ctx, fx-8, beamY+34, 'F','yB', modeColor(), 15, 'right');
+    else           subLabel(ctx, fx+8, beamY+34, 'F','yA', modeColor(), 15, 'left');
+  }
+
+  /* 单位虚位移箭头（stage&gt;=2，画在梁上方：原位置→位移后位置） */
+  if(stage&gt;=2){
+    const ex = (mode==='B') ? X(L) : X(0);
+    drawArrow(ctx, ex, beamY, ex, beamY-dispPx*dispAnim, modeColor(), 2.5);
+    if(dispAnim&gt;0.6){
+      ctx.fillStyle=modeColor(); ctx.font='bold 13px '+FONT; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('δ=1', ex+ (mode==='B'?-22:22), beamY-dispPx*dispAnim+4);
+    }
+  }
+
+  /* 荷载 F_P=1 圆点（随梁位移） */
+  const lx = X(xp), ly = beamY - dy;
+  drawArrow(ctx, lx, ly-16, lx, ly, RED, 2.5);
+  ctx.beginPath(); ctx.arc(lx, ly, 9, 0, Math.PI*2);
+  ctx.fillStyle=RED; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+  /* 荷载标注 F_P = 1（居中） */
+  ctx.fillStyle=RED; ctx.textBaseline='bottom';
+  ctx.font='bold 13px '+FONT;
+  const wF = ctx.measureText('F').width;
+  ctx.font = Math.round(13*0.68)+'px '+FONT;
+  const wP = ctx.measureText('P').width;
+  ctx.font='bold 13px '+FONT;
+  const wEq = ctx.measureText('=1').width;
+  let sxx = lx - (wF + wP + wEq)/2;
+  ctx.textAlign='left';
+  ctx.font='bold 13px '+FONT; ctx.fillText('F', sxx, ly-20); sxx += wF;
+  ctx.font=Math.round(13*0.68)+'px '+FONT; ctx.fillText('P', sxx, ly-20+13*0.26); sxx += wP;
+  ctx.font='bold 13px '+FONT; ctx.fillText('=1', sxx, ly-20);
+
+  /* δ_P 标注（stage&gt;=2） */
+  if(stage&gt;=2 &amp;&amp; dispAnim&gt;0){
+    ctx.save();
+    ctx.setLineDash([4,4]); ctx.strokeStyle=hexA(RED,0.4); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(lx, beamY); ctx.lineTo(lx, ly); ctx.stroke();
+    ctx.restore();
+    const dx = (lx &gt; W-150) ? lx-150 : lx+14;
+    ctx.fillStyle=RED; ctx.font='bold 13px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle';
+    const endX = subLabel(ctx, dx, (ly+beamY)/2, 'δ','P', RED, 13, 'left');
+    ctx.fillText(' = '+deltaAt(xp).toFixed(3), endX, (ly+beamY)/2);
+  }
+
+  /* 尺寸标注 */
+  ctx.fillStyle=SUB; ctx.font='12px '+FONT; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('A', X(0), beamY+6);
+  ctx.fillText('B', X(L), beamY+6);
+  ctx.fillText('l = '+L+' m', (X(0)+X(L))/2, beamY+34);
+  for(let i=0;i&lt;=L;i+=1){
+    ctx.beginPath(); ctx.moveTo(X(i), beamY+3); ctx.lineTo(X(i), beamY+8); ctx.strokeStyle=GRAY; ctx.lineWidth=1; ctx.stroke();
+  }
+  ctx.fillText('0', X(0), beamY+12);
+  ctx.fillText(String(L), X(L), beamY+12);
+}
+
+/* ================= 影响线图 ================= */
+function drawIL(){
+  const c = ilCanvas, ctx = c.getContext('2d');
+  const W=c._logicalW, H=c._logicalH, dpr=c._dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const ml=58, mr=26, mt=40, mb=50;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const ox=ml, oy=mt+ph;                 // δ=0 基线
+  const X = x =&gt; ox + (x/L)*pw;
+  const Y = d =&gt; oy - d*ph;              // δ∈[0,1] → 底到顶
+  const col = modeColor();
+
+  /* 绘图区底 */
+  ctx.fillStyle='#fbfcfe'; ctx.fillRect(ox, mt, pw, ph);
+
+  /* 竖向网格 */
+  ctx.lineWidth=1;
+  for(let x=0;x&lt;=L;x+=1){
+    ctx.strokeStyle=LINE;
+    ctx.beginPath(); ctx.moveTo(X(x), mt); ctx.lineTo(X(x), oy); ctx.stroke();
+  }
+  /* δ=0.5 参考线 */
+  ctx.strokeStyle='#edf2f7'; ctx.beginPath(); ctx.moveTo(ox,Y(0.5)); ctx.lineTo(ox+pw,Y(0.5)); ctx.stroke();
+
+  /* 坐标轴 */
+  ctx.strokeStyle=GRAY; ctx.fillStyle=GRAY; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox+pw+10, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, mt-10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox+pw+14, oy); ctx.lineTo(ox+pw+4, oy-4); ctx.lineTo(ox+pw+4, oy+4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ox, mt-14); ctx.lineTo(ox-4, mt-4); ctx.lineTo(ox+4, mt-4); ctx.closePath(); ctx.fill();
+
+  /* δ=1 参考虚线 */
+  ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox, Y(1)); ctx.lineTo(ox+pw, Y(1)); ctx.stroke(); ctx.restore();
+
+  /* 刻度 */
+  ctx.font='12px '+FONT; ctx.fillStyle=SUB;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let x=0;x&lt;=L;x+=2) ctx.fillText(String(x), X(x), oy+6);
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.fillText('0', ox-6, oy);
+  ctx.fillText('0.5', ox-6, Y(0.5));
+  ctx.fillText('1', ox-6, Y(1));
+
+  /* 轴标题 */
+  ctx.fillStyle=INK; ctx.font='13px '+FONT;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('荷载位置 x (m)', ox+pw/2, oy+34);
+  ctx.save();
+  ctx.translate(16, mt+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText('影响线纵标（F / F_P）', 0, 0);
+  ctx.restore();
+
+  /* ===== 影响线（stage&gt;=4） ===== */
+  if(stage&gt;=4){
+    const v0 = deltaAt(0), vL = deltaAt(L);
+    /* 斜线阴影填充三角形 */
+    const pts = (mode==='B')
+      ? [ {x:X(0),y:oy}, {x:X(L),y:oy}, {x:X(L),y:Y(1)} ]
+      : [ {x:X(0),y:oy}, {x:X(0),y:Y(1)}, {x:X(L),y:oy} ];
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i&lt;pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath(); ctx.clip();
+    ctx.strokeStyle=hexA(col,0.45); ctx.lineWidth=1;
+    const d=9;
+    for(let off=-H; off&lt;W+H; off+=d){
+      ctx.beginPath(); ctx.moveTo(off, 0); ctx.lineTo(off+H, H); ctx.stroke();
+    }
+    ctx.restore();
+    /* 影响线主线 */
+    ctx.beginPath(); ctx.moveTo(X(0), Y(v0)); ctx.lineTo(X(L), Y(vL));
+    ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+    /* 端点圆 */
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(X(0), Y(v0), 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(X(L), Y(vL), 4, 0, Math.PI*2); ctx.fill();
+    /* 标题（居中于绘图区顶部） */
+    ctx.fillStyle=col; ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.font='bold 14px '+FONT;
+    const wBase = ctx.measureText('F').width;
+    ctx.font = Math.round(14*0.68)+'px '+FONT;
+    const wSub = ctx.measureText(mode==='B'?'yB':'yA').width;
+    ctx.font='bold 14px '+FONT;
+    const wTxt = ctx.measureText(' 影响线').width;
+    const t0 = ox + pw/2 - (wBase + wSub + wTxt)/2;
+    const t1 = subLabel(ctx, t0, Y(1)-14, 'F', mode==='B'?'yB':'yA', col, 14, 'left');
+    ctx.fillText(' 影响线', t1, Y(1)-14);
+  }
+
+  /* ===== 当前荷载位置（stage&gt;=2 显示高亮） ===== */
+  if(stage&gt;=2){
+    const curD = deltaAt(xp), cx = X(xp), cy = Y(curD);
+    ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle=hexA(RED,0.6); ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, oy); ctx.stroke(); ctx.restore();
+    ctx.beginPath(); ctx.arc(cx, cy, 6.5, 0, Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.fillStyle=col; ctx.font='bold 13px '+FONT;
+    ctx.textAlign = (cx &gt; ox+pw-120) ? 'right' : 'left';
+    ctx.textBaseline='middle';
+    const lx = (cx &gt; ox+pw-120) ? cx-12 : cx+12;
+    ctx.fillText(deltaAt(xp).toFixed(3), lx, cy-16);
+  }
+}
+
+/* ================= 渲染主控 ================= */
+function render(){ drawBeam(); drawIL(); updateReadouts(); updateUI(); }
+
+function updateReadouts(){
+  const d = deltaAt(xp);
+  document.getElementById('xVal').innerHTML = xp.toFixed(2)+'&lt;small&gt;m&lt;/small&gt;';
+  document.getElementById('dpVal').textContent = d.toFixed(3);
+  document.getElementById('fVal').textContent = d.toFixed(3);
+  document.getElementById('xSliderVal').textContent = 'x = '+xp.toFixed(2)+' m';
+  const fk = document.getElementById('fkLabel');
+  const fv = document.getElementById('fVal');
+  if(mode==='B'){
+    fk.innerHTML='支座反力 F&lt;sub&gt;yB&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;';
+    fv.className='v blue';
+  }else{
+    fk.innerHTML='支座反力 F&lt;sub&gt;yA&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;';
+    fv.className='v orange';
+  }
+  document.getElementById('chkVal').textContent = '✓ 恒成立';
+}
+
+function updateUI(){
+  const btnR=document.getElementById('btnRelease');
+  const btnD=document.getElementById('btnDisp');
+  const btnG=document.getElementById('btnGen');
+  const stepStage = document.getElementById('beamStage');
+  const ilStage = document.getElementById('ilStage');
+  /* 按钮文案随模式 */
+  btnR.textContent = mode==='B' ? '解除 B 支座约束' : '解除 A 支座约束';
+  /* 按钮可用态 */
+  btnR.disabled = (stage!==0);
+  btnD.disabled = (stage!==1);
+  btnG.disabled = (stage!==3);
+  /* 步骤 chips */
+  const c1=document.getElementById('chip1'), c2=document.getElementById('chip2'),
+        c3=document.getElementById('chip3'), c4=document.getElementById('chip4');
+  [c1,c2,c3,c4].forEach((c,i)=&gt;{
+    c.className='step-chip';
+    const activeIdx = stage&gt;=4 ? 3 : (stage&gt;=2 ? 2 : stage);
+    if(i &lt; activeIdx) c.classList.add('done');
+    else if(i === activeIdx) c.classList.add('on');
+  });
+  /* 阶段说明 */
+  const descs = {
+    B:['完整水平简支梁，A 铰支座、B 滚动支座','B 支座约束已解除，F_yB 作为外力，梁可绕 A 转动','机构绕 A 向上转动，B 点竖向位移 = 1，可拖动荷载观察 δ_P','虚功原理推导','虚位移图即 F_yB 影响线'],
+    A:['完整水平简支梁，A 铰支座、B 滚动支座','A 支座约束已解除，F_yA 作为外力，梁可绕 B 转动','机构绕 B 向上转动，A 点竖向位移 = 1，可拖动荷载观察 δ_P','虚功原理推导','虚位移图即 F_yA 影响线']
+  };
+  stepStage.textContent = ' · ' + descs[mode][Math.min(stage,4)];
+  ilStage.textContent = stage&gt;=4 ? ' · 已生成影响线' : (stage&gt;=2 ? ' · 等待生成' : ' · 尚未生成');
+  document.getElementById('beamDot').style.background = modeColor();
+  document.getElementById('ilDot').style.background = stage&gt;=4 ? modeColor() : '#64748b';
+}
+
+/* ================= 状态流转 ================= */
+function setStage(s){ stage=s; render(); }
+
+function doRelease(){ if(stage===0) setStage(1); }
+function doDisplace(){
+  if(stage!==1) return;
+  setStage(2);
+  const dur=1200, t0=performance.now();
+  function tick(t){
+    let k=Math.min(1,(t-t0)/dur);
+    dispAnim=easeInOut(k);
+    drawBeam(); drawIL();
+    if(k&lt;1){ animId=requestAnimationFrame(tick); }
+    else { dispAnim=1; setStage(3); openModal(); }
+  }
+  animId=requestAnimationFrame(tick);
+}
+function doGenerate(){ if(stage===3) setStage(4); }
+function doReset(){
+  if(animId){ cancelAnimationFrame(animId); animId=null; }
+  dispAnim=0; setStage(0);
+  closeModal();
+}
+
+function setMode(m){
+  if(animId){ cancelAnimationFrame(animId); animId=null; }
+  mode=m; dispAnim=0; stage=0;
+  document.getElementById('modeB').className = m==='B' ? 'active-b' : '';
+  document.getElementById('modeA').className = m==='A' ? 'active-a' : '';
+  closeModal();
+  render();
+}
+
+/* ================= 虚功公式弹窗 ================= */
+function openModal(){
+  const mask=document.getElementById('formulaModal');
+  const t=document.getElementById('modalTitle');
+  const e1=document.getElementById('eq1');
+  const e2=document.getElementById('eq2');
+  const note=document.getElementById('modalNote');
+  if(mode==='B'){
+    t.textContent='虚功原理 · 求 F_yB';
+    e1.innerHTML='F&lt;sub&gt;yB&lt;/sub&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; · δ&lt;sub&gt;P&lt;/sub&gt; = 0';
+    e2.innerHTML='F&lt;sub&gt;yB&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;'; e2.className='eq blue';
+    note.innerHTML='解除 B 支座竖向约束后，梁变为可绕 A 铰转动的刚体机构（内力虚功为零）。令机构沿 F&lt;sub&gt;yB&lt;/sub&gt; 正方向发生单位虚位移（B 点向上 δ=1），由虚功方程「外力虚功 = 0」解得支座反力等于荷载点虚位移。';
+  }else{
+    t.textContent='虚功原理 · 求 F_yA';
+    e1.innerHTML='F&lt;sub&gt;yA&lt;/sub&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; · δ&lt;sub&gt;P&lt;/sub&gt; = 0';
+    e2.innerHTML='F&lt;sub&gt;yA&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;'; e2.className='eq orange';
+    note.innerHTML='解除 A 支座竖向约束后，梁变为可绕 B 滚动支座转动的刚体机构（内力虚功为零）。令机构沿 F&lt;sub&gt;yA&lt;/sub&gt; 正方向发生单位虚位移（A 点向上 δ=1），由虚功方程「外力虚功 = 0」解得支座反力等于荷载点虚位移。';
+  }
+  mask.classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('formulaModal').classList.add('hidden'); }
+
+/* ================= 荷载拖动 ================= */
+function setX(x){
+  x=Math.max(0, Math.min(L, x));
+  xp=x;
+  document.getElementById('xSlider').value=x;
+  render();
+}
+function px2m(e, canvas){
+  const rect=canvas.getBoundingClientRect();
+  return (e.clientX-rect.left)/rect.width*canvas._logicalW;
+}
+let dragging=null;
+beamCanvas.addEventListener('pointerdown', e=&gt;{
+  const c=beamCanvas, rect=c.getBoundingClientRect();
+  const W=c._logicalW, H=c._logicalH;
+  const xL=64, xR=W-64, pxPerM=(xR-xL)/L, beamY=H*0.62, dispPx=122;
+  const X = x =&gt; xL + x*pxPerM;
+  const mx=(e.clientX-rect.left)/rect.width*W, my=(e.clientY-rect.top)/rect.height*H;
+  const lx=X(xp), ly=beamY-deltaAt(xp)*dispPx*dispAnim;
+  if(Math.hypot(mx-lx, my-ly) &lt; 30){ dragging='beam'; setX((mx-xL)/pxPerM); e.preventDefault(); }
+});
+ilCanvas.addEventListener('pointerdown', e=&gt;{
+  const c=ilCanvas, W=c._logicalW, ml=58, mr=26, pw=W-ml-mr;
+  const mx=px2m(e,c);
+  dragging='il';
+  setX((mx-ml)/pw*L);
+  e.preventDefault();
+});
+window.addEventListener('pointermove', e=&gt;{
+  if(!dragging) return;
+  if(dragging==='beam'){
+    const c=beamCanvas, W=c._logicalW, xL=64, xR=W-64, pxPerM=(xR-xL)/L;
+    setX((px2m(e,c)-xL)/pxPerM);
+  }else if(dragging==='il'){
+    const c=ilCanvas, W=c._logicalW, ml=58, mr=26, pw=W-ml-mr;
+    setX((px2m(e,c)-ml)/pw*L);
+  }
+});
+window.addEventListener('pointerup', ()=&gt;{ dragging=null; });
+
+/* ================= 初始化 ================= */
+initCanvas();
+render();
+window.addEventListener('resize', ()=&gt;{ initCanvas(); render(); });
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+    <iframe class="frame hidden" id="f2" srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;机动法绘制简支梁截面内力影响线&lt;/title&gt;
+&lt;style&gt;
+  :root{
+    --blue:#2563eb; --orange:#ea580c; --red:#dc2626; --green:#16a34a;
+    --ink:#0f172a; --sub:#64748b; --line:#e2e8f0; --bg:#f5f7fb; --card:#ffffff;
+    --blue-soft:#eff4ff; --orange-soft:#fff4ed;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:&quot;Segoe UI&quot;,&quot;Microsoft YaHei&quot;,-apple-system,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    padding:20px 16px 60px;
+  }
+  .wrap{ max-width:980px; margin:0 auto; }
+  header h1{ font-size:22px; font-weight:700; letter-spacing:.5px; }
+  header .sub{ color:var(--sub); font-size:13.5px; margin-top:4px; }
+  header .sub b{ color:var(--ink); }
+
+  /* 模式切换 */
+  .modebar{ display:flex; gap:10px; margin:18px 0 14px; flex-wrap:wrap; }
+  .modebar button{
+    flex:1; min-width:200px; padding:12px 16px; font-size:15px; font-weight:600;
+    border-radius:12px; border:2px solid var(--line); background:#fff; cursor:pointer;
+    transition:.18s; color:var(--sub);
+  }
+  .modebar button small{ display:block; font-weight:400; font-size:12px; color:var(--sub); margin-top:2px; }
+  .modebar button.active-v{ border-color:var(--blue); background:var(--blue-soft); color:var(--blue); }
+  .modebar button.active-v small{ color:var(--blue); }
+  .modebar button.active-m{ border-color:var(--orange); background:var(--orange-soft); color:var(--orange); }
+  .modebar button.active-m small{ color:var(--orange); }
+
+  /* 步骤条 */
+  .steps{ display:flex; gap:8px; margin:0 0 16px; flex-wrap:wrap; }
+  .chip{
+    flex:1; min-width:120px; text-align:center; padding:9px 8px; font-size:13px;
+    border-radius:10px; background:#fff; border:1.5px solid var(--line); color:#94a3b8;
+    transition:.2s; white-space:nowrap;
+  }
+  .chip.done{ background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
+  .chip.cur{ background:#0f172a; color:#fff; border-color:#0f172a; font-weight:600; }
+
+  /* 读数卡 */
+  .cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:10px 14px; box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  .card .k{ font-size:12px; color:var(--sub); }
+  .card .v{ font-size:19px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .card .v.blue{ color:var(--blue); } .card .v.orange{ color:var(--orange); }
+  .card .v.red{ color:var(--red); } .card .v.green{ color:var(--green); }
+  @media(max-width:640px){ .cards{ grid-template-columns:repeat(2,1fr); } }
+
+  /* 面板 */
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 10px; margin-bottom:14px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+  .panel-title{ font-size:14.5px; font-weight:700; margin-bottom:6px; }
+  .panel-title .tag{ font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; margin-left:8px; vertical-align:1px; }
+  .tag.blue{ background:var(--blue-soft); color:var(--blue); }
+  .tag.orange{ background:var(--orange-soft); color:var(--orange); }
+  canvas{ display:block; width:100%; height:auto; border-radius:8px; background:#fbfcfe; }
+  .panel-note{ font-size:12.5px; color:var(--sub); margin-top:8px; min-height:18px; }
+  .panel-note b{ color:var(--ink); }
+
+  /* 控制区 */
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .controls button{
+    padding:12px 18px; font-size:14.5px; font-weight:600; border-radius:10px;
+    border:2px solid var(--line); background:#fff; cursor:pointer; transition:.15s; color:#334155;
+  }
+  .controls button.primary{ background:#0f172a; color:#fff; border-color:#0f172a; }
+  .controls button.blue{ border-color:var(--blue); color:var(--blue); }
+  .controls button.orange{ border-color:var(--orange); color:var(--orange); }
+  .controls button:disabled{ opacity:.38; cursor:not-allowed; }
+  .controls button:not(:disabled):hover{ transform:translateY(-1px); box-shadow:0 3px 8px rgba(15,23,42,.08); }
+  .controls button.reset{ margin-left:auto; color:var(--sub); }
+
+  /* 滑块 */
+  .sliders{ display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; margin-bottom:14px; }
+  @media(max-width:640px){ .sliders{ grid-template-columns:1fr; } }
+  .slider-row{ display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
+  .slider-row label{ font-size:13px; color:var(--sub); white-space:nowrap; }
+  .slider-row label b{ color:var(--ink); }
+  .slider-row input[type=range]{ flex:1; accent-color:var(--blue); }
+  .slider-row .val{ font-size:14px; font-weight:700; min-width:52px; text-align:right; font-variant-numeric:tabular-nums; }
+  .slider-row.x input[type=range]{ accent-color:var(--red); }
+
+  /* 公式框 */
+  .eqbox{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+  .eqbox .title{ font-size:13px; font-weight:700; color:var(--sub); margin-bottom:6px; }
+  .eqbox .eq{ font-size:18px; font-weight:700; text-align:center; letter-spacing:.3px; }
+  .eqbox .eq .blue{ color:var(--blue); } .eqbox .eq .orange{ color:var(--orange); } .eqbox .eq .red{ color:var(--red); }
+  .eqbox .hint{ text-align:center; font-size:12.5px; color:var(--sub); margin-top:6px; }
+
+  .notes{ background:#fff; border:1px dashed #cbd5e1; border-radius:12px; padding:14px 18px; font-size:13px; color:#475569; }
+  .notes li{ margin:6px 0 6px 20px; }
+  .notes b{ color:var(--ink); }
+
+  /* 弹窗 */
+  .mask{ position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .mask.show{ display:flex; }
+  .modal{ background:#fff; border-radius:16px; max-width:520px; width:100%; padding:26px 26px 22px; box-shadow:0 20px 60px rgba(15,23,42,.3); animation:pop .25s ease; }
+  @keyframes pop{ from{ transform:scale(.92); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .modal h3{ font-size:17px; margin-bottom:12px; }
+  .modal .eq{ font-size:20px; font-weight:700; text-align:center; margin:14px 0; }
+  .modal .eq .blue{ color:var(--blue); } .modal .eq .orange{ color:var(--orange); }
+  .modal .eq-res{ font-size:17px; font-weight:700; text-align:center; color:#0f172a; margin-bottom:12px; }
+  .modal p{ font-size:13.5px; color:#475569; margin:6px 0; }
+  .modal .btn{ display:block; width:100%; margin-top:16px; padding:12px; font-size:15px; font-weight:600; border:none; border-radius:10px; background:#0f172a; color:#fff; cursor:pointer; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;wrap&quot;&gt;
+
+  &lt;header&gt;
+    &lt;h1&gt;机动法绘制简支梁截面内力影响线&lt;/h1&gt;
+    &lt;div class=&quot;sub&quot;&gt;虚功原理 · 解除截面约束 → 单位虚位移 → 机构虚位移图即影响线（可自选截面位置 a）&lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;div class=&quot;modebar&quot;&gt;
+    &lt;button id=&quot;btnModeV&quot; class=&quot;active-v&quot;&gt;求截面剪力 &lt;b&gt;V&lt;/b&gt;&lt;sub&gt;C&lt;/sub&gt;&lt;small&gt;解除 C 截面剪力约束 · 单位相对竖向位移&lt;/small&gt;&lt;/button&gt;
+    &lt;button id=&quot;btnModeM&quot;&gt;求截面弯矩 &lt;b&gt;M&lt;/b&gt;&lt;sub&gt;C&lt;/sub&gt;&lt;small&gt;解除 C 截面弯矩约束（插铰）· 单位相对转角&lt;/small&gt;&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;steps&quot; id=&quot;steps&quot;&gt;
+    &lt;div class=&quot;chip&quot; data-s=&quot;0&quot;&gt;① 初始简支梁&lt;/div&gt;
+    &lt;div class=&quot;chip&quot; data-s=&quot;1&quot;&gt;② 解除约束&lt;/div&gt;
+    &lt;div class=&quot;chip&quot; data-s=&quot;2&quot;&gt;③ 单位虚位移&lt;/div&gt;
+    &lt;div class=&quot;chip&quot; data-s=&quot;3&quot;&gt;④ 虚功方程&lt;/div&gt;
+    &lt;div class=&quot;chip&quot; data-s=&quot;4&quot;&gt;⑤ 生成影响线&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;cards&quot;&gt;
+    &lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;k&quot;&gt;荷载位置 x&lt;/div&gt;&lt;div class=&quot;v red&quot; id=&quot;xVal&quot;&gt;2.00 m&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;k&quot;&gt;该点竖向虚位移 δ&lt;sub&gt;P&lt;/sub&gt;&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;dpVal&quot;&gt;—&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;k&quot; id=&quot;fKey&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;&lt;/div&gt;&lt;div class=&quot;v blue&quot; id=&quot;fVal&quot;&gt;—&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;k&quot;&gt;截面位置 a&lt;/div&gt;&lt;div class=&quot;v green&quot; id=&quot;aVal&quot;&gt;3.00 m&lt;/div&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;panel&quot;&gt;
+    &lt;div class=&quot;panel-title&quot; id=&quot;beamTitle&quot;&gt;第一步：机构虚位移图&lt;span class=&quot;tag blue&quot; id=&quot;beamTag&quot;&gt;求 V&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt;&lt;/div&gt;
+    &lt;canvas id=&quot;beamCanvas&quot;&gt;&lt;/canvas&gt;
+    &lt;div class=&quot;panel-note&quot; id=&quot;beamNote&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;panel&quot;&gt;
+    &lt;div class=&quot;panel-title&quot; id=&quot;ilTitle&quot;&gt;第二步：影响线图&lt;span class=&quot;tag blue&quot; id=&quot;ilTag&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt; 影响线&lt;/span&gt;&lt;/div&gt;
+    &lt;canvas id=&quot;ilCanvas&quot;&gt;&lt;/canvas&gt;
+    &lt;div class=&quot;panel-note&quot; id=&quot;ilNote&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;controls&quot;&gt;
+    &lt;button id=&quot;btnRelease&quot; class=&quot;blue&quot;&gt;解除 C 截面剪力约束&lt;/button&gt;
+    &lt;button id=&quot;btnDisp&quot; disabled&gt;施加单位相对虚位移&lt;/button&gt;
+    &lt;button id=&quot;btnGen&quot; disabled&gt;生成影响线&lt;/button&gt;
+    &lt;button id=&quot;btnReset&quot; class=&quot;reset&quot;&gt;↻ 重新演示&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;sliders&quot;&gt;
+    &lt;div class=&quot;slider-row&quot;&gt;
+      &lt;label&gt;截面位置 &lt;b&gt;a&lt;/b&gt;&lt;/label&gt;
+      &lt;input type=&quot;range&quot; id=&quot;aSlider&quot; min=&quot;0.5&quot; max=&quot;7.5&quot; step=&quot;0.1&quot; value=&quot;3&quot;&gt;
+      &lt;span class=&quot;val&quot; id=&quot;aSliderVal&quot;&gt;3.0 m&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;slider-row x&quot;&gt;
+      &lt;label&gt;荷载位置 &lt;b&gt;x&lt;/b&gt;&lt;/label&gt;
+      &lt;input type=&quot;range&quot; id=&quot;xSlider&quot; min=&quot;0&quot; max=&quot;8&quot; step=&quot;0.1&quot; value=&quot;2&quot;&gt;
+      &lt;span class=&quot;val&quot; id=&quot;xSliderVal&quot;&gt;2.0 m&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;eqbox&quot;&gt;
+    &lt;div class=&quot;title&quot;&gt;虚功原理&lt;/div&gt;
+    &lt;div class=&quot;eq&quot; id=&quot;eqLine&quot;&gt;—&lt;/div&gt;
+    &lt;div class=&quot;hint&quot; id=&quot;eqHint&quot;&gt;—&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;notes&quot;&gt;
+    &lt;li&gt;&lt;b&gt;剪力 V&lt;sub&gt;C&lt;/sub&gt;&lt;/b&gt;：解除 C 截面&lt;b&gt;剪力约束&lt;/b&gt;（两侧可相对竖向错动、但不相对转动），沿剪力正方向施加&lt;b&gt;单位相对竖向位移 Δ=1&lt;/b&gt;，机构虚位移图即 V&lt;sub&gt;C&lt;/sub&gt; 影响线——两段平行斜线，在截面处&lt;b&gt;突变 1&lt;/b&gt;。&lt;/li&gt;
+    &lt;li&gt;&lt;b&gt;弯矩 M&lt;sub&gt;C&lt;/sub&gt;&lt;/b&gt;：解除 C 截面&lt;b&gt;弯矩约束&lt;/b&gt;（插入铰，可相对转动、但不相对错动），施加&lt;b&gt;单位相对转角 Δθ=1&lt;/b&gt;，机构虚位移图即 M&lt;sub&gt;C&lt;/sub&gt; 影响线——顶点在截面 C 的三角形，峰值 a(l−a)/l。&lt;/li&gt;
+    &lt;li&gt;虚功方程：&lt;b&gt;F&lt;sub&gt;内力&lt;/sub&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; × δ&lt;sub&gt;P&lt;/sub&gt; = 0 ⇒ F&lt;sub&gt;内力&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;&lt;/b&gt;（F&lt;sub&gt;P&lt;/sub&gt;=1）。&lt;/li&gt;
+    &lt;li&gt;按结构力学惯例：&lt;b&gt;弯矩影响线画在受拉侧&lt;/b&gt;（横坐标下侧，不区分正负）；剪力影响线按正负号上正下负绘制。&lt;/li&gt;
+  &lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;mask&quot; id=&quot;mask&quot;&gt;
+  &lt;div class=&quot;modal&quot;&gt;
+    &lt;h3 id=&quot;modalTitle&quot;&gt;虚功原理&lt;/h3&gt;
+    &lt;p id=&quot;modalDesc&quot;&gt;&lt;/p&gt;
+    &lt;div class=&quot;eq&quot; id=&quot;modalEq&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;eq-res&quot; id=&quot;modalRes&quot;&gt;&lt;/div&gt;
+    &lt;p id=&quot;modalNote&quot;&gt;&lt;/p&gt;
+    &lt;button class=&quot;btn&quot; id=&quot;modalClose&quot;&gt;我知道了，继续&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+'use strict';
+const FONT = '&quot;Segoe UI&quot;,&quot;Microsoft YaHei&quot;,sans-serif';
+const L = 8;
+const RED='#dc2626', BLUE='#2563eb', ORANGE='#ea580c', GREEN='#16a34a', GRAY='#64748b', LGRAY='#94a3b8';
+
+/* ---------- 状态 ---------- */
+let mode = 'V';          // 'V' 剪力 | 'M' 弯矩
+let a = 3.0;             // 截面位置
+let xp = 2.0;            // 荷载位置
+let stage = 0;           // 0..4
+let dispAnim = 0;        // 虚位移动画进度 0..1
+let dragging = false;
+
+/* ---------- DOM ---------- */
+const beamEl = document.getElementById('beamCanvas');
+const ilEl   = document.getElementById('ilCanvas');
+const $ = id =&gt; document.getElementById(id);
+
+/* ---------- 力学：机构虚位移 = 影响线纵标（δ 向上为正）---------- */
+function deltaV(x){ return x &lt; a ? -x/L : (L-x)/L; }
+function deltaM(x){ return x &lt;= a ? x*(L-a)/L : a*(L-x)/L; }
+function deltaAt(x){ return mode==='V' ? deltaV(x) : deltaM(x); }
+const vLeft  = () =&gt; -a/L;             // V 影响线左极限（截面左面）
+const vRight = () =&gt; (L-a)/L;          // V 影响线右极限（截面右面）
+const mPeak  = () =&gt; a*(L-a)/L;        // M 影响线峰值
+const modeColor = () =&gt; mode==='V' ? BLUE : ORANGE;
+
+/* ---------- Canvas 工具 ---------- */
+function setupCanvas(cv, maxW, logicalH){
+  const parent = cv.parentElement;
+  const w = Math.min(maxW, Math.max(320, parent.clientWidth - 2));
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = Math.round(w*dpr);
+  cv.height = Math.round(logicalH*dpr);
+  cv.style.width  = w + 'px';
+  cv.style.height = logicalH + 'px';
+  cv._dpr = dpr; cv._logicalW = w; cv._logicalH = logicalH;
+}
+function drawSub(ctx, x, y, base, sub, color, size){
+  ctx.fillStyle = color;
+  ctx.font = 'bold '+size+'px '+FONT;
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillText(base, x, y);
+  const wb = ctx.measureText(base).width;
+  ctx.font = 'bold '+Math.round(size*0.7)+'px '+FONT;
+  ctx.fillText(sub, x+wb+1, y+size*0.22);
+  const ws = ctx.measureText(sub).width;
+  return wb+1+ws;
+}
+function subWidth(ctx, base, sub, size){
+  ctx.font = 'bold '+size+'px '+FONT;
+  const wb = ctx.measureText(base).width;
+  ctx.font = 'bold '+Math.round(size*0.7)+'px '+FONT;
+  const ws = ctx.measureText(sub).width;
+  return wb+1+ws;
+}
+function drawArrow(ctx, x1,y1,x2,y2,color,width){
+  ctx.save();
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=width||2.5;
+  ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang = Math.atan2(y2-y1, x2-x1);
+  const hs = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-hs*Math.cos(ang-Math.PI/6), y2-hs*Math.sin(ang-Math.PI/6));
+  ctx.lineTo(x2-hs*Math.cos(ang+Math.PI/6), y2-hs*Math.sin(ang+Math.PI/6));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawDoubleArrow(ctx, x,y1,y2,color,width){
+  ctx.save();
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=width||2.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x,y1); ctx.lineTo(x,y2); ctx.stroke();
+  const hs=7;
+  ctx.beginPath(); ctx.moveTo(x,y1); ctx.lineTo(x-hs*0.7,y1+hs); ctx.lineTo(x+hs*0.7,y1+hs); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x,y2); ctx.lineTo(x-hs*0.7,y2-hs); ctx.lineTo(x+hs*0.7,y2-hs); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function hatchPolygon(ctx, pts, color, spacing){
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i&lt;pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath(); ctx.clip();
+  const xs=pts.map(p=&gt;p[0]), ys=pts.map(p=&gt;p[1]);
+  const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+  ctx.strokeStyle=color; ctx.globalAlpha=0.30; ctx.lineWidth=1;
+  for(let x0=minx-(maxy-miny); x0&lt;=maxx; x0+=spacing){
+    ctx.beginPath(); ctx.moveTo(x0,maxy); ctx.lineTo(x0+(maxy-miny),miny); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- 梁图坐标 ---------- */
+let bml, bmr, bpw, beamY, dispScale;
+function layoutBeam(){
+  bml = 62; bmr = 44;
+  bpw = beamEl._logicalW - bml - bmr;
+  beamY = 168;
+  dispScale = mode==='V' ? 78 : 44;   // δ→px（V 相对位移≈1，M 峰值≈2）
+}
+const bX = x =&gt; bml + (x/L)*bpw;
+function loadYpx(anim){ const d = deltaAt(xp); const s = (mode==='V') ? -1 : +1; return beamY + s*d*dispScale*(anim===undefined?dispAnim:anim); }
+
+/* ---------- 支座/符号 ---------- */
+function drawGround(ctx, x, y){ ctx.strokeStyle=GRAY; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x-16,y); ctx.lineTo(x+16,y); ctx.stroke(); }
+function drawPin(ctx, x, y){
+  drawGround(ctx, x, y+18);
+  ctx.strokeStyle=GRAY; ctx.fillStyle='#fff'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-10,y); ctx.lineTo(x+10,y); ctx.lineTo(x,y+18); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle=GRAY; ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill();
+}
+function drawRoller(ctx, x, y){
+  drawGround(ctx, x, y+26);
+  ctx.strokeStyle=GRAY; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-10,y); ctx.lineTo(x+10,y); ctx.lineTo(x,y+12); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y+17,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+}
+
+/* ---------- 主渲染：梁图 ---------- */
+function render(){
+  const ctx = beamEl.getContext('2d');
+  const dpr = beamEl._dpr, W = beamEl._logicalW, H = beamEl._logicalH;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  layoutBeam();
+  const col = modeColor();
+  const anim = dispAnim;
+
+  /* 原梁（灰色粗线，贯穿全宽） */
+  ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=3.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(bX(0), beamY); ctx.lineTo(bX(L), beamY); ctx.stroke();
+
+  /* 支座 A（铰）、B（滚）—— 始终存在 */
+  drawPin(ctx, bX(0), beamY);
+  drawRoller(ctx, bX(L), beamY);
+  ctx.fillStyle=GRAY; ctx.font='bold 13px '+FONT; ctx.textAlign='center';
+  ctx.fillText('A', bX(0), beamY+46);
+  ctx.fillText('B', bX(L), beamY+46);
+
+  /* 截面 C：stage0 只是切缝标记；stage&gt;=1 释放约束 */
+  if(stage===0){
+    ctx.setLineDash([5,4]); ctx.strokeStyle=GREEN; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(bX(a), beamY-26); ctx.lineTo(bX(a), beamY+12); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=GREEN; ctx.font='bold 13px '+FONT; ctx.textAlign='center';
+    ctx.fillText('截面 C', bX(a), beamY-34);
+    ctx.font='11px '+FONT; ctx.fillStyle=LGRAY;
+    ctx.fillText('a='+a.toFixed(1), bX(a), beamY-20);
+  }
+
+  /* 尺寸标注 */
+  ctx.font='11.5px '+FONT; ctx.fillStyle=LGRAY; ctx.textAlign='center';
+  ctx.fillText('l = '+L+' m', (bX(0)+bX(L))/2, beamY+78);
+  ctx.textAlign='left'; ctx.fillText('a', bX(0)+8, beamY+60);
+  ctx.textAlign='right'; ctx.fillText('l−a', bX(L)-8, beamY+60);
+
+  /* 机构变形图（stage&gt;=2） */
+  if(stage&gt;=2){
+    ctx.save();
+    ctx.setLineDash([8,5]); ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineCap='round';
+    if(mode==='V'){
+      const yAL=bX(0), yCL=beamY - vLeft()*dispScale*anim;      // 左面（下移）
+      const yCR=beamY - vRight()*dispScale*anim;                 // 右面（上移）
+      ctx.beginPath(); ctx.moveTo(bX(0), beamY); ctx.lineTo(bX(a), yCL); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bX(a), yCR); ctx.lineTo(bX(L), beamY); ctx.stroke();
+    }else{
+      const yC = beamY + mPeak()*dispScale*anim;
+      ctx.beginPath(); ctx.moveTo(bX(0), beamY); ctx.lineTo(bX(a), yC); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bX(a), yC); ctx.lineTo(bX(L), beamY); ctx.stroke();
+    }
+    ctx.restore();
+
+    /* 转动中心标注 */
+    ctx.fillStyle=GRAY; ctx.font='bold 12px '+FONT; ctx.textAlign='center';
+    if(mode==='V'){ ctx.fillText('绕 A 转', bX(0)+30, beamY+66); ctx.fillText('绕 B 转', bX(L)-30, beamY+66); }
+    else { ctx.fillText('绕 A 转', bX(0)+30, beamY+66); ctx.fillText('绕 B 转', bX(L)-30, beamY+66); }
+  }
+
+  /* 释放约束符号 + 内力外力（stage&gt;=1） */
+  if(stage&gt;=1){
+    if(mode==='V'){
+      // 剪力滑动连接：两条短横线示意滑槽
+      const cx=bX(a);
+      ctx.strokeStyle=col; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.moveTo(cx-9, beamY-22); ctx.lineTo(cx+9, beamY-22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-9, beamY+22); ctx.lineTo(cx+9, beamY+22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, beamY-22); ctx.lineTo(cx, beamY+22); ctx.stroke();
+      // V_C 外力对：左面下、右面上
+      if(stage&gt;=1 &amp;&amp; dispAnim===0){
+        drawArrow(ctx, cx-10, beamY-8, cx-10, beamY+18, col, 2.8);
+        drawArrow(ctx, cx+10, beamY+18, cx+10, beamY-8, col, 2.8);
+        ctx.fillStyle=col; ctx.font='bold 13px '+FONT; ctx.textAlign='center';
+        drawSub(ctx, cx-26, beamY+30, 'V','C', col, 13);
+      }
+      // 单位相对位移箭头（Δ=1）
+      if(stage&gt;=2 &amp;&amp; anim&gt;0.05){
+        const yCL=beamY - vLeft()*dispScale*anim, yCR=beamY - vRight()*dispScale*anim;
+        drawDoubleArrow(ctx, bX(a)+16, yCL, yCR, col, 2.5);
+        ctx.fillStyle=col; ctx.font='bold 12px '+FONT; ctx.textAlign='left';
+        ctx.fillText('Δ=1', bX(a)+24, (yCL+yCR)/2+4);
+      }
+    }else{
+      // 弯矩：铰 + M_C 力偶对
+      const cx=bX(a), cy=(stage&gt;=2 &amp;&amp; anim&gt;0) ? (beamY + mPeak()*dispScale*anim) : beamY;
+      ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      if(stage&gt;=1 &amp;&amp; dispAnim===0){
+        ctx.fillStyle=col; ctx.font='bold 13px '+FONT; ctx.textAlign='left';
+        drawSub(ctx, cx+14, cy-12, 'M','C', col, 13);
+        ctx.strokeStyle=col; ctx.lineWidth=2.2;
+        ctx.beginPath(); ctx.arc(cx, cy, 18, -Math.PI*0.9, Math.PI*0.9); ctx.stroke();
+        drawArrow(ctx, cx+18, cy-6, cx+18, cy+6, col, 2.2);
+      }
+      // 单位相对转角 Δθ=1
+      if(stage&gt;=2 &amp;&amp; anim&gt;0.05){
+        ctx.fillStyle=col; ctx.font='bold 12px '+FONT; ctx.textAlign='left';
+        ctx.fillText('Δθ=1', bX(a)+16, cy-20);
+      }
+    }
+  }
+
+  /* 荷载 F_P=1（红色） */
+  const ly = loadYpx(anim);
+  drawArrow(ctx, bX(xp), ly-52, bX(xp), ly-8, RED, 3);
+  ctx.fillStyle=RED; ctx.beginPath(); ctx.arc(bX(xp), ly-56, 7, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle=RED; ctx.font='bold 13px '+FONT; ctx.textAlign='center';
+  drawSub(ctx, bX(xp), ly-70, 'F','P', RED, 13);
+  ctx.fillText('=1', bX(xp)+ (subWidth(ctx,'F','P',13))/2 + 16, ly-70);
+
+  /* δ_P 标注（stage&gt;=2） */
+  if(stage&gt;=2){
+    const dy = deltaAt(xp)*dispScale*anim;
+    const dLabelY = (ly + beamY)/2 + 2;
+    ctx.setLineDash([3,3]); ctx.strokeStyle=RED; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(bX(xp), ly-6); ctx.lineTo(bX(xp), beamY+4); ctx.stroke();
+    ctx.setLineDash([]);
+    const dv = deltaAt(xp);
+    const txt = 'δ_P = ' + (dv&gt;=0?'+':'') + dv.toFixed(3);
+    ctx.fillStyle=RED; ctx.font='bold 12.5px '+FONT; ctx.textAlign='center';
+    const sw = ctx.measureText('δ_P = +0.000').width;
+    const lxx = Math.min(Math.max(bX(xp), bml+sw/2+2), bX(L)-sw/2-2);
+    ctx.fillText(txt, lxx, dLabelY);
+  }
+
+  /* 底部进度水印 */
+  ctx.fillStyle='#cbd5e1'; ctx.font='11px '+FONT; ctx.textAlign='center';
+  ctx.fillText('机构虚位移图（虚位移 = 影响线纵标）', W/2, H-10);
+}
+
+/* ---------- 影响线图渲染 ---------- */
+function renderIL(){
+  const ctx = ilEl.getContext('2d');
+  const dpr = ilEl._dpr, W = ilEl._logicalW, H = ilEl._logicalH;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const col = modeColor();
+
+  const ml=58, mr=26, mt=22, mb=44;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const ox=ml;
+  const X = x =&gt; ox + (x/L)*pw;
+  let oy, vscale, Y;
+  if(mode==='V'){
+    oy = mt + ph/2;                 // 基线在中间
+    vscale = (ph/2)/1.0;
+    Y = v =&gt; oy - v*vscale;         // 正值向上
+  }else{
+    oy = mt;                        // 基线在顶部（受拉侧朝下）
+    vscale = ph/2.0;                // 2 → 全高
+    Y = v =&gt; oy + v*vscale;         // 正值向下
+  }
+
+  /* 绘图区底色 */
+  ctx.fillStyle='#fbfcfe'; ctx.fillRect(ox, mt, pw, ph);
+
+  /* 竖向网格 */
+  ctx.lineWidth=1;
+  for(let x=0;x&lt;=L;x+=1){
+    ctx.strokeStyle='#edf2f7';
+    ctx.beginPath(); ctx.moveTo(X(x), mt); ctx.lineTo(X(x), mt+ph); ctx.stroke();
+  }
+  /* 横向网格 + 基线 */
+  if(mode==='V'){
+    for(let v=-1;v&lt;=1+0.001;v+=0.5){
+      ctx.strokeStyle = (Math.abs(v)&lt;1e-6)?'#cbd5e1':'#edf2f7';
+      ctx.beginPath(); ctx.moveTo(ox, Y(v)); ctx.lineTo(ox+pw, Y(v)); ctx.stroke();
+    }
+  }else{
+    for(let v=0;v&lt;=2+0.001;v+=0.5){
+      ctx.strokeStyle = (Math.abs(v)&lt;1e-6)?'#cbd5e1':'#edf2f7';
+      ctx.beginPath(); ctx.moveTo(ox, Y(v)); ctx.lineTo(ox+pw, Y(v)); ctx.stroke();
+    }
+  }
+
+  /* 坐标轴 */
+  ctx.strokeStyle='#94a3b8'; ctx.fillStyle='#94a3b8'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox+pw+8, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, mt-8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox+pw+12, oy); ctx.lineTo(ox+pw+2, oy-4); ctx.lineTo(ox+pw+2, oy+4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ox, mt-12); ctx.lineTo(ox-4, mt-2); ctx.lineTo(ox+4, mt-2); ctx.closePath(); ctx.fill();
+
+  /* 刻度 */
+  ctx.font='12px '+FONT; ctx.fillStyle='#475569';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let x=0;x&lt;=L;x+=2) ctx.fillText(String(x), X(x), oy+6);
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  if(mode==='V'){
+    for(let v=-1;v&lt;=1+0.001;v+=0.5) ctx.fillText(v.toFixed(1), ox-6, Y(v));
+  }else{
+    for(let v=0;v&lt;=2+0.001;v+=0.5) ctx.fillText(v.toFixed(1), ox-6, Y(v));
+  }
+
+  /* 轴标题 */
+  ctx.fillStyle='#334155'; ctx.font='13px '+FONT;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('荷载位置 x (m)', ox+pw/2, (mode==='V'? oy+34 : mt+ph+34));
+  ctx.save();
+  ctx.translate(15, mt+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText(mode==='V' ? 'V_C 影响线纵标' : 'M_C 影响线纵标 (m)', 0, 0);
+  ctx.restore();
+
+  /* 截面参考线（绿虚线） */
+  ctx.setLineDash([5,4]); ctx.strokeStyle=GREEN; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(X(a), mt); ctx.lineTo(X(a), mt+ph); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=GREEN; ctx.font='bold 12px '+FONT; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('截面 C', X(a)+5, mt+2);
+
+  /* 影响线（stage&gt;=4） */
+  if(stage&gt;=4){
+    if(mode==='V'){
+      const yL = Y(vLeft()), yR = Y(vRight());
+      /* 阴影：两段三角形 */
+      hatchPolygon(ctx, [[X(0),oy],[X(a),yL],[X(a),oy]], col, 9);
+      hatchPolygon(ctx, [[X(a),oy],[X(a),yR],[X(L),oy]], col, 9);
+      /* 主线 */
+      ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.beginPath(); ctx.moveTo(X(0), oy); ctx.lineTo(X(a), yL); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(a), yR); ctx.lineTo(X(L), oy); ctx.stroke();
+      /* 突变竖虚线 */
+      ctx.setLineDash([4,3]); ctx.strokeStyle=col; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(X(a), yL); ctx.lineTo(X(a), yR); ctx.stroke();
+      ctx.setLineDash([]);
+      /* 空心圆（左极限）+ 实心圆（右极限） */
+      ctx.fillStyle='#fff'; ctx.strokeStyle=col; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(X(a), yL, 5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.arc(X(a), yR, 5, 0, Math.PI*2); ctx.fill();
+      /* 分支公式标注 */
+      ctx.font='bold 12px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle';
+      drawSub(ctx, X(a/2)-30, Y(-a/2/L)-12, 'V','C', col, 12);
+      ctx.fillText('=−x/l', X(a/2)-30 + subWidth(ctx,'V','C',12), Y(-a/2/L)-12);
+      drawSub(ctx, X((a+L)/2)-30, Y((L-a/2)/L)-12, 'V','C', col, 12);
+      ctx.fillText('=(l−x)/l', X((a+L)/2)-30 + subWidth(ctx,'V','C',12), Y((L-a/2)/L)-12);
+      ctx.fillStyle=col; ctx.font='bold 12px '+FONT; ctx.textAlign='center';
+      ctx.fillText('ΔV_C=1', X(a), (yL+yR)/2 - 14);
+    }else{
+      const peak = mPeak(), yP = Y(peak);
+      hatchPolygon(ctx, [[X(0),oy],[X(a),yP],[X(L),oy]], col, 9);
+      ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.beginPath(); ctx.moveTo(X(0), oy); ctx.lineTo(X(a), yP); ctx.lineTo(X(L), oy); ctx.stroke();
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.arc(X(a), yP, 5, 0, Math.PI*2); ctx.fill();
+      /* 峰值标注 */
+      ctx.font='bold 12px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle';
+      const rest = ' = ' + peak.toFixed(3);
+      const tot = subWidth(ctx,'M','C,max',12) + ctx.measureText(rest).width;
+      let sx = X(a)+12; if(sx+tot&gt;ox+pw) sx = X(a)-12-tot;
+      let ly = yP + (mode==='V'? -12 : 20);
+      let cx = sx;
+      drawSub(ctx, cx, ly, 'M','C,max', col, 12); cx += subWidth(ctx,'M','C,max',12);
+      ctx.fillText(rest, cx, ly);
+    }
+
+    /* 当前荷载位置：红虚线 + 高亮点 */
+    const curV = deltaAt(xp), curX = X(xp), curY = Y(curV);
+    ctx.setLineDash([5,4]); ctx.strokeStyle=RED; ctx.lineWidth=1.3;
+    if(mode==='V'){ ctx.beginPath(); ctx.moveTo(curX, curY); ctx.lineTo(curX, oy); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(curX, oy); ctx.lineTo(curX, curY); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(curX, curY, 7, 0, Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+    /* 纵标值 */
+    const rest2 = ' = ' + curV.toFixed(3);
+    const tot2 = subWidth(ctx, mode==='V'?'V':'M','C',13) + ctx.measureText(rest2).width;
+    let sx2 = curX+12; if(sx2+tot2&gt;ox+pw) sx2 = curX-12-tot2;
+    let ly2 = mode==='V' ? (curV&gt;=0 ? curY-16 : curY+20) : curY+20;
+    if(ly2&lt;mt) ly2 = curY+20;
+    let cx2 = sx2;
+    drawSub(ctx, cx2, ly2, mode==='V'?'V':'M','C', col, 13); cx2 += subWidth(ctx, mode==='V'?'V':'M','C',13);
+    ctx.font='bold 13px '+FONT; ctx.fillText(rest2, cx2, ly2);
+  } else {
+    ctx.fillStyle='#cbd5e1'; ctx.font='13px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('完成「施加单位虚位移」后，点击「生成影响线」', ox+pw/2, mt+ph/2);
+  }
+}
+
+/* ---------- 读数 / 公式 / 说明 ---------- */
+function updateReadouts(){
+  $('xVal').textContent = xp.toFixed(2) + ' m';
+  $('aVal').textContent = a.toFixed(2) + ' m';
+  $('aSliderVal').textContent = a.toFixed(1) + ' m';
+  $('xSliderVal').textContent = xp.toFixed(1) + ' m';
+  const dv = deltaAt(xp);
+  $('dpVal').textContent = (dv&gt;=0?'+':'') + dv.toFixed(3);
+  $('fVal').textContent = (dv&gt;=0?'+':'') + dv.toFixed(3);
+  $('dpVal').className = 'v red';
+  $('fVal').className = 'v ' + (mode==='V'?'blue':'orange');
+  $('fKey').innerHTML = mode==='V' ? 'V&lt;sub&gt;C&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;' : 'M&lt;sub&gt;C&lt;/sub&gt; = δ&lt;sub&gt;P&lt;/sub&gt;';
+  $('aSlider').value = a;
+  $('xSlider').value = xp;
+}
+function updateEquation(){
+  const dv = deltaAt(xp);
+  if(mode==='V'){
+    const branch = xp&lt;a ? '−x/l' : '(l−x)/l';
+    $('eqLine').innerHTML =
+      '&lt;span class=&quot;blue&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; × 1 − &lt;span class=&quot;red&quot;&gt;F&lt;sub&gt;P&lt;/sub&gt;&lt;/span&gt; × δ&lt;sub&gt;P&lt;/sub&gt; = 0' +
+      '　⇒　&lt;span class=&quot;blue&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; = δ&lt;sub&gt;P&lt;/sub&gt; = '+branch+' = ' + (dv&gt;=0?'+':'') + dv.toFixed(3) +
+      '　&lt;span class=&quot;red&quot;&gt;(x='+xp.toFixed(2)+')&lt;/span&gt;';
+    $('eqHint').innerHTML = '剪力影响线为两段平行斜线，在截面 C 处突变 ΔV&lt;sub&gt;C&lt;/sub&gt;=1；左段 V&lt;sub&gt;C&lt;/sub&gt;=−x/l（负，下侧），右段 V&lt;sub&gt;C&lt;/sub&gt;=(l−x)/l（正，上侧）。';
+  }else{
+    const branch = xp&lt;=a ? 'x(l−a)/l' : 'a(l−x)/l';
+    $('eqLine').innerHTML =
+      '&lt;span class=&quot;orange&quot;&gt;M&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; × 1 − &lt;span class=&quot;red&quot;&gt;F&lt;sub&gt;P&lt;/sub&gt;&lt;/span&gt; × δ&lt;sub&gt;P&lt;/sub&gt; = 0' +
+      '　⇒　&lt;span class=&quot;orange&quot;&gt;M&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; = δ&lt;sub&gt;P&lt;/sub&gt; = '+branch+' = ' + (dv&gt;=0?'+':'') + dv.toFixed(3) +
+      '　&lt;span class=&quot;red&quot;&gt;(x='+xp.toFixed(2)+')&lt;/span&gt;';
+    $('eqHint').innerHTML = '弯矩影响线为顶点在截面 C 的三角形，峰值 M&lt;sub&gt;C,max&lt;/sub&gt;=a(l−a)/l='+mPeak().toFixed(3)+' m；按受拉侧画在横坐标下侧。';
+  }
+}
+function updateNotes(){
+  const notes = {
+    V:[
+      '完整简支梁，C 为待求剪力的截面。可拖动红色荷载 / 调节截面位置 a / 切换求 V_C 或 M_C。',
+      '已&lt;b&gt;解除 C 截面剪力约束&lt;/b&gt;：切口两侧可相对竖向错动（不相对转动），剪力 &lt;b&gt;V_C&lt;/b&gt; 作为外力成对作用在切口两侧，梁变为机构。',
+      '正在施加&lt;b&gt;单位相对竖向位移 Δ=1&lt;/b&gt;：左段绕 A、右段绕 B 同步转动，两侧斜率相同、在 C 处错开 1。',
+      '机构虚位移图已经形成（两段平行斜线）。拖动荷载观察 δ&lt;sub&gt;P&lt;/sub&gt; 变化 —— 虚功方程见弹窗。',
+      '已将机构虚位移投影为&lt;b&gt;V_C 影响线&lt;/b&gt;：两段平行斜线 + 截面处突变 1。红竖线为当前荷载位置。',
+    ],
+    M:[
+      '完整简支梁，C 为待求弯矩的截面。可拖动红色荷载 / 调节截面位置 a / 切换求 V_C 或 M_C。',
+      '已&lt;b&gt;解除 C 截面弯矩约束&lt;/b&gt;：在 C 处插入铰，弯矩 &lt;b&gt;M_C&lt;/b&gt; 作为外力偶成对作用，梁变为机构。',
+      '正在施加&lt;b&gt;单位相对转角 Δθ=1&lt;/b&gt;：左段绕 A、右段绕 B 反向转动，在 C 处形成折角 1。',
+      '机构虚位移图已经形成（顶点在 C 的三角形）。拖动荷载观察 δ&lt;sub&gt;P&lt;/sub&gt; 变化 —— 虚功方程见弹窗。',
+      '已将机构虚位移投影为&lt;b&gt;M_C 影响线&lt;/b&gt;：三角形，顶点在 C、峰值 a(l−a)/l，画在受拉侧（下侧）。',
+    ],
+  };
+  $('beamNote').innerHTML = notes[mode][stage];
+  $('ilNote').innerHTML = (stage&lt;4)
+    ? '影响线将在完成前四步后生成。'
+    : (mode==='V'
+        ? 'V&lt;sub&gt;C&lt;/sub&gt; 影响线：左段 −x/l、右段 (l−x)/l，截面处突变 1（空心圆=左极限，实心圆=右极限）。'
+        : 'M&lt;sub&gt;C&lt;/sub&gt; 影响线：x≤a 为 x(l−a)/l、x≥a 为 a(l−x)/l，峰值 a(l−a)/l='+mPeak().toFixed(3)+' m。');
+}
+function updateTags(){
+  $('beamTag').textContent = mode==='V' ? '求 V_C' : '求 M_C';
+  $('beamTag').className = 'tag ' + (mode==='V'?'blue':'orange');
+  $('ilTag').innerHTML = mode==='V' ? 'V&lt;sub&gt;C&lt;/sub&gt; 影响线' : 'M&lt;sub&gt;C&lt;/sub&gt; 影响线';
+  $('ilTag').className = 'tag ' + (mode==='V'?'blue':'orange');
+}
+
+/* ---------- 状态机 ---------- */
+function setStage(s){
+  stage = s;
+  const chips = document.querySelectorAll('#steps .chip');
+  chips.forEach(c=&gt;{
+    const n = +c.dataset.s;
+    c.className = 'chip' + (n&lt;stage?' done':(n===stage?' cur':''));
+  });
+  $('btnRelease').disabled = stage!==0;
+  $('btnDisp').disabled = stage!==1;
+  $('btnGen').disabled = stage!==3;
+  $('btnRelease').textContent = mode==='V' ? '解除 C 截面剪力约束' : '解除 C 截面弯矩约束';
+  $('btnDisp').textContent = mode==='V' ? '施加单位相对竖向位移' : '施加单位相对转角';
+  if(stage&lt;2) dispAnim = 0;
+  updateNotes(); render(); renderIL(); updateReadouts();
+}
+function setMode(m){
+  if(mode===m) return;
+  mode = m;
+  $('btnModeV').className = mode==='V' ? 'active-v' : '';
+  $('btnModeM').className = mode==='M' ? 'active-m' : '';
+  updateTags(); updateEquation();
+  setStage(0);
+}
+function setA(v){
+  a = Math.min(7.5, Math.max(0.5, v));
+  render(); renderIL(); updateReadouts(); updateEquation();
+}
+function setX(v){
+  xp = Math.min(L, Math.max(0, v));
+  render(); renderIL(); updateReadouts(); updateEquation();
+}
+function animateDisp(){
+  if(stage!==2) return;
+  const t0 = performance.now(), dur = 1200;
+  function frame(t){
+    const p = Math.min(1, (t-t0)/dur);
+    const e = p&lt;0.5 ? 2*p*p : 1-(-2*p+2)*(-2*p+2)/2;
+    dispAnim = e;
+    render();
+    if(p&lt;1) requestAnimationFrame(frame);
+    else { setStage(3); openModal(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- 弹窗 ---------- */
+function openModal(){
+  if(mode==='V'){
+    $('modalTitle').textContent = '虚功原理（求剪力 V_C）';
+    $('modalDesc').innerHTML = '去掉 C 截面&lt;b&gt;剪力约束&lt;/b&gt;，令其沿剪力正方向发生&lt;b&gt;单位相对竖向位移 Δ=1&lt;/b&gt;（右面相对左面向上 1）：';
+    $('modalEq').innerHTML = '&lt;span class=&quot;blue&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; × δ&lt;sub&gt;P&lt;/sub&gt; = 0';
+    $('modalRes').innerHTML = '⇒ &lt;span class=&quot;blue&quot;&gt;V&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; = δ&lt;sub&gt;P&lt;/sub&gt; = −x/l（x&amp;lt;a） 或 (l−x)/l（x&amp;gt;a）';
+    $('modalNote').innerHTML = '机构虚位移图即 V&lt;sub&gt;C&lt;/sub&gt; 影响线，在截面 C 处发生 ΔV&lt;sub&gt;C&lt;/sub&gt; = 1 的&lt;b&gt;突变&lt;/b&gt;。';
+  }else{
+    $('modalTitle').textContent = '虚功原理（求弯矩 M_C）';
+    $('modalDesc').innerHTML = '去掉 C 截面&lt;b&gt;弯矩约束&lt;/b&gt;（插入铰），令其沿弯矩正方向发生&lt;b&gt;单位相对转角 Δθ=1&lt;/b&gt;：';
+    $('modalEq').innerHTML = '&lt;span class=&quot;orange&quot;&gt;M&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; × 1 − F&lt;sub&gt;P&lt;/sub&gt; × δ&lt;sub&gt;P&lt;/sub&gt; = 0';
+    $('modalRes').innerHTML = '⇒ &lt;span class=&quot;orange&quot;&gt;M&lt;sub&gt;C&lt;/sub&gt;&lt;/span&gt; = δ&lt;sub&gt;P&lt;/sub&gt; = x(l−a)/l（x≤a） 或 a(l−x)/l（x≥a）';
+    $('modalNote').innerHTML = '机构虚位移图即 M&lt;sub&gt;C&lt;/sub&gt; 影响线，为顶点在截面 C 的三角形，峰值 a(l−a)/l='+mPeak().toFixed(3)+' m。';
+  }
+  $('mask').classList.add('show');
+}
+function closeModal(){ $('mask').classList.remove('show'); }
+
+/* ---------- 交互绑定 ---------- */
+$('btnModeV').addEventListener('click', ()=&gt;setMode('V'));
+$('btnModeM').addEventListener('click', ()=&gt;setMode('M'));
+$('btnRelease').addEventListener('click', ()=&gt;{ if(stage===0) setStage(1); });
+$('btnDisp').addEventListener('click', ()=&gt;{ if(stage===1){ setStage(2); animateDisp(); } });
+$('btnGen').addEventListener('click', ()=&gt;{ if(stage===3) setStage(4); });
+$('btnReset').addEventListener('click', ()=&gt;{ setStage(0); });
+$('modalClose').addEventListener('click', closeModal);
+$('mask').addEventListener('click', e=&gt;{ if(e.target===$('mask')) closeModal(); });
+
+$('aSlider').addEventListener('input', e=&gt;setA(parseFloat(e.target.value)));
+$('xSlider').addEventListener('input', e=&gt;setX(parseFloat(e.target.value)));
+
+/* 梁图拖拽荷载 */
+beamEl.addEventListener('pointerdown', e=&gt;{
+  const r = beamEl.getBoundingClientRect();
+  const px = (e.clientX-r.left)*(beamEl._logicalW/r.width);
+  const py = (e.clientY-r.top)*(beamEl._logicalH/r.height);
+  const lx = bX(xp), ly = loadYpx();
+  if(Math.hypot(px-lx, py-ly) &lt; 36){ dragging=true; beamEl.setPointerCapture(e.pointerId); }
+});
+beamEl.addEventListener('pointermove', e=&gt;{
+  if(!dragging) return;
+  const r = beamEl.getBoundingClientRect();
+  const px = (e.clientX-r.left)*(beamEl._logicalW/r.width);
+  setX((px-bml)/bpw*L);
+});
+beamEl.addEventListener('pointerup', ()=&gt;{ dragging=false; });
+beamEl.addEventListener('pointercancel', ()=&gt;{ dragging=false; });
+
+/* 影响线图点击/拖动定位荷载 */
+let ildrag=false;
+ilEl.addEventListener('pointerdown', e=&gt;{ ildrag=true; ilEl.setPointerCapture(e.pointerId); ilPick(e); });
+ilEl.addEventListener('pointermove', e=&gt;{ if(ildrag) ilPick(e); });
+ilEl.addEventListener('pointerup', ()=&gt;{ ildrag=false; });
+ilEl.addEventListener('pointercancel', ()=&gt;{ ildrag=false; });
+function ilPick(e){
+  const r = ilEl.getBoundingClientRect();
+  const px = (e.clientX-r.left)*(ilEl._logicalW/r.width);
+  const ml=58, mr=26; const pw = ilEl._logicalW-ml-mr;
+  setX((px-ml)/pw*L);
+}
+
+/* ---------- 初始化 ---------- */
+function initCanvas(){
+  setupCanvas(beamEl, 960, 300);
+  setupCanvas(ilEl, 960, 320);
+}
+initCanvas();
+updateTags(); updateReadouts(); updateEquation();
+setStage(0);
+window.addEventListener('resize', ()=&gt;{ initCanvas(); render(); renderIL(); });
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+  </div>
+<script>
+(function(){
+  'use strict';
+  const tabs = document.querySelectorAll('.tab');
+  const f1 = document.getElementById('f1');
+  const f2 = document.getElementById('f2');
+  const frames = [f1, f2];
+  let active = 1;
+
+  function fit(iframe){
+    try{
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      if(!doc || !doc.body) return;
+      const h = doc.body.scrollHeight;
+      if(h > 40) iframe.style.height = h + 'px';
+    }catch(e){}
+  }
+  f1.addEventListener('load', function(){ fit(f1); });
+  f2.addEventListener('load', function(){ fit(f2); });
+
+  function activate(t){
+    active = t;
+    tabs.forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.t)===t); });
+    f1.classList.toggle('hidden', t!==1);
+    f2.classList.toggle('hidden', t!==2);
+    const cur = (t===1) ? f1 : f2;
+    requestAnimationFrame(function(){ fit(cur); });
+  }
+  tabs.forEach(function(b){ b.addEventListener('click', function(){ activate(parseInt(b.dataset.t)); }); });
+
+  // 子页面内容高度可能随交互（弹窗/步骤）轻微变化，定时校正当前活动页
+  setInterval(function(){ fit(active===1 ? f1 : f2); }, 900);
+  window.addEventListener('resize', function(){ fit(active===1 ? f1 : f2); });
+})();
+</script>
+</body>
+</html>

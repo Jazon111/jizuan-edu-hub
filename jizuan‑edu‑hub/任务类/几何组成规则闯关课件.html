@@ -1,0 +1,4143 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+</html>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>几何体系的基本组成规则讲解 · 闯关互动课件</title>
+<style>
+  :root{
+    --primary:#1f6feb;
+    --primary-dark:#1a4f9c;
+    --primary-light:#e7f0ff;
+    --accent:#16a34a;
+    --danger:#dc2626;
+    --warning:#d97706;
+    --hinge:#b45309;
+    --rigid:#1e40af;
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --text:#1f2937;
+    --text-soft:#4b5563;
+    --text-mute:#9ca3af;
+    --border:#e5e7eb;
+    --shadow:0 6px 24px rgba(15,23,42,.06);
+    --shadow-lg:0 12px 40px rgba(15,23,42,.12);
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ============= 登录弹窗 ============= */
+  #login-overlay{
+    position:fixed;inset:0;z-index:1000;
+    background:linear-gradient(135deg,#1e3a8a 0%,#1f2937 60%,#0b1f4d 100%);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  #login-overlay::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      radial-gradient(circle at 20% 30%,rgba(96,165,250,.18) 0,transparent 40%),
+      radial-gradient(circle at 80% 70%,rgba(59,130,246,.15) 0,transparent 45%);
+    pointer-events:none;
+  }
+  .login-card{
+    position:relative;z-index:2;width:100%;max-width:460px;
+    background:rgba(255,255,255,.97);border-radius:22px;
+    padding:40px 36px 32px;box-shadow:0 24px 60px rgba(0,0,0,.4);
+  }
+  .login-card .badge{
+    display:inline-block;font-size:12px;letter-spacing:1px;
+    background:var(--primary-light);color:var(--primary);
+    padding:5px 12px;border-radius:20px;font-weight:700;margin-bottom:14px;
+  }
+  .login-card h1{font-size:24px;color:#0f172a;font-weight:800;line-height:1.4;margin-bottom:8px}
+  .login-card .subtitle{color:var(--text-soft);font-size:14px;margin-bottom:28px;line-height:1.7}
+  .login-card .field{margin-bottom:18px}
+  .login-card label{display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
+  .login-card .req{color:var(--danger);margin-left:3px}
+  .login-card input{
+    width:100%;padding:12px 14px;font-size:15px;
+    border:2px solid var(--border);border-radius:10px;
+    font-family:inherit;transition:all .2s;background:#fff;
+  }
+  .login-card input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+  .login-card .err{color:var(--danger);font-size:12px;margin-top:6px;min-height:16px;display:block}
+  .login-card .tips{
+    background:#fef3c7;border:1px solid #fde68a;border-radius:10px;
+    padding:10px 14px;font-size:12.5px;color:#92400e;margin-bottom:22px;line-height:1.6;
+  }
+  .login-card .btn-start{
+    width:100%;padding:14px;font-size:16px;font-weight:800;
+    background:linear-gradient(135deg,var(--primary),#3b82f6);
+    color:#fff;border:none;border-radius:12px;cursor:pointer;
+    transition:all .2s;letter-spacing:2px;box-shadow:0 8px 20px rgba(31,111,235,.35);
+  }
+  .login-card .btn-start:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(31,111,235,.45)}
+
+  /* ============= 主应用 ============= */
+  #app{display:none;min-height:100vh;flex-direction:column}
+  #app.active{display:flex}
+  header.topbar{
+    background:#fff;border-bottom:1px solid var(--border);
+    padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(15,23,42,.04);
+  }
+  .topbar-left{display:flex;align-items:center;gap:14px}
+  .topbar-left .logo{
+    width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(135deg,var(--primary),#3b82f6);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:18px;
+  }
+  .topbar-left .title-block .t1{font-size:16px;font-weight:800;color:#0f172a}
+  .topbar-left .title-block .t2{font-size:12px;color:var(--text-mute);margin-top:1px}
+  .topbar-right{display:flex;align-items:center;gap:18px}
+  .student-badge{
+    display:flex;align-items:center;gap:10px;
+    background:var(--primary-light);padding:8px 14px;border-radius:30px;
+    font-size:13px;color:var(--primary-dark);font-weight:700;
+  }
+  .student-badge .avatar{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;
+  }
+  .score-display{
+    display:flex;align-items:center;gap:6px;
+    background:#fff3e0;padding:8px 14px;border-radius:30px;
+    font-size:13px;color:#b45309;font-weight:800;
+  }
+  .score-display .num{font-size:15px}
+
+  /* 关卡导航 */
+  nav.stage-nav{
+    background:#fff;border-bottom:1px solid var(--border);
+    padding:18px 28px;display:flex;gap:10px;overflow-x:auto;justify-content:center;
+  }
+  .stage-nav .stage-pill{
+    display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:30px;
+    background:#f3f4f6;color:var(--text-mute);font-size:13px;font-weight:700;
+    cursor:pointer;transition:all .2s;border:2px solid transparent;white-space:nowrap;user-select:none;
+  }
+  .stage-nav .stage-pill .step-num{
+    width:22px;height:22px;border-radius:50%;background:#d1d5db;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .stage-nav .stage-pill.unlocked{background:#fff;color:var(--primary);border-color:var(--primary)}
+  .stage-nav .stage-pill.unlocked .step-num{background:var(--primary)}
+  .stage-nav .stage-pill.active{background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(31,111,235,.35)}
+  .stage-nav .stage-pill.active .step-num{background:rgba(255,255,255,.25)}
+  .stage-nav .stage-pill.completed{background:#dcfce7;color:#15803d;border-color:#86efac}
+  .stage-nav .stage-pill.completed .step-num{background:#16a34a}
+  .stage-nav .stage-pill.locked{cursor:not-allowed;opacity:.65}
+
+  main.content{flex:1;padding:28px 0 60px;max-width:1180px;margin:0 auto;width:100%}
+  .stage{display:none;padding:0 28px;animation:fadeIn .4s ease}
+  .stage.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .stage-header{
+    background:linear-gradient(135deg,#1f6feb,#3b82f6);
+    color:#fff;padding:28px 32px;border-radius:18px;margin-bottom:24px;
+    box-shadow:var(--shadow-lg);position:relative;overflow:hidden;
+  }
+  .stage-header.s2{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+  .stage-header.s3{background:linear-gradient(135deg,#dc2626,#ea580c)}
+  .stage-header.s4{background:linear-gradient(135deg,#16a34a,#22c55e)}
+  .stage-header::before{
+    content:"";position:absolute;right:-30px;top:-30px;width:180px;height:180px;
+    border-radius:50%;background:rgba(255,255,255,.1);
+  }
+  .stage-header .tag{
+    display:inline-block;font-size:12px;letter-spacing:2px;
+    background:rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;
+    margin-bottom:10px;font-weight:700;
+  }
+  .stage-header h2{font-size:24px;font-weight:800;margin-bottom:6px;position:relative;z-index:1}
+  .stage-header .desc{font-size:14px;opacity:.9;position:relative;z-index:1;line-height:1.7}
+
+  /* 知识卡片 */
+  .ksection{
+    background:var(--card);border-radius:var(--radius);
+    padding:24px 28px;margin-bottom:20px;box-shadow:var(--shadow);
+    border:1px solid var(--border);
+  }
+  .ksection h3{
+    font-size:18px;color:#0f172a;font-weight:800;margin-bottom:14px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .ksection h3 .icon-bar{width:5px;height:20px;background:var(--primary);border-radius:3px}
+  .ksection h4{
+    font-size:15px;color:var(--primary-dark);font-weight:800;margin:18px 0 10px;
+    padding-left:10px;border-left:3px solid var(--primary);
+  }
+  .ksection p{color:var(--text-soft);font-size:14px;margin-bottom:10px;line-height:1.8}
+  .ksection ul{margin:8px 0 14px 20px}
+  .ksection ul li{color:var(--text-soft);font-size:14px;line-height:1.9;margin-bottom:4px}
+
+  /* 规则卡片 */
+  .rule-card{
+    background:#fff;border-radius:14px;border:2px solid var(--border);
+    padding:22px 24px;margin-bottom:20px;transition:all .2s;
+  }
+  .rule-card:hover{box-shadow:var(--shadow-lg);border-color:var(--primary)}
+  .rule-card .rule-head{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;
+    padding-bottom:14px;border-bottom:2px dashed var(--border);
+  }
+  .rule-card .rule-title{
+    font-size:17px;font-weight:800;color:var(--primary-dark);display:flex;align-items:center;gap:10px;
+  }
+  .rule-card .rule-title .rnum{
+    width:30px;height:30px;border-radius:8px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;
+  }
+  .rule-card .rule-tag{
+    font-size:12px;background:var(--primary-light);color:var(--primary-dark);
+    padding:5px 12px;border-radius:20px;font-weight:800;
+  }
+  .rule-card .rule-tag.warn{background:#fef3c7;color:#b45309}
+  .rule-card .rule-tag.danger{background:#fee2e2;color:#dc2626}
+  .rule-card .rule-def{
+    background:#f8fafc;border-radius:10px;padding:14px 18px;
+    font-size:14px;color:var(--text);line-height:1.8;margin-bottom:14px;
+    border-left:4px solid var(--primary);
+  }
+  .rule-card .rule-def b{color:var(--primary-dark)}
+
+  /* 动画演示器 */
+  .anim-box{
+    background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+    border-radius:12px;padding:18px;margin:14px 0;position:relative;
+  }
+  .anim-iframe-wrap{
+    background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+    border-radius:12px;padding:10px;margin:14px 0;position:relative;overflow:hidden;
+  }
+  .anim-iframe{
+    width:100%;height:520px;border:none;border-radius:8px;background:#0d1117;display:block;
+  }
+  .anim-box .anim-canvas{
+    background:#0d1117;border-radius:8px;display:flex;justify-content:center;
+    min-height:200px;align-items:center;
+  }
+  .anim-box .anim-canvas svg{max-width:100%;height:auto;display:block}
+  .anim-box .anim-caption{
+    text-align:center;font-size:12px;color:#94a3b8;margin-top:10px;font-style:italic;
+  }
+  .anim-controls{
+    display:flex;justify-content:center;gap:8px;margin-top:12px;
+  }
+  .anim-btn{
+    padding:8px 18px;background:rgba(255,255,255,.08);color:#e2e8f0;
+    border:1px solid rgba(255,255,255,.15);border-radius:20px;
+    cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;
+    transition:all .2s;display:flex;align-items:center;gap:6px;
+  }
+  .anim-btn:hover{background:var(--primary);border-color:var(--primary);color:#fff}
+  .anim-btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .anim-btn.primary:hover{background:var(--primary-dark)}
+  .anim-status{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;color:#94a3b8;margin-left:8px;
+  }
+  .anim-status .dot{width:8px;height:8px;border-radius:50%;background:#64748b}
+  .anim-status.playing .dot{background:#22c55e;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* 规则属性条 */
+  .rule-attrs{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;
+  }
+  .rule-attr{
+    background:#f8fafc;border-radius:8px;padding:10px 14px;text-align:center;
+    border:1px solid var(--border);
+  }
+  .rule-attr .k{font-size:11px;color:var(--text-mute);font-weight:700;margin-bottom:4px}
+  .rule-attr .v{font-size:13px;color:var(--text);font-weight:800}
+  .rule-attr.ok .v{color:#16a34a}
+  .rule-attr.warn .v{color:#d97706}
+  .rule-attr.danger .v{color:#dc2626}
+
+  /* 题目卡片 */
+  .question-card{
+    background:#fff;border-radius:var(--radius);padding:24px 28px;
+    margin-bottom:20px;box-shadow:var(--shadow);border:1px solid var(--border);
+    position:relative;
+  }
+  .question-card::before{
+    content:"";position:absolute;left:0;top:24px;bottom:24px;width:4px;
+    background:var(--primary);border-radius:0 4px 4px 0;
+  }
+  .question-card.answered{border-color:#cbd5e1}
+  .question-card.answered::before{background:#9ca3af}
+  .qhead{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;
+  }
+  .qhead .qtype{
+    font-size:11px;background:var(--primary-light);color:var(--primary-dark);
+    padding:4px 10px;border-radius:20px;font-weight:800;letter-spacing:.5px;
+  }
+  .qhead .qscore{
+    font-size:13px;font-weight:800;color:#92400e;background:#fff3e0;
+    padding:4px 12px;border-radius:20px;
+  }
+  .qhead .qscore.got{background:#dcfce7;color:#15803d}
+  .qbody{font-size:15px;color:#0f172a;font-weight:700;line-height:1.7;margin-bottom:16px}
+  .qbody .stmt{display:block;padding:6px 0;font-weight:600}
+  .options{display:flex;flex-direction:column;gap:10px}
+  .option{
+    padding:14px 18px;border:2px solid var(--border);border-radius:10px;
+    cursor:pointer;transition:all .15s;font-size:14px;
+    display:flex;align-items:center;gap:12px;background:#fff;
+  }
+  .option:hover{border-color:var(--primary);background:var(--primary-light)}
+  .option .okey{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--text-soft);flex-shrink:0;
+  }
+  .option.selected{border-color:var(--primary);background:var(--primary-light)}
+  .option.selected .okey{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .option.correct{border-color:#16a34a;background:#dcfce7}
+  .option.correct .okey{background:#16a34a;color:#fff;border-color:#16a34a}
+  .option.wrong{border-color:#dc2626;background:#fee2e2}
+  .option.wrong .okey{background:#dc2626;color:#fff;border-color:#dc2626}
+  .option.disabled{cursor:not-allowed}
+  .option.locked{cursor:not-allowed;opacity:.85}
+  .option .otext{flex:1;font-weight:600;color:var(--text)}
+  .tf-options{display:flex;gap:14px}
+  .tf-options .option{flex:1;justify-content:center}
+
+  .submit-row{margin-top:18px;display:flex;justify-content:flex-end;gap:10px}
+  .btn{
+    padding:11px 26px;border:none;border-radius:10px;cursor:pointer;
+    font-size:14px;font-weight:800;font-family:inherit;transition:all .2s;
+  }
+  .btn-primary{background:var(--primary);color:#fff;box-shadow:0 6px 14px rgba(31,111,235,.3)}
+  .btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+  .btn-primary:disabled{background:#9ca3af;cursor:not-allowed;box-shadow:none;transform:none}
+  .btn-ghost{background:#fff;color:var(--text-soft);border:1px solid var(--border)}
+  .btn-ghost:hover{background:#f3f4f6}
+
+  .stage-complete{text-align:center;margin:28px 0}
+  .btn-complete{
+    padding:16px 40px;font-size:16px;font-weight:800;
+    background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;
+    border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;
+    box-shadow:0 10px 24px rgba(22,163,74,.35);transition:all .2s;
+  }
+  .btn-complete:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(22,163,74,.45)}
+  .btn-complete:disabled{background:#9ca3af;cursor:not-allowed;box-shadow:none;transform:none}
+
+  /* 反馈弹窗 */
+  #feedback-modal{
+    position:fixed;inset:0;z-index:800;background:rgba(15,23,42,.65);
+    display:none;align-items:center;justify-content:center;padding:24px;
+    backdrop-filter:blur(4px);
+  }
+  #feedback-modal.show{display:flex;animation:fadeIn .2s}
+  .fb-card{
+    background:#fff;border-radius:18px;padding:32px 32px 26px;
+    width:100%;max-width:480px;box-shadow:var(--shadow-lg);animation:popIn .3s ease;
+  }
+  @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+  .fb-card .fb-icon{
+    width:60px;height:60px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;margin:0 auto 14px;color:#fff;
+  }
+  .fb-card.correct .fb-icon{background:#16a34a}
+  .fb-card.wrong .fb-icon{background:#dc2626}
+  .fb-card .fb-title{text-align:center;font-size:20px;font-weight:800;margin-bottom:6px}
+  .fb-card.correct .fb-title{color:#16a34a}
+  .fb-card.wrong .fb-title{color:#dc2626}
+  .fb-card .fb-score{text-align:center;font-size:14px;color:var(--text-soft);margin-bottom:14px}
+  .fb-card .fb-score .num{font-size:18px;font-weight:800;color:#92400e}
+  .fb-card .fb-answer{
+    background:#f8fafc;border-radius:10px;padding:12px 16px;
+    font-size:13px;color:var(--text-soft);margin-bottom:14px;line-height:1.7;
+  }
+  .fb-card .fb-answer b{color:var(--primary-dark)}
+  .fb-card .fb-analysis{
+    background:#fffbeb;border:1px solid #fde68a;border-radius:10px;
+    padding:14px 16px;font-size:13px;color:#78350f;line-height:1.8;
+  }
+  .fb-card .fb-analysis .label{font-weight:800;color:#92400e;display:block;margin-bottom:4px}
+  .fb-card .fb-review{
+    background:#fee2e2;border:1px solid #fecaca;border-radius:10px;
+    padding:14px 16px;font-size:13px;color:#7f1d1d;line-height:1.8;margin-bottom:14px;
+  }
+  .fb-card .fb-review .label{font-weight:800;display:block;margin-bottom:4px}
+  .fb-card .fb-btn-row{display:flex;justify-content:center;gap:10px;margin-top:18px}
+
+  /* 排名榜 */
+  .rank-hero{
+    background:linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%);
+    color:#fff;padding:30px 32px;border-radius:18px;
+    margin-bottom:24px;text-align:center;position:relative;overflow:hidden;
+  }
+  .rank-hero::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.2),transparent 50%);
+  }
+  .rank-hero h2{font-size:26px;font-weight:800;position:relative;z-index:1;margin-bottom:6px}
+  .rank-hero .sub{font-size:14px;opacity:.95;position:relative;z-index:1}
+  .rank-table-wrap{
+    background:#fff;border-radius:14px;box-shadow:var(--shadow);
+    overflow:hidden;border:1px solid var(--border);
+  }
+  .rank-table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .rank-table th{
+    background:#f8fafc;padding:14px 16px;text-align:left;
+    font-weight:800;color:#475569;font-size:12.5px;letter-spacing:.5px;
+    border-bottom:2px solid var(--border);
+  }
+  .rank-table td{
+    padding:13px 16px;border-bottom:1px solid #f1f5f9;color:var(--text);font-weight:600;
+  }
+  .rank-table tbody tr:hover{background:#f8fafc}
+  .rank-table .rank-cell{font-size:16px;font-weight:800}
+  .rank-table .rank-1{color:#dc2626}
+  .rank-table .rank-2{color:#ea580c}
+  .rank-table .rank-3{color:#ca8a04}
+  .rank-table .you{background:#eff6ff!important}
+  .rank-table .you td{font-weight:800}
+  .rank-table .score-cell{color:#b45309;font-weight:800;font-size:15px}
+  .rank-table .acc-cell{color:var(--primary-dark);font-weight:700}
+  .rank-table .time-cell{color:var(--text-soft)}
+  .rank-empty{text-align:center;padding:40px;color:var(--text-mute);font-size:14px}
+  .rank-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+  .stat-card{
+    background:#fff;border-radius:12px;padding:18px 22px;
+    box-shadow:var(--shadow);border:1px solid var(--border);text-align:center;
+  }
+  .stat-card .val{font-size:24px;font-weight:900;color:var(--primary)}
+  .stat-card .lbl{font-size:12px;color:var(--text-mute);margin-top:4px}
+  .rank-actions{display:flex;justify-content:center;gap:14px;margin-top:24px;flex-wrap:wrap}
+  .rank-actions .btn{padding:12px 30px}
+
+  /* 开篇导入 */
+  .intro-hero{
+    background:linear-gradient(135deg,#0c4a6e 0%,#0e7490 50%,#06b6d4 100%);
+    color:#fff;padding:40px;border-radius:20px;margin-bottom:24px;
+    text-align:center;position:relative;overflow:hidden;
+  }
+  .intro-hero::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 20% 30%,rgba(255,255,255,.18),transparent 50%),
+              radial-gradient(circle at 80% 70%,rgba(255,255,255,.12),transparent 45%);
+  }
+  .intro-hero h1{font-size:30px;font-weight:900;margin-bottom:10px;position:relative;z-index:1}
+  .intro-hero .sub{font-size:15px;opacity:.95;position:relative;z-index:1;line-height:1.7}
+  .intro-roadmap{
+    background:#fff;border-radius:14px;padding:24px;box-shadow:var(--shadow);
+    border:1px solid var(--border);margin-bottom:20px;
+  }
+  .intro-roadmap h3{font-size:16px;color:#0f172a;font-weight:800;margin-bottom:16px;text-align:center}
+  .roadmap-steps{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+  .roadmap-step{
+    flex:1;min-width:140px;text-align:center;padding:14px 10px;
+    background:#f8fafc;border-radius:10px;border:1px solid var(--border);
+  }
+  .roadmap-step .num{
+    width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;
+    margin:0 auto 8px;font-size:14px;
+  }
+  .roadmap-step .name{font-size:13px;font-weight:800;color:var(--text)}
+  .roadmap-step .detail{font-size:11px;color:var(--text-mute);margin-top:4px}
+  .intro-tips{
+    background:#fff;border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);
+    border:1px solid var(--border);
+  }
+  .intro-tips h3{font-size:15px;color:#0f172a;font-weight:800;margin-bottom:10px}
+  .intro-tips ul{margin-left:20px}
+  .intro-tips li{font-size:13.5px;color:var(--text-soft);line-height:1.9}
+
+  .finish-banner{
+    background:linear-gradient(135deg,#16a34a,#22c55e);
+    color:#fff;padding:34px;border-radius:18px;text-align:center;
+    margin-bottom:20px;box-shadow:0 12px 30px rgba(22,163,74,.35);
+  }
+  .finish-banner .ic{font-size:48px;margin-bottom:10px}
+  .finish-banner h2{font-size:24px;font-weight:800;margin-bottom:8px}
+  .finish-banner p{font-size:14px;opacity:.95;line-height:1.7}
+
+  /* 总结要点 */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .summary-card{
+    background:#fff;border-radius:12px;padding:18px;border:2px solid var(--border);
+  }
+  .summary-card.ok{border-color:#86efac;background:#f0fdf4}
+  .summary-card.warn{border-color:#fde047;background:#fefce8}
+  .summary-card.danger{border-color:#fca5a5;background:#fef2f2}
+  .summary-card .sc-title{font-size:14px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .summary-card.ok .sc-title{color:#15803d}
+  .summary-card.warn .sc-title{color:#a16207}
+  .summary-card.danger .sc-title{color:#b91c1c}
+  .summary-card .sc-body{font-size:13px;color:var(--text-soft);line-height:1.7}
+
+  /* 动画SVG专属样式 */
+  .anim-svg .rigid-body{fill:#1e40af;stroke:#1e3a8a;stroke-width:2}
+  .anim-svg .rigid-body-2{fill:#0891b2;stroke:#0e7490;stroke-width:2}
+  .anim-svg .rigid-body-3{fill:#7c3aed;stroke:#5b21b6;stroke-width:2}
+  .anim-svg .point-node{fill:#fbbf24;stroke:#b45309;stroke-width:2}
+  .anim-svg .link-bar{stroke:#e5e7eb;stroke-width:6;stroke-linecap:round;fill:none}
+  .anim-svg .link-bar-new{stroke:#22c55e;stroke-width:6;stroke-linecap:round;fill:none;stroke-dasharray:200;stroke-dashoffset:200;transition:stroke-dashoffset .8s ease}
+  .anim-svg .link-bar-new.shown{stroke-dashoffset:0}
+  .anim-svg .hinge{fill:#0d1117;stroke:#fbbf24;stroke-width:2.5}
+  .anim-svg .ground-line{stroke:#64748b;stroke-width:2.5;fill:none}
+  .anim-svg .ground-hatch{stroke:#64748b;stroke-width:1.5}
+  .anim-svg .label-text{font-size:11px;fill:#cbd5e1;font-family:"Microsoft YaHei",sans-serif;font-weight:600}
+  .anim-svg .label-warn{font-size:12px;fill:#f87171;font-weight:700}
+  .anim-svg .label-ok{font-size:12px;fill:#4ade80;font-weight:700}
+  .anim-svg .dashed-link{stroke-dasharray:4 3}
+  .anim-svg .vpoint{fill:#f87171;stroke:#fff;stroke-width:2}
+  .anim-svg .vpoint-label{font-size:11px;fill:#fbbf24;font-weight:700}
+  .anim-svg .deform-arrow{stroke:#f87171;stroke-width:2;fill:none;marker-end:url(#arrow-red);opacity:0;transition:opacity .4s}
+  .anim-svg .deform-arrow.shown{opacity:1}
+  .anim-svg .body-rotated{transform-origin:var(--ox) var(--oy);transition:transform .8s ease}
+  .anim-svg .body-rotated.rotated{transform:rotate(var(--angle))}
+
+  /* ============= Canvas动画引擎样式 ============= */
+  .anim-box .anim-canvas-wrap{
+    background:#0d1117;border-radius:8px;position:relative;
+    min-height:260px;overflow:hidden;
+  }
+  .anim-box canvas.anim-cv{display:block;width:100%;height:260px}
+  .anim-stepper{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;
+    display:flex;gap:4px;background:rgba(22,27,34,0.85);
+    padding:5px 12px;border-radius:10px;border:1px solid #30363d;
+  }
+  .anim-stepper .sdot{
+    width:28px;height:5px;border-radius:3px;background:#30363d;transition:all .3s;
+  }
+  .anim-stepper .sdot.active{background:#58a6ff;box-shadow:0 0 6px rgba(88,166,255,.6)}
+  .anim-stepper .sdot.done{background:#3fb950}
+  .anim-hint{
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:5;
+    background:rgba(22,27,34,0.9);border:1px solid #30363d;
+    padding:8px 18px;border-radius:10px;font-size:12.5px;color:#e6edf3;
+    text-align:center;max-width:90%;transition:opacity .3s;min-height:18px;
+  }
+  .anim-hint .hl-y{color:#ffd700;font-weight:600}
+  .anim-hint .hl-g{color:#3fb950;font-weight:600}
+  .anim-hint .hl-b{color:#58a6ff;font-weight:600}
+  .anim-hint .hl-p{color:#a371f7;font-weight:600}
+  .anim-hint .hl-k{color:#f778ba;font-weight:600}
+  .anim-hint .hl-r{color:#f85149;font-weight:600}
+  .anim-conclusion{
+    position:absolute;top:38px;right:10px;z-index:5;
+    background:rgba(22,27,34,0.92);border:1px solid #3fb950;
+    padding:10px 14px;border-radius:10px;max-width:200px;
+    opacity:0;transform:translateX(15px);transition:opacity .5s,transform .5s;
+  }
+  .anim-conclusion.show{opacity:1;transform:translateX(0)}
+  .anim-conclusion .cbadge{
+    display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:10px;font-weight:700;background:rgba(63,185,80,0.2);color:#3fb950;
+  }
+  .anim-conclusion .ctitle{font-size:12px;color:#e6edf3;margin:4px 0 2px;font-weight:700}
+  .anim-conclusion .cdesc{font-size:11px;color:#8b949e;line-height:1.6}
+  .anim-conclusion .cdesc b{color:#3fb950}
+  .anim-conclusion.danger{border-color:#f85149}
+  .anim-conclusion.danger .cbadge{background:rgba(248,81,73,0.2);color:#f85149}
+  .anim-conclusion.danger .cdesc b{color:#f85149}
+  .anim-conclusion.warn{border-color:#d29922}
+  .anim-conclusion.warn .cbadge{background:rgba(210,153,34,0.2);color:#d29922}
+  .anim-conclusion.warn .cdesc b{color:#d29922}
+
+  @media(max-width:780px){
+    .summary-grid,.rank-summary,.rule-attrs{grid-template-columns:1fr}
+    .rule-attrs{grid-template-columns:1fr 1fr 1fr}
+    .roadmap-step{min-width:calc(50% - 4px)}
+    .stage-nav{justify-content:flex-start}
+    .topbar{padding:12px 16px}
+    .stage{padding:0 16px}
+    main.content{padding:18px 0 40px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= 登录弹窗 ============= -->
+<div id="login-overlay">
+  <div class="login-card">
+    <span class="badge">土建互动教学课件 · 闯关模式</span>
+    <h1>《几何体系的基本组成规则讲解》</h1>
+    <p class="subtitle">建筑结构 / 结构力学基础课堂教学<br>三大规则 · 瞬变常变判定 · 重难点综合闯关</p>
+    <div class="tips">
+      请填写真实姓名和学号后开始闯关，未提交信息将锁定全部学习与答题功能。本次答题记录、成绩与排名将与您的身份信息绑定。
+    </div>
+    <div class="field">
+      <label>学生姓名<span class="req">*</span></label>
+      <input id="login-name" type="text" placeholder="请输入真实姓名" maxlength="20" autocomplete="off">
+      <span class="err" id="err-name"></span>
+    </div>
+    <div class="field">
+      <label>学号<span class="req">*</span></label>
+      <input id="login-sid" type="text" placeholder="请输入学号" maxlength="20" autocomplete="off">
+      <span class="err" id="err-sid"></span>
+    </div>
+    <button class="btn-start" id="btn-login">开始闯关</button>
+  </div>
+</div>
+
+<!-- ============= 主应用 ============= -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">M</div>
+      <div class="title-block">
+        <div class="t1">几何体系的基本组成规则讲解</div>
+        <div class="t2">土建互动教学课件 · 闯关模式</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="score-display">总分 <span class="num" id="topbar-score">0</span> / 60</div>
+      <div class="student-badge">
+        <div class="avatar" id="topbar-avatar">学</div>
+        <span id="topbar-name">未登录</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="stage-nav" id="stage-nav">
+    <div class="stage-pill active" data-stage="0"><span class="step-num">0</span>开篇导入</div>
+    <div class="stage-pill locked" data-stage="1"><span class="step-num">1</span>三大规则</div>
+    <div class="stage-pill locked" data-stage="2"><span class="step-num">2</span>瞬变常变</div>
+    <div class="stage-pill locked" data-stage="3"><span class="step-num">3</span>重难点综合</div>
+    <div class="stage-pill locked" data-stage="4"><span class="step-num">4</span>总结排名</div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ====== 阶段 0: 开篇导入 ====== -->
+    <section class="stage active" id="stage-0">
+      <div class="intro-hero">
+        <h1>几何体系的基本组成规则讲解</h1>
+        <p class="sub">通过动态演示动画拆解三大组成规则、推广规则与瞬变常变判定<br>建立"三角形=结构稳定核心"的整体思维</p>
+      </div>
+      <div class="intro-roadmap">
+        <h3>闯关路线图</h3>
+        <div class="roadmap-steps">
+          <div class="roadmap-step"><div class="num">1</div><div class="name">三大基本规则</div><div class="detail">点刚片/两刚片/三刚片 · 3题</div></div>
+          <div class="roadmap-step"><div class="num">2</div><div class="name">瞬变常变判定</div><div class="detail">经典判错案例+2题</div></div>
+          <div class="roadmap-step"><div class="num">3</div><div class="name">重难点综合闯关</div><div class="detail">综合压轴题 · 1题</div></div>
+          <div class="roadmap-step"><div class="num">4</div><div class="name">总结排名</div><div class="detail">班级榜单 · 学情数据</div></div>
+        </div>
+      </div>
+      <div class="intro-tips">
+        <h3>学习须知</h3>
+        <ul>
+          <li>共 <b>6 道题</b>，每题 10 分，总分 <b>60 分</b>；答对得分，答错不得分（可查看解析）。</li>
+          <li>采用 <b>闯关解锁机制</b>：完成上一关全部题目后方可解锁下一关。</li>
+          <li>每条规则配 <b>动态演示动画</b>，点击"播放动画"按钮观看体系组成过程与约束效果。</li>
+          <li>题目作答后即时反馈与解析，<b>答错会弹出知识点回顾提示</b>，便于巩固。</li>
+          <li>通关后自动生成 <b>班级得分排名</b>，按总分降序、同分按用时升序排列。</li>
+        </ul>
+      </div>
+      <div class="stage-complete">
+        <button class="btn-complete" id="btn-start-1">开始第一关</button>
+      </div>
+    </section>
+
+    <!-- ====== 阶段 1: 三大基本规则 ====== -->
+    <section class="stage" id="stage-1">
+      <div class="stage-header">
+        <span class="tag">第一关 · 核心知识点</span>
+        <h2>几何不变体系三大基本组成规则</h2>
+        <p class="desc">逐条精讲点-刚片、两刚片、三刚片三大规则，配套动态演示动画，强调"不共线"关键条件</p>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>核心概念引入</h3>
+        <p>几何不变体系是指 <b>在不考虑材料应变的条件下，体系的位置和形状不能改变</b> 的体系。判断一个体系是否几何不变、有无多余约束，依赖三大基本组成规则。三大规则有共同的 <b>关键条件：连接元素的几何位置不能共线</b>，否则会退化为瞬变体系。</p>
+      </div>
+
+      <!-- 规则1：点-刚片 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum">1</span>点—刚片规则</div>
+          <span class="rule-tag">几何不变 · 无多余约束</span>
+        </div>
+        <div class="rule-def">
+          <b>定义：</b>一个点与一个刚片，通过 <b>两根不共线的链杆</b> 相连，组成无多余约束的几何不变体系。
+        </div>
+        <div class="anim-box">
+          <div class="anim-canvas-wrap">
+            <canvas class="anim-cv" id="cv-1"></canvas>
+            <div class="anim-stepper" id="step-1">
+              <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+            </div>
+            <div class="anim-hint" id="hint-1">点击"播放动画"开始演示</div>
+            <div class="anim-conclusion" id="conc-1">
+              <span class="cbadge">结论</span>
+              <div class="ctitle"></div>
+              <div class="cdesc"></div>
+            </div>
+          </div>
+          <div class="anim-caption">点 A 通过两根不共线链杆固定于刚片，构成无多余约束几何不变体系</div>
+          <div class="anim-controls">
+            <button class="anim-btn primary" data-anim="1">▶ 播放动画</button>
+            <button class="anim-btn" data-anim="1-reset">↺ 重置</button>
+            <span class="anim-status" id="a1-status"><span class="dot"></span>未播放</span>
+          </div>
+        </div>
+        <div class="rule-attrs">
+          <div class="rule-attr ok"><div class="k">约束特点</div><div class="v">2根不共线链杆</div></div>
+          <div class="rule-attr warn"><div class="k">关键条件</div><div class="v">链杆不共线</div></div>
+          <div class="rule-attr ok"><div class="k">体系属性</div><div class="v">几何不变</div></div>
+        </div>
+        <h4 style="margin-top:16px">讲解核心</h4>
+        <p style="margin-top:4px"><b>不共线是关键</b>：若两链杆共线（即点 A 位于两链杆延长线上），体系在该瞬时会发生微小位移，称为 <b style="color:#dc2626">瞬变体系</b>。共线情形将在第三关详细讲解。</p>
+      </div>
+
+      <!-- 规则2：两刚片 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum">2</span>两刚片规则</div>
+          <span class="rule-tag">几何不变 · 无多余约束</span>
+        </div>
+        <div class="rule-def">
+          <b>定义：</b>两个刚片，通过 <b>不在同一直线上的一个铰 + 一根链杆</b> 相连，组成无多余约束的几何不变体系。
+        </div>
+        <div class="anim-iframe-wrap">
+          <iframe srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;两刚片规则 · 一铰一链杆 / 三链杆虚铰&lt;/title&gt;
+&lt;style&gt;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: &quot;Segoe UI&quot;, &quot;Microsoft YaHei&quot;, sans-serif; background: #0d1117; color: #e6edf3; overflow: hidden; }
+  #app { display: flex; height: 100vh; }
+
+  #scene-wrap { flex:1; position:relative; overflow:hidden; background: radial-gradient(circle at 50% 50%, #1b2433 0%, #0a0e16 75%); }
+  #scene { position:absolute; top:0; left:0; width:100%; height:100%; display:block; }
+
+  /* 情形切换 */
+  #mode-bar {
+    position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:11;
+    display:flex; gap:6px; background:rgba(22,27,34,0.85);
+    padding:6px; border-radius:12px; border:1px solid #30363d; backdrop-filter:blur(6px);
+  }
+  .btn-mode {
+    padding:8px 16px; border:none; border-radius:8px; cursor:pointer;
+    background:transparent; color:#8b949e; font-size:12.5px; font-weight:600;
+    transition:all .25s; white-space:nowrap;
+  }
+  .btn-mode:hover:not(.active) { color:#e6edf3; background:rgba(255,255,255,.05); }
+  .btn-mode.active { background:#1f6feb; color:#fff; box-shadow:0 0 10px rgba(31,111,235,.5); }
+
+  /* 顶部步骤指示器 */
+  #stepper {
+    position:absolute; top:62px; left:50%; transform:translateX(-50%); z-index:10;
+    display:flex; gap:4px; background:rgba(22,27,34,0.85);
+    padding:7px 14px; border-radius:12px; border:1px solid #30363d; backdrop-filter:blur(6px);
+  }
+  .step-dot {
+    width:36px; height:6px; border-radius:3px; background:#30363d; transition:all .3s;
+  }
+  .step-dot.active { background:#58a6ff; box-shadow:0 0 8px rgba(88,166,255,.6); }
+  .step-dot.done { background:#3fb950; }
+
+  /* 右侧结论面板 */
+  #conclusion {
+    position:absolute; top:100px; right:16px; z-index:10;
+    background:rgba(22,27,34,0.9); border:1px solid #30363d;
+    padding:16px 20px; border-radius:14px; backdrop-filter:blur(8px);
+    max-width:300px; opacity:0; transform:translateX(20px);
+    transition:opacity .5s, transform .5s;
+  }
+  #conclusion.show { opacity:1; transform:translateX(0); }
+  #conclusion .badge {
+    display:inline-block; padding:4px 12px; border-radius:6px;
+    font-size:12px; font-weight:700; letter-spacing:1px;
+    background:rgba(63,185,80,0.2); color:#3fb950;
+  }
+  #conclusion h3 { font-size:15px; margin:8px 0 4px; color:#e6edf3; }
+  #conclusion .sub { font-size:11.5px; color:#8b949e; margin-bottom:8px; }
+  #conclusion .formula {
+    font-family:&quot;Consolas&quot;,monospace; font-size:12.5px; color:#58a6ff;
+    background:rgba(88,166,255,0.08); padding:7px 11px; border-radius:8px;
+    border:1px solid rgba(88,166,255,0.2); margin:8px 0;
+  }
+  #conclusion .desc { font-size:12px; color:#c9d1d9; line-height:1.7; }
+  #conclusion .desc b { color:#3fb950; }
+
+  /* 左下提示文字 */
+  #hint-box {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:10;
+    background:rgba(22,27,34,0.88); border:1px solid #30363d;
+    padding:11px 22px; border-radius:12px; backdrop-filter:blur(6px);
+    font-size:13.5px; color:#e6edf3; text-align:center; min-width:300px; max-width:560px;
+    transition:opacity .3s;
+  }
+  #hint-box .icon { font-size:17px; margin-right:6px; }
+  #hint-box .highlight { color:#ffd700; font-weight:600; }
+  #hint-box .highlight-green { color:#3fb950; font-weight:600; }
+  #hint-box .highlight-blue { color:#58a6ff; font-weight:600; }
+  #hint-box .highlight-purple { color:#a371f7; font-weight:600; }
+  #hint-box .highlight-pink { color:#f778ba; font-weight:600; }
+
+  /* 右侧控制面板 */
+  #panel {
+    width:290px; background:#161b22; border-left:1px solid #30363d;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #panel h2 {
+    padding:14px 16px; font-size:14.5px; color:#e6edf3;
+    border-bottom:1px solid #30363d; display:flex; align-items:center; gap:8px;
+  }
+  #panel h2 .dot { width:8px; height:8px; border-radius:50%; background:#3fb950; box-shadow:0 0 8px #3fb950; }
+  #panel-body { flex:1; overflow-y:auto; padding:12px 14px; }
+  #panel-body::-webkit-scrollbar { width:5px; }
+  #panel-body::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+
+  .btn {
+    width:100%; padding:9px; border:none; border-radius:8px; cursor:pointer;
+    font-size:12.5px; font-weight:600; transition:all .2s; margin-bottom:7px;
+  }
+  .btn.primary { background:#1f6feb; color:#fff; }
+  .btn.primary:hover { background:#388bfd; }
+  .btn.secondary { background:#21262d; color:#c9d1d9; border:1px solid #30363d; }
+  .btn.secondary:hover { background:#30363d; color:#fff; }
+
+  .info-block {
+    padding:11px; background:#0d1117; border:1px solid #21262d;
+    border-radius:10px; margin-bottom:11px; font-size:12px; line-height:1.7; color:#8b949e;
+  }
+  .info-block b { color:#c9d1d9; }
+  .info-block .hl-b { color:#58a6ff; font-weight:600; }
+  .info-block .hl-p { color:#a371f7; font-weight:600; }
+  .info-block .hl-y { color:#ffd700; font-weight:600; }
+  .info-block .hl-g { color:#3fb950; font-weight:600; }
+  .info-block .hl-k { color:#f778ba; font-weight:600; }
+
+  .step-list { list-style:none; padding:0; }
+  .step-list li {
+    display:flex; align-items:flex-start; gap:9px; padding:7px 0;
+    font-size:12px; color:#8b949e; border-bottom:1px solid #21262d;
+  }
+  .step-list li:last-child { border:none; }
+  .step-list .num {
+    width:20px; height:20px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:700; background:#30363d; color:#8b949e;
+    transition:all .3s;
+  }
+  .step-list li.active .num { background:#1f6feb; color:#fff; }
+  .step-list li.active { color:#e6edf3; }
+  .step-list li.done .num { background:#3fb950; color:#fff; }
+  .step-list li.done { color:#c9d1d9; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;app&quot;&gt;
+  &lt;div id=&quot;scene-wrap&quot;&gt;
+    &lt;canvas id=&quot;scene&quot;&gt;&lt;/canvas&gt;
+
+    &lt;div id=&quot;mode-bar&quot;&gt;
+      &lt;button class=&quot;btn-mode active&quot; data-mode=&quot;1&quot;&gt;情形一：一铰一链杆&lt;/button&gt;
+      &lt;button class=&quot;btn-mode&quot; data-mode=&quot;2&quot;&gt;情形二：三链杆（虚铰）&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;stepper&quot;&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;0&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;1&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;2&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;3&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;4&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;conclusion&quot;&gt;
+      &lt;span class=&quot;badge&quot;&gt;结论&lt;/span&gt;
+      &lt;h3&gt;几何不变，无多余联系&lt;/h3&gt;
+      &lt;div class=&quot;sub&quot; id=&quot;conc-sub&quot;&gt;两刚片规则（一铰一链杆）&lt;/div&gt;
+      &lt;div class=&quot;formula&quot; id=&quot;conc-formula&quot;&gt;约束 = 2(铰) + 1(链杆) = 3&lt;br&gt;自由度 = 3 − 3 = 0&lt;/div&gt;
+      &lt;div class=&quot;desc&quot; id=&quot;conc-desc&quot;&gt;
+        一个&lt;b&gt;实铰&lt;/b&gt;提供 2 个约束，一根&lt;b&gt;不通过铰的链杆&lt;/b&gt;提供 1 个约束。
+        约束总数 = 3，恰好消除 3 个自由度，&lt;b&gt;几何不变且无多余约束&lt;/b&gt;。
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;hint-box&quot;&gt;
+      &lt;span class=&quot;icon&quot;&gt;▶&lt;/span&gt;点击右侧&quot;播放动画&quot;开始演示
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div id=&quot;panel&quot;&gt;
+    &lt;h2&gt;&lt;span class=&quot;dot&quot;&gt;&lt;/span&gt;&lt;span&gt;两刚片规则&lt;/span&gt;&lt;/h2&gt;
+    &lt;div id=&quot;panel-body&quot;&gt;
+      &lt;div class=&quot;info-block&quot;&gt;
+        &lt;b&gt;规则内容&lt;/b&gt;&lt;br&gt;
+        两个刚片用一个&lt;span class=&quot;hl-p&quot;&gt;铰&lt;/span&gt;和一根&lt;span class=&quot;hl-y&quot;&gt;不通过此铰的链杆&lt;/span&gt;相连，
+        或用&lt;span class=&quot;hl-y&quot;&gt;三根链杆&lt;/span&gt;相连（其中两根形成&lt;span class=&quot;hl-p&quot;&gt;虚铰&lt;/span&gt;，第三根不通过虚铰），
+        则体系&lt;span class=&quot;hl-g&quot;&gt;几何不变，且无多余联系&lt;/span&gt;。
+      &lt;/div&gt;
+
+      &lt;button class=&quot;btn primary&quot; id=&quot;btn-play&quot;&gt;▶ 播放动画&lt;/button&gt;
+      &lt;button class=&quot;btn secondary&quot; id=&quot;btn-replay&quot;&gt;↺ 重新播放&lt;/button&gt;
+
+      &lt;div class=&quot;info-block&quot;&gt;
+        &lt;b&gt;动画步骤&lt;/b&gt;
+        &lt;ul class=&quot;step-list&quot; id=&quot;step-list&quot;&gt;&lt;/ul&gt;
+      &lt;/div&gt;
+
+      &lt;div class=&quot;info-block&quot; id=&quot;key-info&quot;&gt;
+        &lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;
+        · &lt;span class=&quot;hl-p&quot;&gt;铰&lt;/span&gt;提供 &lt;span class=&quot;hl-p&quot;&gt;2个约束&lt;/span&gt;（限制x、y移动）&lt;br&gt;
+        · &lt;span class=&quot;hl-y&quot;&gt;链杆&lt;/span&gt;提供 &lt;span class=&quot;hl-y&quot;&gt;1个约束&lt;/span&gt;（限制杆长方向位移）&lt;br&gt;
+        · 链杆延长线&lt;span class=&quot;hl-y&quot;&gt;不通过铰点&lt;/span&gt; → 约束独立&lt;br&gt;
+        · 总约束 = 3 = 刚片自由度 3 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+// ============================================================
+// Canvas 初始化
+// ============================================================
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, CX = 0, CY = 0;
+const SCALE = 85;
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = w; H = h; CX = W/2; CY = H/2 + 30;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+requestAnimationFrame(resize);
+function toS(x,y){ return { x: CX + x*SCALE, y: CY - y*SCALE }; }
+
+function localToWorld(rig, lx, ly) {
+  const c = Math.cos(rig.theta * Math.PI/180);
+  const s = Math.sin(rig.theta * Math.PI/180);
+  return { x: rig.x + lx*c - ly*s, y: rig.y + lx*s + ly*c };
+}
+
+function lineIntersect(p1, p2, p3, p4) {
+  const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y,x4=p4.x,y4=p4.y;
+  const denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+  if (Math.abs(denom) &lt; 1e-10) return null;
+  const t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4)) / denom;
+  return { x: x1 + t*(x2-x1), y: y1 + t*(y2-y1) };
+}
+
+// ============================================================
+// 两种情形配置
+// ============================================================
+let mode = 1;
+
+// 情形一：一实铰 + 一链杆（V形布局：左端铰接、张开角度、右端链杆连接）
+// 两刚片左端尖点铰接于世界(-1.5, 0)，向右张开成V形
+// R1(上): theta=-15°（向右上倾斜），左端尖(lx=-2.5,ly=0)铰接
+// R2(下): theta=+15°（向右下倾斜），左端尖(lx=-2.5,ly=0)铰接
+// 链杆: 连接两刚片右侧边缘
+//   椭圆 a=2.5 b=0.75，在 lx=2.2 处 ly=±0.75·√(1-(2.2/2.5)²)=±0.356
+//   R1下边缘 A(2.2, +0.356), R2上边缘 B(2.2, -0.356)
+//   变换后链杆在世界 x≈3.13 处垂直连接，远离铰(-1.5,0)，不共线
+const cfg1 = {
+  R1: { x: 0.9148, y: -0.6470, theta: -15, a: 2.5, b: 0.75 },
+  R2: { x: 0.9148, y:  0.6470, theta:  15, a: 2.5, b: 0.75 },
+  hinge: { pt1: {lx: -2.5, ly: 0}, pt2: {lx: -2.5, ly: 0} },
+  links: [
+    { A: {lx: 2.2, ly: 0.356}, B: {lx: 2.2, ly: -0.356} }
+  ],
+};
+
+// 情形二：三链杆虚铰（两个水平椭圆刚片，间距大幅拉开）
+// 椭圆尺寸: a=2.5, b=0.75
+// R1(上): 水平，中心(0,-1.1)
+// R2(下): 水平，中心(0, 1.1)
+// 中心距 = 2.2（之前为1.2，+83%）
+// 视觉缝隙 = 2.2 - 0.75 - 0.75 = 0.7 单位（明显可见的缝隙）
+//
+// 椭圆边界: ly = ±0.75·√(1-(lx/2.5)²)
+//   lx=±2.2 → ly≈±0.2892
+//   lx=±1.8 → ly≈±0.4593
+//   lx=±1.0 → ly≈±0.6874
+//   lx=±0.5 → ly≈±0.7348
+const cfg2 = {
+  R1: { x: 0, y: -1.1, theta: 0, a: 2.5, b: 0.75 },
+  R2: { x: 0, y:  1.1, theta: 0, a: 2.5, b: 0.75 },
+  hinge: null,
+  links: [
+    // 链杆① 左远端（陡）
+    { A: {lx: -2.2, ly:  0.289}, B: {lx: -1.9, ly: -0.431} },
+    // 链杆② 左近中心（平缓）
+    { A: {lx: -1.0, ly:  0.687}, B: {lx: -0.5, ly: -0.735} },
+    // 链杆③ 右侧（不通过虚铰）
+    { A: {lx:  2.2, ly:  0.289}, B: {lx:  1.8, ly: -0.459} },
+  ],
+};
+
+function getCfg() { return mode === 1 ? cfg1 : cfg2; }
+
+function computeVirtualHinge() {
+  if (mode !== 2) return null;
+  const c = cfg2;
+  const A0 = localToWorld(c.R1, c.links[0].A.lx, c.links[0].A.ly);
+  const B0 = localToWorld(c.R2, c.links[0].B.lx, c.links[0].B.ly);
+  const A1 = localToWorld(c.R1, c.links[1].A.lx, c.links[1].A.ly);
+  const B1 = localToWorld(c.R2, c.links[1].B.lx, c.links[1].B.ly);
+  return lineIntersect(A0, B0, A1, B1);
+}
+
+// ============================================================
+// 动画状态
+// ============================================================
+let animStep = -1;
+let blinkPhase = 0;
+let playing = false;
+const STEP_DURATIONS = [2.0, 2.2, 1.8, 2.0, 2.5];
+
+const STEP_TEXTS = {
+  1: [
+    '圈出&lt;span class=&quot;highlight-blue&quot;&gt;刚片1&lt;/span&gt;和&lt;span class=&quot;highlight-pink&quot;&gt;刚片2&lt;/span&gt;——两个被分析的刚片',
+    '圈出&lt;span class=&quot;highlight-purple&quot;&gt;铰&lt;/span&gt;——两刚片在此铰接，提供 2 个约束',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆&lt;/span&gt;——连接两刚片，提供 1 个约束',
+    '&lt;span class=&quot;highlight&quot;&gt;链杆延长线不通过铰点&lt;/span&gt;——约束相互独立，无多余联系',
+    '结论：体系是&lt;span class=&quot;highlight-green&quot;&gt;几何不变的，且没有多余联系&lt;/span&gt;',
+  ],
+  2: [
+    '圈出&lt;span class=&quot;highlight-blue&quot;&gt;刚片1&lt;/span&gt;和&lt;span class=&quot;highlight-pink&quot;&gt;刚片2&lt;/span&gt;——两个被分析的刚片',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆①②&lt;/span&gt;——延长线相交形成&lt;span class=&quot;highlight-purple&quot;&gt;虚铰&lt;/span&gt;（等效 2 个约束）',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆③&lt;/span&gt;——连接两刚片，提供 1 个约束',
+    '&lt;span class=&quot;highlight&quot;&gt;链杆③延长线不通过虚铰&lt;/span&gt;——约束相互独立，无多余联系',
+    '结论：体系是&lt;span class=&quot;highlight-green&quot;&gt;几何不变的，且没有多余联系&lt;/span&gt;',
+  ],
+};
+
+const STEP_LIST_HTML = {
+  1: [
+    '&lt;span class=&quot;num&quot;&gt;1&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-b&quot;&gt;刚片1&lt;/span&gt;和&lt;span class=&quot;hl-k&quot;&gt;刚片2&lt;/span&gt;（闪烁高亮）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;2&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-p&quot;&gt;铰&lt;/span&gt;（两刚片在此铰接）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;3&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-y&quot;&gt;链杆&lt;/span&gt;（连接两刚片）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;4&lt;/span&gt;&lt;span&gt;链杆延长线&lt;span class=&quot;hl-y&quot;&gt;不通过铰点&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;5&lt;/span&gt;&lt;span&gt;结论：&lt;span class=&quot;hl-g&quot;&gt;几何不变，无多余联系&lt;/span&gt;&lt;/span&gt;',
+  ],
+  2: [
+    '&lt;span class=&quot;num&quot;&gt;1&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-b&quot;&gt;刚片1&lt;/span&gt;和&lt;span class=&quot;hl-k&quot;&gt;刚片2&lt;/span&gt;（闪烁高亮）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;2&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-y&quot;&gt;链杆①②&lt;/span&gt; → 交点为&lt;span class=&quot;hl-p&quot;&gt;虚铰&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;3&lt;/span&gt;&lt;span&gt;圈出&lt;span class=&quot;hl-y&quot;&gt;链杆③&lt;/span&gt;（连接两刚片）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;4&lt;/span&gt;&lt;span&gt;链杆③延长线&lt;span class=&quot;hl-y&quot;&gt;不通过虚铰&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;5&lt;/span&gt;&lt;span&gt;结论：&lt;span class=&quot;hl-g&quot;&gt;几何不变，无多余联系&lt;/span&gt;&lt;/span&gt;',
+  ],
+};
+
+// ============================================================
+// 绘图函数
+// ============================================================
+function drawGrid() {
+  ctx.lineWidth=1; ctx.strokeStyle='#1c2230'; ctx.beginPath();
+  for(let x=CX%SCALE;x&lt;W;x+=SCALE){ctx.moveTo(x,0);ctx.lineTo(x,H);}
+  for(let y=CY%SCALE;y&lt;H;y+=SCALE){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+  ctx.stroke();
+}
+
+// 椭圆刚片（带斜线阴影）
+function drawRigid(rig, colors, label) {
+  const p = toS(rig.x, rig.y);
+  const theta = -rig.theta * Math.PI/180;
+  const a = rig.a*SCALE, b = rig.b*SCALE;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(theta);
+
+  // 填充底色
+  ctx.fillStyle = colors[0];
+  ctx.beginPath(); ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2); ctx.fill();
+
+  // 斜线阴影
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2);
+  ctx.clip();
+  ctx.strokeStyle = colors[1];
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.6;
+  // 在椭圆区域内画斜线
+  const spacing = 8;
+  for (let i = -a - b; i &lt; a + b; i += spacing) {
+    // 画通过椭圆的线段
+    ctx.beginPath();
+    ctx.moveTo(i, -b*2);
+    ctx.lineTo(i + b*2, b*2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 边框
+  ctx.strokeStyle = colors[2];
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2); ctx.stroke();
+
+  // 中心线
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(-a, 0); ctx.lineTo(a, 0);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 中心十字
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-7, 0); ctx.lineTo(7, 0);
+  ctx.moveTo(0, -7); ctx.lineTo(0, 7);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // 标签
+  ctx.font = 'bold 14px &quot;Segoe UI&quot;';
+  ctx.fillStyle = colors[2];
+  ctx.textAlign = 'center';
+  const labelOffset = b*0.8 + 12;
+  ctx.fillText(label, p.x, p.y - labelOffset);
+  ctx.textAlign = 'start';
+}
+
+// 链杆（两端粗中间细的工程杆样式）
+function drawLink(Aw, Bw, color='#ffd700') {
+  const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y);
+  const dx = Bs.x - As.x, dy = Bs.y - As.y;
+  const len = Math.hypot(dx, dy) || 1;
+  ctx.save();
+  ctx.translate(As.x, As.y);
+  ctx.rotate(Math.atan2(dy, dx));
+  const w = len, h = 8;
+  // 杆身渐变
+  const grad = ctx.createLinearGradient(0, -4, 0, 4);
+  grad.addColorStop(0, '#b8860b');
+  grad.addColorStop(0.5, color);
+  grad.addColorStop(1, '#b8860b');
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = '#8b6914';
+  ctx.lineWidth = 1;
+  // 圆角矩形
+  const r = 4;
+  ctx.beginPath();
+  ctx.moveTo(r, -h/2);
+  ctx.lineTo(w-r, -h/2);
+  ctx.lineTo(w, -h/2+r);
+  ctx.lineTo(w, h/2-r);
+  ctx.lineTo(w-r, h/2);
+  ctx.lineTo(r, h/2);
+  ctx.lineTo(0, h/2-r);
+  ctx.lineTo(0, -h/2+r);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  // 两端铰链
+  drawPin(As.x, As.y, color);
+  drawPin(Bs.x, Bs.y, color);
+}
+
+function drawPin(x, y, color='#ffd700') {
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(x, y, 5.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// 实铰
+function drawHinge(ptWorld, color='#a371f7', size=9) {
+  const s = toS(ptWorld.x, ptWorld.y);
+  const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 28);
+  grd.addColorStop(0, 'rgba(163,113,247,0.5)');
+  grd.addColorStop(1, 'rgba(163,113,247,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 28, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#161b22';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size*0.4, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// 虚铰
+function drawVirtualHinge(ptWorld, color='#a371f7', size=11) {
+  const s = toS(ptWorld.x, ptWorld.y);
+  const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 30);
+  grd.addColorStop(0, 'rgba(163,113,247,0.35)');
+  grd.addColorStop(1, 'rgba(163,113,247,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 30, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size+5, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#0d1117';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(s.x-5, s.y); ctx.lineTo(s.x+5, s.y);
+  ctx.moveTo(s.x, s.y-5); ctx.lineTo(s.x, s.y+5);
+  ctx.stroke();
+}
+
+// 高亮椭圆（闪烁）
+function drawHighlightEllipse(cx, cy, a, b, angle, color, alpha, lineWidth=3) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = lineWidth;
+  ctx.setLineDash([10, 6]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, a + 12, b + 12, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// 链杆编号标注
+function drawLinkLabel(Aw, Bw, label, color='#ffd700') {
+  const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y);
+  const mx = (As.x+Bs.x)/2, my = (As.y+Bs.y)/2;
+  const dx = Bs.x - As.x, dy = Bs.y - As.y, len = Math.hypot(dx, dy) || 1;
+  const nx = -dy/len, ny = dx/len;
+  ctx.save();
+  ctx.font = 'bold 13px &quot;Segoe UI&quot;';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, mx + nx*16, my + ny*16);
+  ctx.restore();
+}
+
+// ============================================================
+// 提示文字 &amp; 步骤UI
+// ============================================================
+function setHint(html) {
+  const el = document.getElementById('hint-box');
+  el.innerHTML = html;
+  el.style.opacity = '1';
+}
+
+function updateStepUI(step) {
+  document.querySelectorAll('.step-dot').forEach((el, i) =&gt; {
+    el.classList.remove('active', 'done');
+    if (i &lt; step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  });
+  document.querySelectorAll('#step-list li').forEach((el, i) =&gt; {
+    el.classList.remove('active', 'done');
+    if (i &lt; step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  });
+  const conc = document.getElementById('conclusion');
+  if (step &gt;= 4) conc.classList.add('show');
+  else conc.classList.remove('show');
+}
+
+function updateModeUI() {
+  document.querySelectorAll('.btn-mode').forEach(el =&gt; {
+    el.classList.toggle('active', parseInt(el.dataset.mode) === mode);
+  });
+  const ul = document.getElementById('step-list');
+  ul.innerHTML = STEP_LIST_HTML[mode].map((t,i) =&gt;
+    `&lt;li data-s=&quot;${i}&quot;&gt;${t}&lt;/li&gt;`).join('');
+  if (mode === 1) {
+    document.getElementById('conc-sub').textContent = '两刚片规则（一铰一链杆）';
+    document.getElementById('conc-formula').innerHTML = '约束 = 2(铰) + 1(链杆) = 3&lt;br&gt;自由度 = 3 − 3 = 0';
+    document.getElementById('conc-desc').innerHTML =
+      '一个&lt;b&gt;实铰&lt;/b&gt;提供 2 个约束，一根&lt;b&gt;不通过铰的链杆&lt;/b&gt;提供 1 个约束。约束总数 = 3，&lt;b&gt;几何不变且无多余约束&lt;/b&gt;。';
+  } else {
+    document.getElementById('conc-sub').textContent = '两刚片规则（三链杆·虚铰）';
+    document.getElementById('conc-formula').innerHTML = '约束 = 2(虚铰) + 1(链杆③) = 3&lt;br&gt;自由度 = 3 − 3 = 0';
+    document.getElementById('conc-desc').innerHTML =
+      '两根链杆延长线交点形成&lt;b&gt;虚铰&lt;/b&gt;（等效 2 约束），第三根链杆不通过虚铰（1 约束）。约束总数 = 3，&lt;b&gt;几何不变且无多余约束&lt;/b&gt;。';
+  }
+  const ki = document.getElementById('key-info');
+  if (mode === 1) {
+    ki.innerHTML = '&lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;· &lt;span class=&quot;hl-p&quot;&gt;铰&lt;/span&gt;提供 &lt;span class=&quot;hl-p&quot;&gt;2个约束&lt;/span&gt;（限制x、y移动）&lt;br&gt;· &lt;span class=&quot;hl-y&quot;&gt;链杆&lt;/span&gt;提供 &lt;span class=&quot;hl-y&quot;&gt;1个约束&lt;/span&gt;（限制杆长方向位移）&lt;br&gt;· 链杆延长线&lt;span class=&quot;hl-y&quot;&gt;不通过铰点&lt;/span&gt; → 约束独立&lt;br&gt;· 总约束 = 3 = 刚片自由度 3 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;';
+  } else {
+    ki.innerHTML = '&lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;· &lt;span class=&quot;hl-y&quot;&gt;链杆①②&lt;/span&gt;延长线相交 → &lt;span class=&quot;hl-p&quot;&gt;虚铰&lt;/span&gt;（等效 2 约束）&lt;br&gt;· &lt;span class=&quot;hl-y&quot;&gt;链杆③&lt;/span&gt;提供 &lt;span class=&quot;hl-y&quot;&gt;1个约束&lt;/span&gt;（限制杆长方向位移）&lt;br&gt;· 链杆③延长线&lt;span class=&quot;hl-y&quot;&gt;不通过虚铰&lt;/span&gt; → 约束独立&lt;br&gt;· 总约束 = 3 = 刚片自由度 3 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;';
+  }
+}
+
+// ============================================================
+// 主渲染
+// ============================================================
+function render() {
+  if (W &lt; 2 || H &lt; 2) resize();
+  blinkPhase += 0.05;
+  const blink = (Math.sin(blinkPhase * 3) + 1) / 2;
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+
+  const cfg = getCfg();
+  const R1 = cfg.R1, R2 = cfg.R2;
+
+  const linkWorlds = cfg.links.map(l =&gt; ({
+    A: localToWorld(R1, l.A.lx, l.A.ly),
+    B: localToWorld(R2, l.B.lx, l.B.ly),
+  }));
+
+  let hingeW = null, vhW = null;
+  if (cfg.hinge) {
+    hingeW = localToWorld(R1, cfg.hinge.pt1.lx, cfg.hinge.pt1.ly);
+  }
+  if (mode === 2) {
+    vhW = computeVirtualHinge();
+  }
+
+  // ---- Step 0: 高亮两个刚片 ----
+  if (animStep === 0) {
+    const alpha = 0.4 + blink * 0.6;
+    const r1s = toS(R1.x, R1.y), r2s = toS(R2.x, R2.y);
+    drawHighlightEllipse(r1s.x, r1s.y, R1.a*SCALE, R1.b*SCALE, R1.theta * Math.PI/180, '#58a6ff', alpha, 3);
+    drawHighlightEllipse(r2s.x, r2s.y, R2.a*SCALE, R2.b*SCALE, R2.theta * Math.PI/180, '#f778ba', alpha, 3);
+  }
+
+  // 画刚片
+  drawRigid(R1, ['rgba(31,111,235,0.35)','rgba(88,166,255,0.65)','#58a6ff'], '刚片 1');
+  drawRigid(R2, ['rgba(247,120,186,0.35)','rgba(247,120,186,0.65)','#f778ba'], '刚片 2');
+
+  // ---- Step 1 ----
+  if (animStep === 1) {
+    const alpha = 0.4 + blink * 0.6;
+    if (mode === 1) {
+      const hs = toS(hingeW.x, hingeW.y);
+      ctx.save();
+      ctx.strokeStyle = '#a371f7';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.arc(hs.x, hs.y, 26, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      ctx.font = 'bold 13px &quot;Segoe UI&quot;';
+      ctx.fillStyle = `rgba(163,113,247,${alpha})`;
+      ctx.fillText('铰（2个约束）', hs.x - 8, hs.y - 32);
+    } else {
+      // 高亮链杆①②
+      [0, 1].forEach(i =&gt; {
+        const As = toS(linkWorlds[i].A.x, linkWorlds[i].A.y);
+        const Bs = toS(linkWorlds[i].B.x, linkWorlds[i].B.y);
+        const mx = (As.x+Bs.x)/2, my = (As.y+Bs.y)/2;
+        const dx = Bs.x-As.x, dy = Bs.y-As.y, len = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.translate(mx, my);
+        ctx.rotate(angle);
+        ctx.strokeStyle = '#ffd700';
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 3.5;
+        ctx.setLineDash([8, 5]);
+        const padX = 8, padY = 14;
+        ctx.beginPath();
+        ctx.moveTo(-len/2-padX, -padY);
+        ctx.lineTo(len/2+padX, -padY);
+        ctx.lineTo(len/2+padX, padY);
+        ctx.lineTo(-len/2-padX, padY);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      });
+      // 画延长线
+      [0, 1].forEach(i =&gt; {
+        const As = toS(linkWorlds[i].A.x, linkWorlds[i].A.y);
+        const Bs = toS(linkWorlds[i].B.x, linkWorlds[i].B.y);
+        const dx = Bs.x-As.x, dy = Bs.y-As.y, len = Math.hypot(dx, dy) || 1;
+        const ux = dx/len, uy = dy/len;
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(As.x - ux*350, As.y - uy*350);
+        ctx.lineTo(Bs.x + ux*350, Bs.y + uy*350);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      });
+      drawLinkLabel(linkWorlds[0].A, linkWorlds[0].B, '①', `rgba(255,215,0,${alpha})`);
+      drawLinkLabel(linkWorlds[1].A, linkWorlds[1].B, '②', `rgba(255,215,0,${alpha})`);
+      if (vhW) {
+        const vs = toS(vhW.x, vhW.y);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#a371f7';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.arc(vs.x, vs.y, 18, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 12px &quot;Segoe UI&quot;';
+        ctx.fillStyle = `rgba(163,113,247,${alpha})`;
+        ctx.fillText('虚铰', vs.x + 22, vs.y - 6);
+        ctx.restore();
+      }
+    }
+  }
+
+  // 画实铰
+  if (hingeW) drawHinge(hingeW, '#a371f7');
+
+  // 画虚铰
+  if (vhW &amp;&amp; animStep &gt;= 1) drawVirtualHinge(vhW, '#a371f7');
+
+  // ---- Step 2 ----
+  if (animStep === 2) {
+    const alpha = 0.4 + blink * 0.6;
+    const idx = (mode === 1) ? 0 : 2;
+    const As = toS(linkWorlds[idx].A.x, linkWorlds[idx].A.y);
+    const Bs = toS(linkWorlds[idx].B.x, linkWorlds[idx].B.y);
+    const mx = (As.x+Bs.x)/2, my = (As.y+Bs.y)/2;
+    const dx = Bs.x-As.x, dy = Bs.y-As.y, len = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(angle);
+    ctx.strokeStyle = '#ffd700';
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 3.5;
+    ctx.setLineDash([8, 5]);
+    const padX = 8, padY = 14;
+    ctx.beginPath();
+    ctx.moveTo(-len/2-padX, -padY);
+    ctx.lineTo(len/2+padX, -padY);
+    ctx.lineTo(len/2+padX, padY);
+    ctx.lineTo(-len/2-padX, padY);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    ctx.font = 'bold 13px &quot;Segoe UI&quot;';
+    const label = (mode === 1) ? '链杆（1个约束）' : '链杆③（1个约束）';
+    ctx.fillStyle = `rgba(255,215,0,${alpha})`;
+    ctx.fillText(label, Bs.x + 16, Bs.y - 12);
+    if (mode === 2) drawLinkLabel(linkWorlds[2].A, linkWorlds[2].B, '③', `rgba(255,215,0,${alpha})`);
+  }
+
+  // 画所有链杆
+  linkWorlds.forEach(lw =&gt; drawLink(lw.A, lw.B, '#ffd700'));
+
+  if (mode === 2) {
+    drawLinkLabel(linkWorlds[0].A, linkWorlds[0].B, '①');
+    drawLinkLabel(linkWorlds[1].A, linkWorlds[1].B, '②');
+    drawLinkLabel(linkWorlds[2].A, linkWorlds[2].B, '③');
+  }
+
+  // ---- Step 3: 延长线 + 不共线标记 ----
+  if (animStep === 3) {
+    const alpha = 0.5 + blink * 0.5;
+    const idx = (mode === 1) ? 0 : 2;
+    const refPt = (mode === 1) ? hingeW : vhW;
+    const Aw = linkWorlds[idx].A, Bw = linkWorlds[idx].B;
+    const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y), Hs = toS(refPt.x, refPt.y);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const dx = Bs.x - As.x, dy = Bs.y - As.y, len = Math.hypot(dx, dy) || 1;
+    const ux = dx/len, uy = dy/len;
+    ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(As.x - ux*300, As.y - uy*300);
+    ctx.lineTo(Bs.x + ux*300, Bs.y + uy*300);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#ff7b72';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(Hs.x-10, Hs.y-10); ctx.lineTo(Hs.x+10, Hs.y+10);
+    ctx.moveTo(Hs.x+10, Hs.y-10); ctx.lineTo(Hs.x-10, Hs.y+10);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.font = 'bold 13px &quot;Segoe UI&quot;';
+    const refName = (mode === 1) ? '铰' : '虚铰';
+    ctx.fillStyle = `rgba(255,215,0,${alpha})`;
+    ctx.fillText('链杆延长线', (As.x+Bs.x)/2 + 30, (As.y+Bs.y)/2 - 30);
+    ctx.fillStyle = `rgba(255,123,114,${alpha})`;
+    ctx.fillText(refName + '不在延长线上 ✗', Hs.x - 60, Hs.y + 28);
+  }
+
+  // ---- Step 4: 结论 ----
+  if (animStep === 4) {
+    const alpha = 0.3 + blink * 0.4;
+    const r1s = toS(R1.x, R1.y), r2s = toS(R2.x, R2.y);
+    ctx.save();
+    ctx.strokeStyle = '#3fb950';
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 6]);
+    // 用两个椭圆的包围盒
+    const bx = Math.min(r1s.x, r2s.x) - 40;
+    const by = Math.min(r1s.y, r2s.y) - 40;
+    const bw = Math.abs(r1s.x - r2s.x) + Math.max(R1.a*SCALE, R2.a*SCALE) * 2 + 80;
+    const bh = Math.abs(r1s.y - r2s.y) + (R1.b*SCALE + R2.b*SCALE) * 2 + 80;
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    const cx = (r1s.x + r2s.x) / 2, cy = (r1s.y + r2s.y) / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.7 + blink * 0.3;
+    ctx.strokeStyle = '#3fb950';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx-12, cy);
+    ctx.lineTo(cx-4, cy+8);
+    ctx.lineTo(cx+12, cy-10);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  requestAnimationFrame(render);
+}
+
+// ============================================================
+// 动画播放逻辑
+// ============================================================
+function startAnimation() {
+  playing = true;
+  animStep = 0;
+  updateStepUI(0);
+  setHint('&lt;span class=&quot;icon&quot;&gt;①&lt;/span&gt;' + STEP_TEXTS[mode][0]);
+  advanceStep();
+}
+
+function advanceStep() {
+  if (animStep &lt; 0 || animStep &gt; 4) return;
+  const dur = STEP_DURATIONS[animStep] || 2;
+  setTimeout(() =&gt; {
+    if (!playing) return;
+    animStep++;
+    if (animStep &gt; 4) { playing = false; return; }
+    updateStepUI(animStep);
+    const icons = ['①','②','③','④','✓'];
+    setHint('&lt;span class=&quot;icon&quot;&gt;' + icons[animStep] + '&lt;/span&gt;' + STEP_TEXTS[mode][animStep]);
+    advanceStep();
+  }, dur * 1000);
+}
+
+// ============================================================
+// 事件绑定
+// ============================================================
+document.getElementById('btn-play').addEventListener('click', () =&gt; {
+  if (!playing) startAnimation();
+});
+document.getElementById('btn-replay').addEventListener('click', () =&gt; {
+  playing = false;
+  setTimeout(() =&gt; startAnimation(), 100);
+});
+document.querySelectorAll('.btn-mode').forEach(el =&gt; {
+  el.addEventListener('click', () =&gt; {
+    const m = parseInt(el.dataset.mode);
+    if (m === mode) return;
+    mode = m;
+    playing = false;
+    animStep = -1;
+    updateModeUI();
+    updateStepUI(-1);
+    setHint('&lt;span class=&quot;icon&quot;&gt;▶&lt;/span&gt;已切换到情形' + (mode===1?'一':'二') + '，点击&quot;播放动画&quot;开始演示');
+    document.getElementById('conclusion').classList.remove('show');
+  });
+});
+
+// ============================================================
+// 初始化
+// ============================================================
+updateModeUI();
+render();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+" class="anim-iframe" frameborder="0"></iframe>
+        </div>
+        <div class="rule-attrs">
+          <div class="rule-attr ok"><div class="k">约束特点</div><div class="v">1铰 + 1链杆</div></div>
+          <div class="rule-attr warn"><div class="k">关键条件</div><div class="v">铰与链杆不共线</div></div>
+          <div class="rule-attr ok"><div class="k">体系属性</div><div class="v">几何不变</div></div>
+        </div>
+        <h4 style="margin-top:16px">强调要点</h4>
+        <p style="margin-top:4px"><b>铰与链杆不能共线</b>：若铰 B 与链杆位于同一直线，刚片 I 可绕铰 B 作瞬时微小转动，体系退化为瞬变。链杆的作用是阻止刚片绕铰转动，共线时该阻止作用失效。</p>
+      </div>
+
+      <!-- 规则3：三刚片 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum">3</span>三刚片规则</div>
+          <span class="rule-tag">几何不变 · 无多余约束</span>
+        </div>
+        <div class="rule-def">
+          <b>定义：</b>三个刚片，通过 <b>三个铰两两相连、且三铰不共线</b>，组成无多余约束的几何不变体系。
+        </div>
+        <div class="anim-iframe-wrap">
+          <iframe srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;三刚片规则 · 三实铰 / 三虚铰&lt;/title&gt;
+&lt;style&gt;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: &quot;Segoe UI&quot;, &quot;Microsoft YaHei&quot;, sans-serif; background: #0d1117; color: #e6edf3; overflow: hidden; }
+  #app { display: flex; height: 100vh; }
+
+  #scene-wrap { flex:1; position:relative; overflow:hidden; background: radial-gradient(circle at 50% 50%, #1b2433 0%, #0a0e16 75%); }
+  #scene { position:absolute; top:0; left:0; width:100%; height:100%; display:block; }
+
+  /* 情形切换 */
+  #mode-bar {
+    position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:11;
+    display:flex; gap:6px; background:rgba(22,27,34,0.85);
+    padding:6px; border-radius:12px; border:1px solid #30363d; backdrop-filter:blur(6px);
+  }
+  .btn-mode {
+    padding:8px 16px; border:none; border-radius:8px; cursor:pointer;
+    background:transparent; color:#8b949e; font-size:12.5px; font-weight:600;
+    transition:all .25s; white-space:nowrap;
+  }
+  .btn-mode:hover:not(.active) { color:#e6edf3; background:rgba(255,255,255,.05); }
+  .btn-mode.active { background:#1f6feb; color:#fff; box-shadow:0 0 10px rgba(31,111,235,.5); }
+
+  /* 顶部步骤指示器 */
+  #stepper {
+    position:absolute; top:62px; left:50%; transform:translateX(-50%); z-index:10;
+    display:flex; gap:4px; background:rgba(22,27,34,0.85);
+    padding:7px 14px; border-radius:12px; border:1px solid #30363d; backdrop-filter:blur(6px);
+  }
+  .step-dot {
+    width:30px; height:6px; border-radius:3px; background:#30363d; transition:all .3s;
+  }
+  .step-dot.active { background:#58a6ff; box-shadow:0 0 8px rgba(88,166,255,.6); }
+  .step-dot.done { background:#3fb950; }
+
+  /* 右侧结论面板 */
+  #conclusion {
+    position:absolute; top:100px; right:16px; z-index:10;
+    background:rgba(22,27,34,0.9); border:1px solid #30363d;
+    padding:16px 20px; border-radius:14px; backdrop-filter:blur(8px);
+    max-width:300px; opacity:0; transform:translateX(20px);
+    transition:opacity .5s, transform .5s;
+  }
+  #conclusion.show { opacity:1; transform:translateX(0); }
+  #conclusion .badge {
+    display:inline-block; padding:4px 12px; border-radius:6px;
+    font-size:12px; font-weight:700; letter-spacing:1px;
+    background:rgba(63,185,80,0.2); color:#3fb950;
+  }
+  #conclusion h3 { font-size:15px; margin:8px 0 4px; color:#e6edf3; }
+  #conclusion .sub { font-size:11.5px; color:#8b949e; margin-bottom:8px; }
+  #conclusion .formula {
+    font-family:&quot;Consolas&quot;,monospace; font-size:12.5px; color:#58a6ff;
+    background:rgba(88,166,255,0.08); padding:7px 11px; border-radius:8px;
+    border:1px solid rgba(88,166,255,0.2); margin:8px 0;
+  }
+  #conclusion .desc { font-size:12px; color:#c9d1d9; line-height:1.7; }
+  #conclusion .desc b { color:#3fb950; }
+
+  /* 左下提示文字 */
+  #hint-box {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:10;
+    background:rgba(22,27,34,0.88); border:1px solid #30363d;
+    padding:11px 22px; border-radius:12px; backdrop-filter:blur(6px);
+    font-size:13.5px; color:#e6edf3; text-align:center; min-width:320px; max-width:620px;
+    transition:opacity .3s;
+  }
+  #hint-box .icon { font-size:17px; margin-right:6px; }
+  #hint-box .highlight { color:#ffd700; font-weight:600; }
+  #hint-box .highlight-green { color:#3fb950; font-weight:600; }
+  #hint-box .highlight-blue { color:#58a6ff; font-weight:600; }
+  #hint-box .highlight-purple { color:#a371f7; font-weight:600; }
+  #hint-box .highlight-pink { color:#f778ba; font-weight:600; }
+  #hint-box .highlight-green2 { color:#3fb950; font-weight:600; }
+  #hint-box .highlight-orange { color:#ffa657; font-weight:600; }
+
+  /* 右侧控制面板 */
+  #panel {
+    width:290px; background:#161b22; border-left:1px solid #30363d;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #panel h2 {
+    padding:14px 16px; font-size:14.5px; color:#e6edf3;
+    border-bottom:1px solid #30363d; display:flex; align-items:center; gap:8px;
+  }
+  #panel h2 .dot { width:8px; height:8px; border-radius:50%; background:#3fb950; box-shadow:0 0 8px #3fb950; }
+  #panel-body { flex:1; overflow-y:auto; padding:12px 14px; }
+  #panel-body::-webkit-scrollbar { width:5px; }
+  #panel-body::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+
+  .btn {
+    width:100%; padding:9px; border:none; border-radius:8px; cursor:pointer;
+    font-size:12.5px; font-weight:600; transition:all .2s; margin-bottom:7px;
+  }
+  .btn.primary { background:#1f6feb; color:#fff; }
+  .btn.primary:hover { background:#388bfd; }
+  .btn.secondary { background:#21262d; color:#c9d1d9; border:1px solid #30363d; }
+  .btn.secondary:hover { background:#30363d; color:#fff; }
+
+  .info-block {
+    padding:11px; background:#0d1117; border:1px solid #21262d;
+    border-radius:10px; margin-bottom:11px; font-size:12px; line-height:1.7; color:#8b949e;
+  }
+  .info-block b { color:#c9d1d9; }
+  .info-block .hl-b { color:#58a6ff; font-weight:600; }
+  .info-block .hl-p { color:#a371f7; font-weight:600; }
+  .info-block .hl-y { color:#ffd700; font-weight:600; }
+  .info-block .hl-g { color:#3fb950; font-weight:600; }
+  .info-block .hl-k { color:#f778ba; font-weight:600; }
+  .info-block .hl-o { color:#ffa657; font-weight:600; }
+
+  .step-list { list-style:none; padding:0; }
+  .step-list li {
+    display:flex; align-items:flex-start; gap:9px; padding:7px 0;
+    font-size:12px; color:#8b949e; border-bottom:1px solid #21262d;
+  }
+  .step-list li:last-child { border:none; }
+  .step-list .num {
+    width:20px; height:20px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:700; background:#30363d; color:#8b949e;
+    transition:all .3s;
+  }
+  .step-list li.active .num { background:#1f6feb; color:#fff; }
+  .step-list li.active { color:#e6edf3; }
+  .step-list li.done .num { background:#3fb950; color:#fff; }
+  .step-list li.done { color:#c9d1d9; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;app&quot;&gt;
+  &lt;div id=&quot;scene-wrap&quot;&gt;
+    &lt;canvas id=&quot;scene&quot;&gt;&lt;/canvas&gt;
+
+    &lt;div id=&quot;mode-bar&quot;&gt;
+      &lt;button class=&quot;btn-mode active&quot; data-mode=&quot;1&quot;&gt;情形一：三个实铰&lt;/button&gt;
+      &lt;button class=&quot;btn-mode&quot; data-mode=&quot;2&quot;&gt;情形二：三个虚铰（六链杆）&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;stepper&quot;&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;0&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;1&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;2&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;3&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;4&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;step-dot&quot; data-s=&quot;5&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;conclusion&quot;&gt;
+      &lt;span class=&quot;badge&quot;&gt;结论&lt;/span&gt;
+      &lt;h3&gt;几何不变，无多余联系&lt;/h3&gt;
+      &lt;div class=&quot;sub&quot; id=&quot;conc-sub&quot;&gt;三刚片规则（三个实铰）&lt;/div&gt;
+      &lt;div class=&quot;formula&quot; id=&quot;conc-formula&quot;&gt;约束 = 3×2(铰) = 6&lt;br&gt;自由度 = 9 − 6 = 3（整体刚体）&lt;br&gt;内部自由度 = 0&lt;/div&gt;
+      &lt;div class=&quot;desc&quot; id=&quot;conc-desc&quot;&gt;
+        三个&lt;b&gt;实铰&lt;/b&gt;（每个提供 2 个约束），共 6 个约束。三个铰&lt;b&gt;不共线&lt;/b&gt;，约束相互独立，&lt;b&gt;内部几何不变且无多余约束&lt;/b&gt;。
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;hint-box&quot;&gt;
+      &lt;span class=&quot;icon&quot;&gt;▶&lt;/span&gt;点击右侧&quot;播放动画&quot;开始演示
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div id=&quot;panel&quot;&gt;
+    &lt;h2&gt;&lt;span class=&quot;dot&quot;&gt;&lt;/span&gt;&lt;span&gt;三刚片规则&lt;/span&gt;&lt;/h2&gt;
+    &lt;div id=&quot;panel-body&quot;&gt;
+      &lt;div class=&quot;info-block&quot;&gt;
+        &lt;b&gt;规则内容&lt;/b&gt;&lt;br&gt;
+        三个刚片用&lt;span class=&quot;hl-p&quot;&gt;三个铰&lt;/span&gt;两两相连（实铰或虚铰），
+        若&lt;span class=&quot;hl-y&quot;&gt;三个铰不共线&lt;/span&gt;，
+        则体系&lt;span class=&quot;hl-g&quot;&gt;几何不变，且无多余联系&lt;/span&gt;。
+      &lt;/div&gt;
+
+      &lt;button class=&quot;btn primary&quot; id=&quot;btn-play&quot;&gt;▶ 播放动画&lt;/button&gt;
+      &lt;button class=&quot;btn secondary&quot; id=&quot;btn-replay&quot;&gt;↺ 重新播放&lt;/button&gt;
+
+      &lt;div class=&quot;info-block&quot;&gt;
+        &lt;b&gt;动画步骤&lt;/b&gt;
+        &lt;ul class=&quot;step-list&quot; id=&quot;step-list&quot;&gt;&lt;/ul&gt;
+      &lt;/div&gt;
+
+      &lt;div class=&quot;info-block&quot; id=&quot;key-info&quot;&gt;
+        &lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;
+        · 每个&lt;span class=&quot;hl-p&quot;&gt;铰&lt;/span&gt;提供 &lt;span class=&quot;hl-p&quot;&gt;2个约束&lt;/span&gt;（限制x、y相对移动）&lt;br&gt;
+        · 三个铰共 &lt;span class=&quot;hl-p&quot;&gt;6个约束&lt;/span&gt;，恰消除 3×3−3 = &lt;span class=&quot;hl-g&quot;&gt;6个内部自由度&lt;/span&gt;&lt;br&gt;
+        · 三个铰&lt;span class=&quot;hl-y&quot;&gt;不共线&lt;/span&gt; → 约束独立&lt;br&gt;
+        · 总约束 = 6 = 内部自由度 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+// ============================================================
+// Canvas 初始化
+// ============================================================
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, CX = 0, CY = 0;
+let SCALE = 100;
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = w; H = h; CX = W/2; CY = H/2 + 20;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+requestAnimationFrame(resize);
+function toS(x,y){ return { x: CX + x*SCALE, y: CY - y*SCALE }; }
+
+function localToWorld(rig, lx, ly) {
+  const c = Math.cos(rig.theta * Math.PI/180);
+  const s = Math.sin(rig.theta * Math.PI/180);
+  return { x: rig.x + lx*c - ly*s, y: rig.y + lx*s + ly*c };
+}
+
+function lineIntersect(p1, p2, p3, p4) {
+  const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y,x4=p4.x,y4=p4.y;
+  const denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+  if (Math.abs(denom) &lt; 1e-10) return null;
+  const t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4)) / denom;
+  return { x: x1 + t*(x2-x1), y: y1 + t*(y2-y1) };
+}
+
+// ============================================================
+// 两种情形配置
+// ============================================================
+let mode = 1;
+
+// 情形一：三个实铰
+// 三个铰构成等边三角形（不共线）
+//   H12(0, 1.2) — 刚片1与2之间的铰（顶）
+//   H23(1.5, -0.8) — 刚片2与3之间的铰（右下）
+//   H31(-1.5, -0.8) — 刚片3与1之间的铰（左下）
+// 三个刚片分别作为三角形的三条边（杆状椭圆）
+const cfg1 = {
+  R1: { x: -0.75, y: 0.2, theta: 53.13, a: 1.25, b: 0.45, color: '#58a6ff', label: '刚片 1' },
+  R2: { x:  0.75, y: 0.2, theta: -53.13, a: 1.25, b: 0.45, color: '#f778ba', label: '刚片 2' },
+  R3: { x:  0,     y: -0.8, theta: 0, a: 1.5, b: 0.45, color: '#3fb950', label: '刚片 3' },
+  hinges: [
+    { name: 'H₁₂', R1_idx: 0, R2_idx: 1, pt1: {lx:  1.25, ly: 0}, pt2: {lx: -1.25, ly: 0}, world: {x: 0, y: 1.2} },
+    { name: 'H₂₃', R1_idx: 1, R2_idx: 2, pt1: {lx:  1.25, ly: 0}, pt2: {lx:  1.5, ly: 0},  world: {x: 1.5, y: -0.8} },
+    { name: 'H₃₁', R1_idx: 2, R2_idx: 0, pt1: {lx: -1.5, ly: 0}, pt2: {lx: -1.25, ly: 0}, world: {x: -1.5, y: -0.8} },
+  ],
+};
+
+// 情形二：三个虚铰（六根链杆）
+// 三个刚片分开较远，每对刚片间的两根链杆不交叉
+// 链杆连接点位置约束：
+//   R1-R2: R1右半部 ↔ R2左半部
+//   R2-R3: R2右下半部 ↔ R3右上半部
+//   R3-R1: R3左上半部 ↔ R1左下半部
+// 链杆延长线精确交于虚铰（数值计算验证）
+const cfg2 = {
+  R1: { x: -1.0, y: 0.7, theta: 0, a: 0.9, b: 0.45, color: '#58a6ff', label: '刚片 1' },
+  R2: { x:  1.0, y: 0.7, theta: 0, a: 0.9, b: 0.45, color: '#f778ba', label: '刚片 2' },
+  R3: { x:  0,   y: -1.1, theta: 0, a: 1.15, b: 0.45, color: '#3fb950', label: '刚片 3' },
+  virtualHinges: [
+    { name: 'V₁₂', world: {x: 3.8, y: 1.0}, pairIdx: 0 },
+    { name: 'V₂₃', world: {x: 1.5, y: 3.5}, pairIdx: 1 },
+    { name: 'V₃₁', world: {x: -1.6, y: 3.5}, pairIdx: 2 },
+  ],
+  linkPairs: [
+    // pair 0: R1-R2 → V₁₂(3.8, 1.0)  R1右半 ↔ R2左半
+    [
+      { fromR: 0, toR: 1, A: {lx: 0.209, ly: 0.438}, B: {lx: -0.425, ly: 0.397} },
+      { fromR: 0, toR: 1, A: {lx: 0.154, ly: -0.443}, B: {lx: -0.728, ly: -0.265} },
+    ],
+    // pair 1: R2-R3 → V₂₃(1.5, 3.5)  R2右下 ↔ R3右上
+    [
+      { fromR: 1, toR: 2, A: {lx: 0.100, ly: -0.447}, B: {lx: 0.964, ly: 0.246} },
+      { fromR: 1, toR: 2, A: {lx: 0.246, ly: -0.433}, B: {lx: 1.143, ly: 0.050} },
+    ],
+    // pair 2: R3-R1 → V₃₁(-1.6, 3.5)  R3左上 ↔ R1左下
+    [
+      { fromR: 2, toR: 0, A: {lx: -1.143, ly: 0.050}, B: {lx: -0.276, ly: -0.428} },
+      { fromR: 2, toR: 0, A: {lx: -0.933, ly: 0.263}, B: {lx: -0.100, ly: -0.447} },
+    ],
+  ],
+};
+
+function getCfg() { return mode === 1 ? cfg1 : cfg2; }
+function getRigids() {
+  const c = getCfg();
+  return [c.R1, c.R2, c.R3];
+}
+
+// ============================================================
+// 动画状态
+// ============================================================
+let animStep = -1;
+let blinkPhase = 0;
+let playing = false;
+const STEP_DURATIONS = [1.8, 2.0, 1.8, 2.0, 2.0, 2.5];
+
+const STEP_TEXTS = {
+  1: [
+    '圈出&lt;span class=&quot;highlight-blue&quot;&gt;刚片1&lt;/span&gt;、&lt;span class=&quot;highlight-pink&quot;&gt;刚片2&lt;/span&gt;、&lt;span class=&quot;highlight-green2&quot;&gt;刚片3&lt;/span&gt;——三个被分析的刚片',
+    '圈出&lt;span class=&quot;highlight-purple&quot;&gt;铰H₁₂&lt;/span&gt;（刚片1与2之间）——提供 2 个约束',
+    '圈出&lt;span class=&quot;highlight-purple&quot;&gt;铰H₂₃&lt;/span&gt;（刚片2与3之间）——提供 2 个约束',
+    '圈出&lt;span class=&quot;highlight-purple&quot;&gt;铰H₃₁&lt;/span&gt;（刚片3与1之间）——提供 2 个约束',
+    '&lt;span class=&quot;highlight&quot;&gt;三个铰不共线&lt;/span&gt;（构成三角形）——约束相互独立',
+    '结论：&lt;span class=&quot;highlight-green&quot;&gt;内部几何不变，且没有多余联系&lt;/span&gt;',
+  ],
+  2: [
+    '圈出&lt;span class=&quot;highlight-blue&quot;&gt;刚片1&lt;/span&gt;、&lt;span class=&quot;highlight-pink&quot;&gt;刚片2&lt;/span&gt;、&lt;span class=&quot;highlight-green2&quot;&gt;刚片3&lt;/span&gt;——三个被分析的刚片',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆对①&lt;/span&gt;——延长线相交形成&lt;span class=&quot;highlight-purple&quot;&gt;虚铰V₁₂&lt;/span&gt;（等效 2 约束）',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆对②&lt;/span&gt;——延长线相交形成&lt;span class=&quot;highlight-purple&quot;&gt;虚铰V₂₃&lt;/span&gt;（等效 2 约束）',
+    '圈出&lt;span class=&quot;highlight&quot;&gt;链杆对③&lt;/span&gt;——延长线相交形成&lt;span class=&quot;highlight-purple&quot;&gt;虚铰V₃₁&lt;/span&gt;（等效 2 约束）',
+    '&lt;span class=&quot;highlight&quot;&gt;三个虚铰不共线&lt;/span&gt;（构成三角形）——约束相互独立',
+    '结论：&lt;span class=&quot;highlight-green&quot;&gt;内部几何不变，且没有多余联系&lt;/span&gt;',
+  ],
+};
+
+const STEP_LIST_HTML = {
+  1: [
+    '&lt;span class=&quot;num&quot;&gt;1&lt;/span&gt;&lt;span&gt;圈出 &lt;span class=&quot;hl-b&quot;&gt;刚片1&lt;/span&gt;、&lt;span class=&quot;hl-k&quot;&gt;刚片2&lt;/span&gt;、&lt;span class=&quot;hl-g&quot;&gt;刚片3&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;2&lt;/span&gt;&lt;span&gt;圈出 &lt;span class=&quot;hl-p&quot;&gt;铰H₁₂&lt;/span&gt;（刚片1-2）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;3&lt;/span&gt;&lt;span&gt;圈出 &lt;span class=&quot;hl-p&quot;&gt;铰H₂₃&lt;/span&gt;（刚片2-3）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;4&lt;/span&gt;&lt;span&gt;圈出 &lt;span class=&quot;hl-p&quot;&gt;铰H₃₁&lt;/span&gt;（刚片3-1）&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;5&lt;/span&gt;&lt;span&gt;三铰 &lt;span class=&quot;hl-y&quot;&gt;不共线&lt;/span&gt; → 约束独立&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;6&lt;/span&gt;&lt;span&gt;结论：&lt;span class=&quot;hl-g&quot;&gt;几何不变，无多余联系&lt;/span&gt;&lt;/span&gt;',
+  ],
+  2: [
+    '&lt;span class=&quot;num&quot;&gt;1&lt;/span&gt;&lt;span&gt;圈出 &lt;span class=&quot;hl-b&quot;&gt;刚片1&lt;/span&gt;、&lt;span class=&quot;hl-k&quot;&gt;刚片2&lt;/span&gt;、&lt;span class=&quot;hl-g&quot;&gt;刚片3&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;2&lt;/span&gt;&lt;span&gt;链杆对① → &lt;span class=&quot;hl-p&quot;&gt;虚铰V₁₂&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;3&lt;/span&gt;&lt;span&gt;链杆对② → &lt;span class=&quot;hl-p&quot;&gt;虚铰V₂₃&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;4&lt;/span&gt;&lt;span&gt;链杆对③ → &lt;span class=&quot;hl-p&quot;&gt;虚铰V₃₁&lt;/span&gt;&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;5&lt;/span&gt;&lt;span&gt;三虚铰 &lt;span class=&quot;hl-y&quot;&gt;不共线&lt;/span&gt; → 约束独立&lt;/span&gt;',
+    '&lt;span class=&quot;num&quot;&gt;6&lt;/span&gt;&lt;span&gt;结论：&lt;span class=&quot;hl-g&quot;&gt;几何不变，无多余联系&lt;/span&gt;&lt;/span&gt;',
+  ],
+};
+
+// ============================================================
+// 绘图函数
+// ============================================================
+function drawGrid() {
+  ctx.lineWidth=1; ctx.strokeStyle='#1c2230'; ctx.beginPath();
+  for(let x=CX%SCALE;x&lt;W;x+=SCALE){ctx.moveTo(x,0);ctx.lineTo(x,H);}
+  for(let y=CY%SCALE;y&lt;H;y+=SCALE){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+  ctx.stroke();
+}
+
+// 椭圆刚片（带斜线阴影）
+function drawRigid(rig, color, label) {
+  const p = toS(rig.x, rig.y);
+  const theta = -rig.theta * Math.PI/180;
+  const a = rig.a*SCALE, b = rig.b*SCALE;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(theta);
+
+  // 填充底色（半透明）
+  ctx.fillStyle = color + '55'; // 低透明度
+  ctx.beginPath(); ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2); ctx.fill();
+
+  // 斜线阴影
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2);
+  ctx.clip();
+  ctx.strokeStyle = color + 'aa';
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.5;
+  const spacing = 7;
+  for (let i = -a - b; i &lt; a + b; i += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(i, -b*2);
+    ctx.lineTo(i + b*2, b*2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 边框
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, a, b, 0, 0, Math.PI*2); ctx.stroke();
+
+  // 中心线
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(-a, 0); ctx.lineTo(a, 0);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 中心十字
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-7, 0); ctx.lineTo(7, 0);
+  ctx.moveTo(0, -7); ctx.lineTo(0, 7);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // 标签
+  ctx.font = 'bold 14px &quot;Segoe UI&quot;';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  const labelOffset = b*0.9 + 14;
+  ctx.fillText(label, p.x, p.y - labelOffset);
+  ctx.textAlign = 'start';
+}
+
+// 链杆（两端粗中间细的工程杆样式）
+function drawLink(Aw, Bw, color='#ffd700') {
+  const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y);
+  const dx = Bs.x - As.x, dy = Bs.y - As.y;
+  const len = Math.hypot(dx, dy) || 1;
+  ctx.save();
+  ctx.translate(As.x, As.y);
+  ctx.rotate(Math.atan2(dy, dx));
+  const w = len, h = 7;
+  const grad = ctx.createLinearGradient(0, -4, 0, 4);
+  grad.addColorStop(0, '#b8860b');
+  grad.addColorStop(0.5, color);
+  grad.addColorStop(1, '#b8860b');
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = '#8b6914';
+  ctx.lineWidth = 1;
+  const r = 4;
+  ctx.beginPath();
+  ctx.moveTo(r, -h/2);
+  ctx.lineTo(w-r, -h/2);
+  ctx.lineTo(w, -h/2+r);
+  ctx.lineTo(w, h/2-r);
+  ctx.lineTo(w-r, h/2);
+  ctx.lineTo(r, h/2);
+  ctx.lineTo(0, h/2-r);
+  ctx.lineTo(0, -h/2+r);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  drawPin(As.x, As.y, color);
+  drawPin(Bs.x, Bs.y, color);
+}
+
+function drawPin(x, y, color='#ffd700') {
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 2.2, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// 实铰
+function drawHinge(ptWorld, color='#a371f7', size=9, label='') {
+  const s = toS(ptWorld.x, ptWorld.y);
+  const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 28);
+  grd.addColorStop(0, 'rgba(163,113,247,0.5)');
+  grd.addColorStop(1, 'rgba(163,113,247,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 28, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#161b22';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size*0.4, 0, Math.PI*2);
+  ctx.fill();
+  // 标签
+  if (label) {
+    ctx.font = 'bold 12px &quot;Segoe UI&quot;';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    // 标签在铰的右上方
+    ctx.fillText(label, s.x + 18, s.y - 14);
+    ctx.textAlign = 'start';
+  }
+}
+
+// 虚铰
+function drawVirtualHinge(ptWorld, color='#a371f7', size=11, label='') {
+  const s = toS(ptWorld.x, ptWorld.y);
+  const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 30);
+  grd.addColorStop(0, 'rgba(163,113,247,0.35)');
+  grd.addColorStop(1, 'rgba(163,113,247,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 30, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size+5, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#0d1117';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(s.x-5, s.y); ctx.lineTo(s.x+5, s.y);
+  ctx.moveTo(s.x, s.y-5); ctx.lineTo(s.x, s.y+5);
+  ctx.stroke();
+  if (label) {
+    ctx.font = 'bold 12px &quot;Segoe UI&quot;';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, s.x + 20, s.y - 14);
+    ctx.textAlign = 'start';
+  }
+}
+
+// 高亮椭圆（闪烁）
+function drawHighlightEllipse(cx, cy, a, b, angle, color, alpha, lineWidth=3) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = lineWidth;
+  ctx.setLineDash([10, 6]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, a + 12, b + 12, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// 链杆延长线（用于虚铰情形）
+function drawExtensionLine(Aw, Bw, color='rgba(255,215,0,0.5)', alpha=1) {
+  const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y);
+  const dx = Bs.x - As.x, dy = Bs.y - As.y, len = Math.hypot(dx, dy) || 1;
+  const ux = dx/len, uy = dy/len;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(As.x - ux*400, As.y - uy*400);
+  ctx.lineTo(Bs.x + ux*400, Bs.y + uy*400);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// 三角形不共线标记（在三个铰附近画小弧线）
+function drawTriangleCheck(p1, p2, p3, alpha) {
+  const s1 = toS(p1.x, p1.y), s2 = toS(p2.x, p2.y), s3 = toS(p3.x, p3.y);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  // 画三角形轮廓
+  ctx.strokeStyle = '#3fb950';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([10, 6]);
+  ctx.beginPath();
+  ctx.moveTo(s1.x, s1.y);
+  ctx.lineTo(s2.x, s2.y);
+  ctx.lineTo(s3.x, s3.y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // 在中心显示&quot;△不共线&quot;
+  const cx = (s1.x + s2.x + s3.x) / 3;
+  const cy = (s1.y + s2.y + s3.y) / 3;
+  ctx.font = 'bold 14px &quot;Segoe UI&quot;';
+  ctx.fillStyle = '#3fb950';
+  ctx.textAlign = 'center';
+  ctx.fillText('△ 三铰不共线', cx, cy - 10);
+  ctx.textAlign = 'start';
+  ctx.restore();
+}
+
+// ============================================================
+// 提示文字 &amp; 步骤UI
+// ============================================================
+function setHint(html) {
+  const el = document.getElementById('hint-box');
+  el.innerHTML = html;
+  el.style.opacity = '1';
+}
+
+function updateStepUI(step) {
+  document.querySelectorAll('.step-dot').forEach((el, i) =&gt; {
+    el.classList.remove('active', 'done');
+    if (i &lt; step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  });
+  document.querySelectorAll('#step-list li').forEach((el, i) =&gt; {
+    el.classList.remove('active', 'done');
+    if (i &lt; step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  });
+  const conc = document.getElementById('conclusion');
+  if (step &gt;= 5) conc.classList.add('show');
+  else conc.classList.remove('show');
+}
+
+function updateModeUI() {
+  // 情形二虚铰位置更远，缩小SCALE以适配
+  SCALE = (mode === 1) ? 100 : 75;
+  document.querySelectorAll('.btn-mode').forEach(el =&gt; {
+    el.classList.toggle('active', parseInt(el.dataset.mode) === mode);
+  });
+  const ul = document.getElementById('step-list');
+  ul.innerHTML = STEP_LIST_HTML[mode].map((t,i) =&gt;
+    `&lt;li data-s=&quot;${i}&quot;&gt;${t}&lt;/li&gt;`).join('');
+  if (mode === 1) {
+    document.getElementById('conc-sub').textContent = '三刚片规则（三个实铰）';
+    document.getElementById('conc-formula').innerHTML = 
+      '约束 = 3 × 2(铰) = 6&lt;br&gt;' +
+      '内部自由度 = 3×3 − 6 − 3(整体) = 0&lt;br&gt;' +
+      '三铰不共线 → 约束独立';
+    document.getElementById('conc-desc').innerHTML =
+      '每个&lt;b&gt;实铰&lt;/b&gt;提供 2 个约束（限制两刚片相对 x、y 移动），三个铰共 6 个约束。' +
+      '三个铰&lt;b&gt;不共线&lt;/b&gt;（构成三角形），约束相互独立，' +
+      '&lt;b&gt;内部几何不变且无多余约束&lt;/b&gt;（整体仍可作为刚体运动）。';
+  } else {
+    document.getElementById('conc-sub').textContent = '三刚片规则（三个虚铰）';
+    document.getElementById('conc-formula').innerHTML = 
+      '约束 = 3 × 2(虚铰) = 6&lt;br&gt;' +
+      '内部自由度 = 3×3 − 6 − 3(整体) = 0&lt;br&gt;' +
+      '三虚铰不共线 → 约束独立';
+    document.getElementById('conc-desc').innerHTML =
+      '每对链杆延长线相交形成&lt;b&gt;虚铰&lt;/b&gt;（等效 2 约束），三对共 6 个约束。' +
+      '三个虚铰&lt;b&gt;不共线&lt;/b&gt;（构成三角形），约束相互独立，' +
+      '&lt;b&gt;内部几何不变且无多余约束&lt;/b&gt;（整体仍可作为刚体运动）。';
+  }
+  const ki = document.getElementById('key-info');
+  if (mode === 1) {
+    ki.innerHTML = '&lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;' +
+      '· 每个&lt;span class=&quot;hl-p&quot;&gt;实铰&lt;/span&gt;提供 &lt;span class=&quot;hl-p&quot;&gt;2个约束&lt;/span&gt;（限制相对 x、y 移动）&lt;br&gt;' +
+      '· 三个铰共 &lt;span class=&quot;hl-p&quot;&gt;6个约束&lt;/span&gt;，恰消除 6 个内部自由度&lt;br&gt;' +
+      '· 三个铰&lt;span class=&quot;hl-y&quot;&gt;不共线&lt;/span&gt; → 约束独立&lt;br&gt;' +
+      '· 总约束 = 内部自由度 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;';
+  } else {
+    ki.innerHTML = '&lt;b&gt;关键判定&lt;/b&gt;&lt;br&gt;' +
+      '· 每对链杆延长线相交 → &lt;span class=&quot;hl-p&quot;&gt;虚铰&lt;/span&gt;（等效 2 约束）&lt;br&gt;' +
+      '· 三对虚铰共 &lt;span class=&quot;hl-p&quot;&gt;6个约束&lt;/span&gt;，恰消除 6 个内部自由度&lt;br&gt;' +
+      '· 三个虚铰&lt;span class=&quot;hl-y&quot;&gt;不共线&lt;/span&gt; → 约束独立&lt;br&gt;' +
+      '· 总约束 = 内部自由度 → &lt;span class=&quot;hl-g&quot;&gt;无多余&lt;/span&gt;';
+  }
+}
+
+// ============================================================
+// 主渲染
+// ============================================================
+function render() {
+  if (W &lt; 2 || H &lt; 2) resize();
+  blinkPhase += 0.05;
+  const blink = (Math.sin(blinkPhase * 3) + 1) / 2;
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+
+  const rigids = getRigids();
+  const colors = ['#58a6ff', '#f778ba', '#3fb950'];
+
+  // ---- Step 0: 高亮三个刚片 ----
+  if (animStep === 0) {
+    const alpha = 0.4 + blink * 0.6;
+    rigids.forEach((r, i) =&gt; {
+      const rs = toS(r.x, r.y);
+      drawHighlightEllipse(rs.x, rs.y, r.a*SCALE, r.b*SCALE, r.theta * Math.PI/180, colors[i], alpha, 3);
+    });
+  }
+
+  // 画刚片
+  rigids.forEach((r, i) =&gt; drawRigid(r, colors[i], r.label));
+
+  if (mode === 1) {
+    // ========== 情形一：三个实铰 ==========
+    const hinges = cfg1.hinges;
+
+    // 计算铰的世界坐标
+    const hingeWorlds = hinges.map(h =&gt; {
+      const R1 = rigids[h.R1_idx];
+      return localToWorld(R1, h.pt1.lx, h.pt1.ly);
+    });
+
+    // 画所有铰（在对应步骤及之后）
+    hinges.forEach((h, i) =&gt; {
+      if (animStep &gt;= 1 + i) {
+        drawHinge(hingeWorlds[i], '#a371f7', 9, h.name);
+      }
+    });
+
+    // Step 1: 高亮铰H12
+    if (animStep === 1) {
+      const alpha = 0.4 + blink * 0.6;
+      const hs = toS(hingeWorlds[0].x, hingeWorlds[0].y);
+      ctx.save();
+      ctx.strokeStyle = '#a371f7';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.arc(hs.x, hs.y, 28, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      drawHinge(hingeWorlds[0], '#a371f7', 9, hinges[0].name);
+    }
+
+    // Step 2: 高亮铰H23
+    if (animStep === 2) {
+      const alpha = 0.4 + blink * 0.6;
+      const hs = toS(hingeWorlds[1].x, hingeWorlds[1].y);
+      ctx.save();
+      ctx.strokeStyle = '#a371f7';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.arc(hs.x, hs.y, 28, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      drawHinge(hingeWorlds[1], '#a371f7', 9, hinges[1].name);
+    }
+
+    // Step 3: 高亮铰H31
+    if (animStep === 3) {
+      const alpha = 0.4 + blink * 0.6;
+      const hs = toS(hingeWorlds[2].x, hingeWorlds[2].y);
+      ctx.save();
+      ctx.strokeStyle = '#a371f7';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.arc(hs.x, hs.y, 28, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      drawHinge(hingeWorlds[2], '#a371f7', 9, hinges[2].name);
+    }
+
+    // Step 4: 三铰不共线
+    if (animStep === 4) {
+      const alpha = 0.5 + blink * 0.5;
+      drawTriangleCheck(hingeWorlds[0], hingeWorlds[1], hingeWorlds[2], alpha);
+      // 在每个铰上标记
+      hingeWorlds.forEach((h, i) =&gt; {
+        const hs = toS(h.x, h.y);
+        ctx.save();
+        ctx.strokeStyle = '#3fb950';
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(hs.x, hs.y, 16, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // Step 5: 结论
+    if (animStep === 5) {
+      const alpha = 0.3 + blink * 0.4;
+      // 绿色包围盒
+      ctx.save();
+      ctx.strokeStyle = '#3fb950';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([12, 6]);
+      const allPts = hingeWorlds.concat(rigids.map(r =&gt; ({x: r.x, y: r.y})));
+      const xs = allPts.map(p =&gt; p.x), ys = allPts.map(p =&gt; p.y);
+      const bx = CX + (Math.min(...xs) - 2) * SCALE;
+      const by = CY - (Math.max(...ys) + 1.5) * SCALE;
+      const bw = (Math.max(...xs) - Math.min(...xs) + 4) * SCALE;
+      const bh = (Math.max(...ys) - Math.min(...ys) + 3) * SCALE;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.setLineDash([]);
+      ctx.restore();
+      // 对勾
+      const cx = CX, cy = CY;
+      ctx.save();
+      ctx.globalAlpha = 0.7 + blink * 0.3;
+      ctx.strokeStyle = '#3fb950';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx-14, cy+10);
+      ctx.lineTo(cx-4, cy+20);
+      ctx.lineTo(cx+18, cy-8);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+  } else {
+    // ========== 情形二：三个虚铰（六链杆） ==========
+    const linkPairs = cfg2.linkPairs;
+    const vhs = cfg2.virtualHinges;
+
+    // 计算所有链杆的世界坐标端点
+    const allLinksWorld = [];
+    linkPairs.forEach((pair, pairIdx) =&gt; {
+      pair.forEach(link =&gt; {
+        const Rfrom = rigids[link.fromR];
+        const Rto = rigids[link.toR];
+        allLinksWorld.push({
+          pairIdx,
+          Aw: localToWorld(Rfrom, link.A.lx, link.A.ly),
+          Bw: localToWorld(Rto, link.B.lx, link.B.ly),
+        });
+      });
+    });
+
+    // 画所有链杆
+    allLinksWorld.forEach(lw =&gt; drawLink(lw.Aw, lw.Bw, '#ffd700'));
+
+    // 计算并绘制所有虚铰
+    const vhWorlds = vhs.map(v =&gt; v.world);
+
+    // 在对应步骤画延长线和虚铰
+    if (animStep &gt;= 1) {
+      // pair 0 延长线（Step 1 及之后）
+      const pair0Links = allLinksWorld.filter(l =&gt; l.pairIdx === 0);
+      pair0Links.forEach(l =&gt; drawExtensionLine(l.Aw, l.Bw, 'rgba(255,215,0,0.5)', 0.7));
+      drawVirtualHinge(vhWorlds[0], '#a371f7', 11, vhs[0].name);
+    }
+    if (animStep &gt;= 2) {
+      const pair1Links = allLinksWorld.filter(l =&gt; l.pairIdx === 1);
+      pair1Links.forEach(l =&gt; drawExtensionLine(l.Aw, l.Bw, 'rgba(255,215,0,0.5)', 0.7));
+      drawVirtualHinge(vhWorlds[1], '#a371f7', 11, vhs[1].name);
+    }
+    if (animStep &gt;= 3) {
+      const pair2Links = allLinksWorld.filter(l =&gt; l.pairIdx === 2);
+      pair2Links.forEach(l =&gt; drawExtensionLine(l.Aw, l.Bw, 'rgba(255,215,0,0.5)', 0.7));
+      drawVirtualHinge(vhWorlds[2], '#a371f7', 11, vhs[2].name);
+    }
+
+    // Step 1: 高亮链杆对①
+    if (animStep === 1) {
+      const alpha = 0.4 + blink * 0.6;
+      const pair0Links = allLinksWorld.filter(l =&gt; l.pairIdx === 0);
+      pair0Links.forEach(l =&gt; highlightLink(l.Aw, l.Bw, alpha));
+      drawExtensionLine(pair0Links[0].Aw, pair0Links[0].Bw, '#ffd700', alpha * 0.8);
+      drawExtensionLine(pair0Links[1].Aw, pair0Links[1].Bw, '#ffd700', alpha * 0.8);
+      drawVirtualHinge(vhWorlds[0], '#a371f7', 11, vhs[0].name);
+    }
+
+    // Step 2: 高亮链杆对②
+    if (animStep === 2) {
+      const alpha = 0.4 + blink * 0.6;
+      const pair1Links = allLinksWorld.filter(l =&gt; l.pairIdx === 1);
+      pair1Links.forEach(l =&gt; highlightLink(l.Aw, l.Bw, alpha));
+      drawExtensionLine(pair1Links[0].Aw, pair1Links[0].Bw, '#ffd700', alpha * 0.8);
+      drawExtensionLine(pair1Links[1].Aw, pair1Links[1].Bw, '#ffd700', alpha * 0.8);
+      drawVirtualHinge(vhWorlds[1], '#a371f7', 11, vhs[1].name);
+    }
+
+    // Step 3: 高亮链杆对③
+    if (animStep === 3) {
+      const alpha = 0.4 + blink * 0.6;
+      const pair2Links = allLinksWorld.filter(l =&gt; l.pairIdx === 2);
+      pair2Links.forEach(l =&gt; highlightLink(l.Aw, l.Bw, alpha));
+      drawExtensionLine(pair2Links[0].Aw, pair2Links[0].Bw, '#ffd700', alpha * 0.8);
+      drawExtensionLine(pair2Links[1].Aw, pair2Links[1].Bw, '#ffd700', alpha * 0.8);
+      drawVirtualHinge(vhWorlds[2], '#a371f7', 11, vhs[2].name);
+    }
+
+    // Step 4: 三虚铰不共线
+    if (animStep === 4) {
+      const alpha = 0.5 + blink * 0.5;
+      drawTriangleCheck(vhWorlds[0], vhWorlds[1], vhWorlds[2], alpha);
+      vhWorlds.forEach((vh, i) =&gt; {
+        const vs = toS(vh.x, vh.y);
+        ctx.save();
+        ctx.strokeStyle = '#3fb950';
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(vs.x, vs.y, 20, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // Step 5: 结论
+    if (animStep === 5) {
+      const alpha = 0.3 + blink * 0.4;
+      ctx.save();
+      ctx.strokeStyle = '#3fb950';
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([12, 6]);
+      const allPts = vhWorlds.concat(rigids.map(r =&gt; ({x: r.x, y: r.y})));
+      const xs = allPts.map(p =&gt; p.x), ys = allPts.map(p =&gt; p.y);
+      const bx = CX + (Math.min(...xs) - 2) * SCALE;
+      const by = CY - (Math.max(...ys) + 1.5) * SCALE;
+      const bw = (Math.max(...xs) - Math.min(...xs) + 4) * SCALE;
+      const bh = (Math.max(...ys) - Math.min(...ys) + 3) * SCALE;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.setLineDash([]);
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.7 + blink * 0.3;
+      ctx.strokeStyle = '#3fb950';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(CX-14, CY+10);
+      ctx.lineTo(CX-4, CY+20);
+      ctx.lineTo(CX+18, CY-8);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  requestAnimationFrame(render);
+}
+
+function highlightLink(Aw, Bw, alpha) {
+  const As = toS(Aw.x, Aw.y), Bs = toS(Bw.x, Bw.y);
+  const mx = (As.x+Bs.x)/2, my = (As.y+Bs.y)/2;
+  const dx = Bs.x-As.x, dy = Bs.y-As.y, len = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(angle);
+  ctx.strokeStyle = '#ffd700';
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = 3.5;
+  ctx.setLineDash([8, 5]);
+  const padX = 8, padY = 14;
+  ctx.beginPath();
+  ctx.moveTo(-len/2-padX, -padY);
+  ctx.lineTo(len/2+padX, -padY);
+  ctx.lineTo(len/2+padX, padY);
+  ctx.lineTo(-len/2-padX, padY);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ============================================================
+// 动画播放逻辑
+// ============================================================
+function startAnimation() {
+  playing = true;
+  animStep = 0;
+  updateStepUI(0);
+  setHint('&lt;span class=&quot;icon&quot;&gt;①&lt;/span&gt;' + STEP_TEXTS[mode][0]);
+  advanceStep();
+}
+
+function advanceStep() {
+  if (animStep &lt; 0 || animStep &gt; 5) return;
+  const dur = STEP_DURATIONS[animStep] || 2;
+  setTimeout(() =&gt; {
+    if (!playing) return;
+    animStep++;
+    if (animStep &gt; 5) { playing = false; return; }
+    updateStepUI(animStep);
+    const icons = ['①','②','③','④','⑤','✓'];
+    setHint('&lt;span class=&quot;icon&quot;&gt;' + icons[animStep] + '&lt;/span&gt;' + STEP_TEXTS[mode][animStep]);
+    advanceStep();
+  }, dur * 1000);
+}
+
+// ============================================================
+// 事件绑定
+// ============================================================
+document.getElementById('btn-play').addEventListener('click', () =&gt; {
+  if (!playing) startAnimation();
+});
+document.getElementById('btn-replay').addEventListener('click', () =&gt; {
+  playing = false;
+  setTimeout(() =&gt; startAnimation(), 100);
+});
+document.querySelectorAll('.btn-mode').forEach(el =&gt; {
+  el.addEventListener('click', () =&gt; {
+    const m = parseInt(el.dataset.mode);
+    if (m === mode) return;
+    mode = m;
+    playing = false;
+    animStep = -1;
+    updateModeUI();
+    updateStepUI(-1);
+    setHint('&lt;span class=&quot;icon&quot;&gt;▶&lt;/span&gt;已切换到情形' + (mode===1?'一':'二') + '，点击&quot;播放动画&quot;开始演示');
+    document.getElementById('conclusion').classList.remove('show');
+  });
+});
+
+// ============================================================
+// 初始化
+// ============================================================
+updateModeUI();
+render();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+" class="anim-iframe" frameborder="0"></iframe>
+        </div>
+        <div class="rule-attrs">
+          <div class="rule-attr ok"><div class="k">约束特点</div><div class="v">3铰两两相连</div></div>
+          <div class="rule-attr warn"><div class="k">关键条件</div><div class="v">三铰不共线</div></div>
+          <div class="rule-attr ok"><div class="k">体系属性</div><div class="v">几何不变</div></div>
+        </div>
+        <h4 style="margin-top:16px">本质理解</h4>
+        <p style="margin-top:4px">三刚片两两铰接，等价于在三个铰位置构成一个 <b>铰接三角形</b>。三角形是几何最稳定的形状，三边长度一旦确定，三角形形状完全确定，因此体系几何不变。这是理解推广规则与瞬变判定的物理基础。</p>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>三大规则速记口诀</h3>
+        <div class="summary-grid">
+          <div class="summary-card ok">
+            <div class="sc-title">✓ 点-刚片</div>
+            <div class="sc-body">点 + 刚片 → 两根 <b>不共线</b> 链杆 → 几何不变</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">✓ 两刚片</div>
+            <div class="sc-body">两刚片 → 1铰 + 1链杆（<b>不共线</b>）→ 几何不变</div>
+          </div>
+          <div class="summary-card ok" style="grid-column:1/-1">
+            <div class="sc-title">✓ 三刚片</div>
+            <div class="sc-body">三刚片 → 3铰两两相连（<b>三铰不共线</b>）→ 几何不变 · 本质即铰接三角形</div>
+          </div>
+          <div class="summary-card danger" style="grid-column:1/-1">
+            <div class="sc-title">⚠ 共同关键条件</div>
+            <div class="sc-body">所有规则都要求"连接元素 <b>不共线</b>"，共线即退化为瞬变体系（第三关详讲）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 题目1 -->
+      <div class="question-card" id="q1" data-qid="1" data-type="single" data-answer="C">
+        <div class="qhead">
+          <span class="qtype">第一关题目1 · 单选题 · 规则定义辨析</span>
+          <span class="qscore" id="qscore-1">10 分</span>
+        </div>
+        <div class="qbody">根据点-刚片组成规则，一个点与一个刚片构成无多余约束几何不变体系的必要条件是（ ）</div>
+        <div class="options">
+          <div class="option" data-key="A"><span class="okey">A</span><span class="otext">1根链杆连接</span></div>
+          <div class="option" data-key="B"><span class="okey">B</span><span class="otext">2根共线链杆连接</span></div>
+          <div class="option" data-key="C"><span class="okey">C</span><span class="otext">2根不共线链杆连接</span></div>
+          <div class="option" data-key="D"><span class="okey">D</span><span class="otext">3根链杆连接</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-1" disabled>提交答案</button>
+        </div>
+      </div>
+
+      <!-- 题目2 -->
+      <div class="question-card" id="q2" data-qid="2" data-type="judge" data-answer="false">
+        <div class="qhead">
+          <span class="qtype">第一关题目2 · 判断题 · 关键条件辨析</span>
+          <span class="qscore" id="qscore-2">10 分</span>
+        </div>
+        <div class="qbody">两刚片通过一个铰加一根链杆连接，只要存在连接即可构成几何不变体系。</div>
+        <div class="options tf-options">
+          <div class="option" data-key="true"><span class="okey">✓</span><span class="otext">正确</span></div>
+          <div class="option" data-key="false"><span class="okey">✗</span><span class="otext">错误</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-2" disabled>提交答案</button>
+        </div>
+      </div>
+
+      <!-- 题目3 -->
+      <div class="question-card" id="q3" data-qid="3" data-type="single" data-answer="C">
+        <div class="qhead">
+          <span class="qtype">第一关题目3 · 单选题 · 三刚片规则</span>
+          <span class="qscore" id="qscore-3">10 分</span>
+        </div>
+        <div class="qbody">三刚片规则构成无多余约束几何不变体系的核心条件是（ ）</div>
+        <div class="options">
+          <div class="option" data-key="A"><span class="okey">A</span><span class="otext">三个铰任意布置</span></div>
+          <div class="option" data-key="B"><span class="okey">B</span><span class="otext">三铰共线</span></div>
+          <div class="option" data-key="C"><span class="okey">C</span><span class="otext">三铰不共线、两两相连</span></div>
+          <div class="option" data-key="D"><span class="okey">D</span><span class="otext">仅需两根链杆相连</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-3" disabled>提交答案</button>
+        </div>
+      </div>
+
+      <div class="stage-complete">
+        <button class="btn-complete" id="btn-complete-1" disabled>完成本关 · 解锁第二关</button>
+      </div>
+    </section>
+
+  
+    <!-- ====== 阶段 2: 瞬变常变判定 ====== -->
+    <section class="stage" id="stage-2">
+      <div class="stage-header s3">
+        <span class="tag">第二关 · 瞬变常变判定</span>
+        <h2>瞬变体系与常变体系判定</h2>
+        <p class="desc">对比定义两类可变体系 · 三类经典判错案例动态演示 · 瞬变体系专项闯关</p>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>两类可变体系对比定义</h3>
+        <div class="summary-grid">
+          <div class="summary-card warn">
+            <div class="sc-title">⚠ 瞬变体系</div>
+            <div class="sc-body">约束布置 <b>临界共线/共点</b>，结构仅能发生 <b>瞬时微小变形</b>，微小位移后即刻变为几何不变。<br><b>不安全、不允许用于工程</b>。</div>
+          </div>
+          <div class="summary-card danger">
+            <div class="sc-title">✗ 常变体系</div>
+            <div class="sc-body">体系 <b>约束不足</b>，可发生 <b>持续、大幅度刚体位移</b>，始终处于可变状态。</div>
+          </div>
+        </div>
+        <p style="margin-top:14px"><b>核心区别</b>：瞬变体系发生微小位移后"自愈"为几何不变；常变体系无论怎么位移都无法变为不变，永远可动。</p>
+      </div>
+
+      <!-- 案例1：三链杆共点 → 瞬变 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum" style="background:#dc2626">案1</span>三链杆共点 → 瞬变体系</div>
+          <span class="rule-tag danger">瞬变体系</span>
+        </div>
+        <div class="rule-def" style="border-left-color:#dc2626">
+          <b>判错案例：</b>两刚片用三根链杆连接，三链杆延长线 <b>交于同一点 O</b>，刚片可绕 O 点作 <b>瞬时微小转动</b>，转动后三链杆不再共点，体系变为几何不变 → <b>瞬变体系</b>。
+        </div>
+        <div class="anim-box">
+          <div class="anim-canvas-wrap">
+            <canvas class="anim-cv" id="cv-7"></canvas>
+            <div class="anim-stepper" id="step-7">
+              <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+            </div>
+            <div class="anim-hint" id="hint-7">点击"播放动画"开始演示</div>
+            <div class="anim-conclusion" id="conc-7">
+              <span class="cbadge">结论</span>
+              <div class="ctitle"></div>
+              <div class="cdesc"></div>
+            </div>
+          </div>
+          <div class="anim-caption">三链杆共点：刚片绕O点瞬时转动，转动后变为几何不变</div>
+          <div class="anim-controls">
+            <button class="anim-btn primary" data-anim="7">▶ 播放变形动画</button>
+            <button class="anim-btn" data-anim="7-reset">↺ 重置</button>
+            <span class="anim-status" id="a7-status"><span class="dot"></span>未播放</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 案例2：三链杆平行 → 常变/瞬变 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum" style="background:#dc2626">案2</span>三链杆平行 → 常变/瞬变区分</div>
+          <span class="rule-tag danger">需依杆长判定</span>
+        </div>
+        <div class="rule-def" style="border-left-color:#dc2626">
+          <b>判错案例：</b>两刚片用 <b>三根互相平行</b> 的链杆相连，刚片可沿垂直杆方向发生位移：
+          <ul style="margin-top:6px">
+            <li><b>三杆等长</b>：刚片可<b>持续平移</b>，平移后三杆仍平行 → <b>常变体系</b>。</li>
+            <li><b>三杆不等长</b>：刚片发生微小位移后三杆不再平行 → <b>瞬变体系</b>。</li>
+          </ul>
+        </div>
+        <div class="anim-box">
+          <div class="anim-canvas-wrap">
+            <canvas class="anim-cv" id="cv-8"></canvas>
+            <div class="anim-stepper" id="step-8">
+              <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+            </div>
+            <div class="anim-hint" id="hint-8">点击"播放动画"开始演示</div>
+            <div class="anim-conclusion" id="conc-8">
+              <span class="cbadge">结论</span>
+              <div class="ctitle"></div>
+              <div class="cdesc"></div>
+            </div>
+          </div>
+          <div class="anim-caption">三杆等长平行：刚片可沿水平方向持续平移，平移后仍平行 → 常变体系</div>
+          <div class="anim-controls">
+            <button class="anim-btn primary" data-anim="8">▶ 播放平移动画</button>
+            <button class="anim-btn" data-anim="8-reset">↺ 重置</button>
+            <span class="anim-status" id="a8-status"><span class="dot"></span>未播放</span>
+          </div>
+        </div>
+        <p style="margin-top:10px"><b>判定要点</b>：等长平行 → 常变（持续可动）；不等长平行 → 瞬变（位移后杆长不齐，体系自锁为不变）。考试中须明确区分。</p>
+      </div>
+
+      <!-- 案例3：三虚铰共线 → 瞬变 -->
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-title"><span class="rnum" style="background:#dc2626">案3</span>三虚铰共线 → 瞬变体系</div>
+          <span class="rule-tag danger">瞬变体系典型</span>
+        </div>
+        <div class="rule-def" style="border-left-color:#dc2626">
+          <b>判错案例：</b>三刚片用三对链杆连接形成三个虚铰，若 <b>三虚铰共线</b>，体系在该瞬时发生微小位移后变为几何不变 → <b>瞬变体系</b>。这是三刚片虚铰推广规则的临界失效情形。
+        </div>
+        <div class="anim-box">
+          <div class="anim-canvas-wrap">
+            <canvas class="anim-cv" id="cv-9"></canvas>
+            <div class="anim-stepper" id="step-9">
+              <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+            </div>
+            <div class="anim-hint" id="hint-9">点击"播放动画"开始演示</div>
+            <div class="anim-conclusion" id="conc-9">
+              <span class="cbadge">结论</span>
+              <div class="ctitle"></div>
+              <div class="cdesc"></div>
+            </div>
+          </div>
+          <div class="anim-caption">三虚铰共线：体系瞬时微小位移后变为几何不变 → 瞬变体系</div>
+          <div class="anim-controls">
+            <button class="anim-btn primary" data-anim="9">▶ 播放动画</button>
+            <button class="anim-btn" data-anim="9-reset">↺ 重置</button>
+            <span class="anim-status" id="a9-status"><span class="dot"></span>未播放</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>核心判定口诀</h3>
+        <div class="summary-grid">
+          <div class="summary-card ok">
+            <div class="sc-title">✓ 几何不变</div>
+            <div class="sc-body">连接元素 <b>不共线、不共点、不全平行</b></div>
+          </div>
+          <div class="summary-card warn">
+            <div class="sc-title">⚠ 瞬变体系</div>
+            <div class="sc-body">连接元素 <b>临界共线、共点</b>（位移后自愈为不变）</div>
+          </div>
+          <div class="summary-card danger" style="grid-column:1/-1">
+            <div class="sc-title">✗ 常变体系</div>
+            <div class="sc-body">约束不足，<b>始终可动</b>（如三杆等长平行）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 瞬变体系专项题4 -->
+      <div class="question-card" id="q4" data-qid="4" data-type="single" data-answer="B">
+        <div class="qhead">
+          <span class="qtype">第二关题4 · 瞬变体系判定 · 单选（经典统考题）</span>
+          <span class="qscore" id="qscore-4">10 分</span>
+        </div>
+        <div class="qbody">两个刚片用三根链杆相连，下列哪种布置方式属于<b>瞬变体系</b>？（ ）
+          <span class="stmt">提示：可从"三链杆是否共点、是否平行、是否共线"三种临界布置入手分析。</span>
+        </div>
+        <div class="options">
+          <div class="option" data-key="A"><span class="okey">A</span><span class="otext">三根链杆不全平行且不全交于一点</span></div>
+          <div class="option" data-key="B"><span class="okey">B</span><span class="otext">三根链杆的延长线交于同一点</span></div>
+          <div class="option" data-key="C"><span class="okey">C</span><span class="otext">三根链杆互相平行且长度相等</span></div>
+          <div class="option" data-key="D"><span class="okey">D</span><span class="otext">三根链杆位于同一直线上</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-4" disabled>提交答案</button>
+        </div>
+      </div>
+
+      <!-- 瞬变体系专项题5 -->
+      <div class="question-card" id="q5" data-qid="5" data-type="judge" data-answer="true">
+        <div class="qhead">
+          <span class="qtype">第二关题5 · 瞬变体系工程特性 · 判断题</span>
+          <span class="qscore" id="qscore-5">10 分</span>
+        </div>
+        <div class="qbody">瞬变体系在发生微小位移后即变为几何不变体系，因此在微小荷载作用下产生的内力也很小，工程中可以放心使用。</div>
+        <div class="options tf-options">
+          <div class="option" data-key="true"><span class="okey">✓</span><span class="otext">正确</span></div>
+          <div class="option" data-key="false"><span class="okey">✗</span><span class="otext">错误</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-5" disabled>提交答案</button>
+        </div>
+      </div>
+
+      <div class="stage-complete">
+        <button class="btn-complete" id="btn-complete-2" disabled>完成本关 · 解锁下一关</button>
+      </div>
+    </section>
+
+    <!-- ====== 阶段 3: 重难点综合闯关 ====== -->
+    <section class="stage" id="stage-3">
+      <div class="stage-header s3">
+        <span class="tag">第三关 · 重难点综合闯关</span>
+        <h2>重难点综合闯关</h2>
+        <p class="desc">综合运用三大规则与瞬变常变判定 · 综合压轴题通关</p>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>综合挑战说明</h3>
+        <p>本关为全课<b>重难点综合检验</b>，不设动画演示。请综合运用 <b>三大基本组成规则</b>、<b>推广规则</b> 与 <b>瞬变/常变体系判定要点</b> 完成压轴综合题，检验整体掌握情况。</p>
+        <div class="summary-grid">
+          <div class="summary-card ok">
+            <div class="sc-title">✓ 解题思路</div>
+            <div class="sc-body">先找刚片与二元体化简 → 选择对应规则 → 检查关键条件（不共线/不共点/不全平行）→ 得出结论</div>
+          </div>
+          <div class="summary-card warn">
+            <div class="sc-title">⚠ 易错警示</div>
+            <div class="sc-body">铰与链杆共线 → <b>瞬变</b>（非常变）；三杆<b>等长</b>平行 → <b>常变</b>（非瞬变）；三杆<b>不等长</b>平行 → 瞬变</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 综合压轴题6 -->
+      <div class="question-card" id="q6" data-qid="6" data-type="single" data-answer="A">
+        <div class="qhead">
+          <span class="qtype">第三关压轴题6 · 全知识点综合单选 · 重修统考题型</span>
+          <span class="qscore" id="qscore-6">10 分</span>
+        </div>
+        <div class="qbody">下列关于平面体系几何组成的表述，全部正确的一组是（ ）<br>
+          <span class="stmt">① 点与刚片用两根不共线链杆连接，为无多余约束几何不变体系</span>
+          <span class="stmt">② 两刚片通过一铰一共线链杆连接，属于常变体系</span>
+          <span class="stmt">③ 三刚片三虚铰两两相连且三铰不共线，为无多余约束几何不变体系</span>
+          <span class="stmt">④ 两刚片三根等长平行链杆连接，属于瞬变体系</span>
+          <span class="stmt">⑤ 所有几何不变基本组成规则，本质均为铰接三角形稳定法则</span>
+        </div>
+        <div class="options">
+          <div class="option" data-key="A"><span class="okey">A</span><span class="otext">①③⑤</span></div>
+          <div class="option" data-key="B"><span class="okey">B</span><span class="otext">①②④</span></div>
+          <div class="option" data-key="C"><span class="okey">C</span><span class="otext">②③⑤</span></div>
+          <div class="option" data-key="D"><span class="okey">D</span><span class="otext">①④⑤</span></div>
+        </div>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="btn-submit-6" disabled>提交终极答案</button>
+        </div>
+      </div>
+
+      <div class="stage-complete">
+        <button class="btn-complete" id="btn-complete-3" disabled>完成全部闯关 · 查看排名</button>
+      </div>
+    </section>
+
+    <!-- ====== 阶段 4: 总结排名 ====== -->
+    <section class="stage" id="stage-4">
+      <div class="stage-header s4">
+        <span class="tag">全局总结 · 班级排名</span>
+        <h2>本节课核心知识点总结</h2>
+        <p class="desc">三大基本规则 · 推广规则 · 瞬变常变判定 · 班级得分排名展示</p>
+      </div>
+
+      <div class="ksection">
+        <h3><span class="icon-bar"></span>核心知识点全局回顾</h3>
+        <div class="summary-grid">
+          <div class="summary-card ok">
+            <div class="sc-title">规则1 · 点-刚片</div>
+            <div class="sc-body">点+刚片+2不共线链杆 → 几何不变</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">规则2 · 两刚片</div>
+            <div class="sc-body">2刚片+1铰+1链杆（不共线）→ 几何不变</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">规则3 · 三刚片</div>
+            <div class="sc-body">3刚片+3铰两两相连（不共线）→ 几何不变</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">本质 · 三角形法则</div>
+            <div class="sc-body">三大规则本质均为铰接三角形稳定性</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">推广1 · 三链杆</div>
+            <div class="sc-body">2刚片+3链杆（不全交、不全平行）→ 几何不变</div>
+          </div>
+          <div class="summary-card ok">
+            <div class="sc-title">推广2 · 虚铰</div>
+            <div class="sc-body">3刚片+3虚铰（不共线）→ 几何不变</div>
+          </div>
+          <div class="summary-card warn">
+            <div class="sc-title">瞬变体系</div>
+            <div class="sc-body">临界共线/共点 → 微小位移后自愈为不变</div>
+          </div>
+          <div class="summary-card danger">
+            <div class="sc-title">常变体系</div>
+            <div class="sc-body">约束不足 → 始终可动（如三等长平行杆）</div>
+          </div>
+          <div class="summary-card danger" style="grid-column:1/-1">
+            <div class="sc-title">判定口诀</div>
+            <div class="sc-body">不共线、不共点、不全平行 → 不变 ｜ 临界共线共点 → 瞬变 ｜ 始终可动 → 常变</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rank-hero">
+        <h2>班级得分排名榜</h2>
+        <p class="sub">按总分降序排列 · 同分按完成用时升序排列</p>
+      </div>
+
+      <div class="rank-summary" id="rank-summary"></div>
+
+      <div class="finish-banner" id="finish-banner">
+        <div class="ic">🏆</div>
+        <h2>恭喜通关！本节课学习完成</h2>
+        <p>您已完成《几何体系的基本组成规则讲解》全部闯关任务，<br>系统已自动记录您的答题情况与成绩，可作为课后学情数据留存。</p>
+      </div>
+
+      <div class="rank-table-wrap">
+        <table class="rank-table">
+          <thead>
+            <tr>
+              <th style="width:60px">排名</th>
+              <th>姓名</th>
+              <th>学号</th>
+              <th style="text-align:center">总分</th>
+              <th style="text-align:center">正确率</th>
+              <th style="text-align:center">完成用时</th>
+            </tr>
+          </thead>
+          <tbody id="rank-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="rank-actions">
+        <button class="btn btn-primary" id="btn-view-detail">查看我的学情详情</button>
+        <button class="btn btn-ghost" id="btn-restart">重新开始（清空本人记录）</button>
+        <button class="btn btn-ghost" id="btn-clear-all">清空全部排名数据</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============= 反馈弹窗 ============= -->
+<div id="feedback-modal">
+  <div class="fb-card" id="fb-card">
+    <div class="fb-icon" id="fb-icon">✓</div>
+    <div class="fb-title" id="fb-title">回答正确</div>
+    <div class="fb-score" id="fb-score">本题得分：<span class="num">10</span> / 10 分</div>
+    <div class="fb-answer" id="fb-answer"></div>
+    <div class="fb-review" id="fb-review" style="display:none"></div>
+    <div class="fb-analysis" id="fb-analysis"></div>
+    <div class="fb-btn-row">
+      <button class="btn btn-primary" id="fb-next">继续</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============= 数据 ============= */
+const QUESTIONS = {
+  1:{ type:'single', answer:'C', analysis:'两点不共线链杆固定结点，是点-刚片不变体系的核心条件。1根链杆约束不足；2根共线链杆为瞬变；3根链杆存在多余约束，故选C。', review:'点-刚片规则：1点+1刚片+2根不共线链杆 → 几何不变无多余约束。共线 → 瞬变。' },
+  2:{ type:'judge', answer:'false', analysis:'必须满足"铰与链杆不共线"，共线时为瞬变体系，不属于几何不变。仅有连接存在不能保证不变，关键在几何布置条件。', review:'两刚片规则：1铰+1链杆 + "铰与链杆不共线" → 几何不变。共线 → 瞬变。' },
+  3:{ type:'single', answer:'C', analysis:'三刚片规则要求三个铰两两相连、且三铰不共线。任意布置或共线均不满足；两根链杆不足以连接三刚片。故选C。', review:'三刚片规则：3刚片+3铰两两相连+三铰不共线 → 几何不变。本质即铰接三角形。' },
+  4:{ type:'single', answer:'B', analysis:'两刚片用三根链杆相连时：三杆不全平行且不全交于一点 → 几何不变（A错）；三杆延长线交于同一点 → 刚片可绕该点作瞬时微小转动，位移后三杆不再共点，体系变为几何不变，属瞬变体系（B正确）；三杆等长平行 → 刚片可持续平移，属常变体系（C错）；三杆共线 → 仅提供同一方向约束，属几何可变体系（D错）。', review:'两刚片三链杆判定：不全平行+不全共点 → 不变；延长线共点 → 瞬变；等长平行 → 常变；共线 → 可变。' },
+  5:{ type:'judge', answer:'false', analysis:'瞬变体系虽在微小位移后变为几何不变，但在微小荷载作用下，约束反力=荷载/微小位移角的正弦值，将产生非常大的内力，甚至趋于无穷大，因此瞬变体系绝对不能用作工程结构；接近瞬变的体系同样产生很大内力，也不宜作为结构。', review:'瞬变体系工程特性：临界布置 + 微小荷载 → 巨大内力。瞬变体系严禁用作结构，接近瞬变也不安全。' },
+  6:{ type:'single', answer:'A', analysis:'①正确，符合点-刚片基本组成规则；②错误，铰与链杆共线为瞬变体系，非常变体系；③正确，三刚片虚铰推广规则，三铰不共线即为几何不变无多余约束；④错误，三杆等长平行为典型常变体系；⑤正确，三大基本规则本质均为铰接三角形法则拓展。综上①③⑤表述正确。', review:'逐项判断：①点刚片2不共线链杆 ✓ ②铰与链杆共线=瞬变（非常变）✗ ③三虚铰不共线=不变 ✓ ④三等长平行=常变（非瞬变）✗ ⑤三角形法则同源 ✓' }
+};
+
+const STORAGE_KEY = 'courseware_geo_rules_students';
+const SESSION_KEY = 'coursework_geo_rules_session';
+const STAGE_COUNT = 5;
+
+/* ============= 状态 ============= */
+let state = {
+  student:null, startTime:0, currentStage:0, unlockedStage:0,
+  answers:{}, totalScore:0, finished:false
+};
+
+/* ============= 工具 ============= */
+function $(id){return document.getElementById(id)}
+function getAllStudents(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]') }catch(e){ return [] }
+}
+function saveStudentRecord(rec){
+  const all = getAllStudents();
+  const idx = all.findIndex(r=>r.studentId===rec.studentId && r.name===rec.name);
+  if(idx>=0) all[idx]=rec; else all.push(rec);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+}
+function clearMyRecord(){
+  if(!state.student) return;
+  const all = getAllStudents().filter(r=> !(r.name===state.student.name && r.studentId===state.student.studentId));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+}
+function clearAllRecords(){ localStorage.removeItem(STORAGE_KEY); }
+function persistSession(){ localStorage.setItem(SESSION_KEY, JSON.stringify(state)); }
+function loadSession(){
+  try{ const s = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if(s && s.student && s.student.name) return s;
+  }catch(e){}
+  return null;
+}
+function fmtDuration(sec){
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return m+'分'+(s<10?'0':'')+s+'秒';
+}
+
+/* ============= 登录 ============= */
+function initLogin(){
+  const btn = $('btn-login');
+  const nameInput = $('login-name');
+  const sidInput = $('login-sid');
+  btn.addEventListener('click', ()=>{
+    const name = nameInput.value.trim();
+    const sid = sidInput.value.trim();
+    let ok = true;
+    $('err-name').textContent = ''; $('err-sid').textContent = '';
+    if(!name){ $('err-name').textContent='请填写姓名'; ok=false; }
+    if(!sid){ $('err-sid').textContent='请填写学号'; ok=false; }
+    if(!ok) return;
+    const sess = loadSession();
+    if(sess && sess.student && sess.student.name===name && sess.student.studentId===sid && !sess.finished){
+      state = sess;
+    } else {
+      state.student = { name, studentId:sid };
+      state.startTime = Date.now();
+      state.currentStage = 0; state.unlockedStage = 0;
+      state.answers = {}; state.totalScore = 0; state.finished = false;
+    }
+    persistSession();
+    enterApp();
+  });
+  [nameInput, sidInput].forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') btn.click(); });
+  });
+}
+
+function enterApp(){
+  $('login-overlay').style.display='none';
+  $('app').classList.add('active');
+  $('topbar-name').textContent = state.student.name;
+  $('topbar-avatar').textContent = state.student.name.charAt(0);
+  $('topbar-score').textContent = state.totalScore;
+  renderStageNav();
+  showStage(state.currentStage);
+  Object.keys(state.answers).forEach(qid=> restoreAnswer(qid));
+  updateCompleteButtons();
+}
+
+/* ============= 关卡导航 ============= */
+function renderStageNav(){
+  const pills = $('stage-nav').querySelectorAll('.stage-pill');
+  pills.forEach(p=>{
+    const sid = parseInt(p.dataset.stage);
+    p.classList.remove('active','unlocked','locked','completed');
+    if(sid < state.unlockedStage) p.classList.add('completed');
+    else if(sid === state.unlockedStage) p.classList.add('unlocked');
+    else p.classList.add('locked');
+    if(sid === state.currentStage) p.classList.add('active');
+    p.onclick = ()=> onStageClick(sid);
+  });
+}
+function onStageClick(sid){
+  if(sid > state.unlockedStage) return;
+  state.currentStage = sid;
+  persistSession();
+  renderStageNav();
+  showStage(sid);
+}
+function showStage(sid){
+  document.querySelectorAll('.stage').forEach(s=> s.classList.remove('active'));
+  const stageEl = $('stage-'+sid);
+  if(!stageEl){ if(sid < STAGE_COUNT-1) showStage(sid+1); return; }
+  stageEl.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(sid===4) renderRanking();
+  // 切换关卡后重新设置该关卡内的canvas尺寸（解决display:none时宽度为0的问题）
+  if(sid>=1 && sid<=3){
+    setTimeout(()=>{
+      setupStageCanvases(sid);
+      for(let i=1; i<=9; i++){
+        if(ANIM.contexts[i]) renderScene(i);
+      }
+    }, 50);
+  }
+}
+function unlockNext(){
+  if(state.unlockedStage < STAGE_COUNT-1){
+    state.unlockedStage++;
+    if(state.currentStage < state.unlockedStage) state.currentStage = state.unlockedStage;
+    persistSession();
+    renderStageNav();
+    showStage(state.currentStage);
+  }
+}
+
+/* ============= 题目逻辑 ============= */
+function initQuestion(qid){
+  const card = $('q'+qid);
+  if(!card) return;
+  const submitBtn = $('btn-submit-'+qid);
+  const options = card.querySelectorAll('.option');
+  let selected = null;
+  options.forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      if(card.classList.contains('answered')) return;
+      options.forEach(o=> o.classList.remove('selected'));
+      opt.classList.add('selected');
+      selected = opt.dataset.key;
+      submitBtn.disabled = false;
+    });
+  });
+  submitBtn.addEventListener('click', ()=> submitChoice(qid, selected));
+}
+
+function submitChoice(qid, selected){
+  const q = QUESTIONS[qid];
+  const correct = selected === q.answer;
+  const score = correct ? 10 : 0;
+  state.answers[qid] = { key:selected, correct, score, time:Date.now() };
+  state.totalScore = Object.values(state.answers).reduce((s,a)=> s+a.score, 0);
+  persistSession();
+  const card = $('q'+qid);
+  card.classList.add('answered');
+  card.querySelectorAll('.option').forEach(opt=>{
+    opt.classList.add('disabled','locked');
+    if(opt.dataset.key === q.answer) opt.classList.add('correct');
+    else if(opt.dataset.key === selected && !correct) opt.classList.add('wrong');
+  });
+  $('btn-submit-'+qid).disabled = true;
+  const scoreEl = $('qscore-'+qid);
+  scoreEl.classList.add('got');
+  scoreEl.textContent = (correct?'+10':'+0')+' 分';
+  $('topbar-score').textContent = state.totalScore;
+  showFeedback(qid, correct, selected);
+  updateCompleteButtons();
+}
+
+function restoreAnswer(qid){
+  const ans = state.answers[qid];
+  if(!ans) return;
+  const q = QUESTIONS[qid];
+  const card = $('q'+qid);
+  if(!card) return;
+  card.classList.add('answered');
+  card.querySelectorAll('.option').forEach(opt=>{
+    opt.classList.add('disabled','locked');
+    if(opt.dataset.key === q.answer) opt.classList.add('correct');
+    else if(opt.dataset.key === ans.key && !ans.correct) opt.classList.add('wrong');
+  });
+  $('btn-submit-'+qid).disabled = true;
+  const scoreEl = $('qscore-'+qid);
+  scoreEl.classList.add('got');
+  scoreEl.textContent = (ans.correct?'+10':'+0')+' 分';
+}
+
+/* ============= 反馈弹窗 ============= */
+function showFeedback(qid, correct, userKey){
+  const q = QUESTIONS[qid];
+  const card = $('fb-card');
+  card.classList.remove('correct','wrong');
+  card.classList.add(correct?'correct':'wrong');
+  $('fb-icon').textContent = correct ? '✓' : '✗';
+  $('fb-title').textContent = correct ? '回答正确' : '回答错误';
+  $('fb-score').innerHTML = '本题得分：<span class="num">'+(correct?10:0)+'</span> / 10 分';
+  let answerText = '';
+  if(q.type === 'judge'){
+    answerText = '标准答案：<b>'+(q.answer==='true'?'正确':'错误')+'</b>';
+  } else {
+    answerText = '标准答案：<b>'+q.answer+'</b>';
+  }
+  $('fb-answer').innerHTML = answerText;
+  if(!correct){
+    $('fb-review').style.display = 'block';
+    $('fb-review').innerHTML = '<span class="label">⚠ 知识点回顾</span>'+q.review;
+  } else {
+    $('fb-review').style.display = 'none';
+  }
+  $('fb-analysis').innerHTML = '<span class="label">解析</span>'+q.analysis;
+  $('feedback-modal').classList.add('show');
+}
+function closeFeedback(){ $('feedback-modal').classList.remove('show'); }
+
+/* ============= 关卡完成按钮 ============= */
+function updateCompleteButtons(){
+  const s1Done = state.answers[1] && state.answers[2] && state.answers[3];
+  $('btn-complete-1').disabled = !s1Done;
+  const s2Done = state.answers[4] && state.answers[5];
+  $('btn-complete-2').disabled = !s2Done;
+  const s3Done = state.answers[6];
+  $('btn-complete-3').disabled = !s3Done;
+}
+
+function initStageComplete(){
+  $('btn-start-1').addEventListener('click', ()=> unlockNext());
+  $('btn-complete-1').addEventListener('click', ()=>{
+    if(state.answers[1] && state.answers[2] && state.answers[3]) unlockNext();
+  });
+  $('btn-complete-2').addEventListener('click', ()=>{
+    if(state.answers[4] && state.answers[5]) unlockNext();
+  });
+  $('btn-complete-3').addEventListener('click', ()=>{
+    if(!state.answers[6]) return;
+    state.finished = true;
+    const endTime = Date.now();
+    const durationSec = Math.floor((endTime - state.startTime)/1000);
+    const correctCount = Object.values(state.answers).filter(a=>a.correct).length;
+    const record = {
+      name: state.student.name, studentId: state.student.studentId,
+      startTime: state.startTime, endTime: endTime, durationSec: durationSec,
+      answers: state.answers, totalScore: state.totalScore,
+      correctCount: correctCount, accuracy: Math.round(correctCount/6*100),
+      finished: true, finishedAt: endTime
+    };
+    saveStudentRecord(record);
+    persistSession();
+    unlockNext();
+  });
+}
+
+/* ============= 排名展示 ============= */
+function renderRanking(){
+  const all = getAllStudents().filter(r=>r.finished);
+  all.sort((a,b)=>{
+    if(b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    return a.durationSec - b.durationSec;
+  });
+  const summary = $('rank-summary');
+  if(all.length === 0){
+    summary.innerHTML = '';
+  } else {
+    const avgScore = (all.reduce((s,r)=>s+r.totalScore,0)/all.length).toFixed(1);
+    const maxScore = Math.max(...all.map(r=>r.totalScore));
+    summary.innerHTML = `
+      <div class="stat-card"><div class="val">${all.length}</div><div class="lbl">参与人数</div></div>
+      <div class="stat-card"><div class="val">${maxScore}</div><div class="lbl">最高分</div></div>
+      <div class="stat-card"><div class="val">${avgScore}</div><div class="lbl">平均分</div></div>
+    `;
+  }
+  const tbody = $('rank-tbody');
+  if(all.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="rank-empty">暂无完成闯关的学生记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = all.map((r, i)=>{
+    const rank = i+1;
+    const rankCls = rank<=3 ? 'rank-'+rank : '';
+    const isYou = state.student && r.name===state.student.name && r.studentId===state.student.studentId;
+    return `
+      <tr class="${isYou?'you':''}">
+        <td class="rank-cell ${rankCls}">${rank<=3?['🥇','🥈','🥉'][rank-1]:rank}</td>
+        <td>${r.name}</td>
+        <td>${r.studentId}</td>
+        <td class="score-cell" style="text-align:center">${r.totalScore} / 60</td>
+        <td class="acc-cell" style="text-align:center">${r.accuracy}%</td>
+        <td class="time-cell" style="text-align:center">${fmtDuration(r.durationSec)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* ============= 学情详情 ============= */
+function showMyDetail(){
+  if(!state.student) return;
+  const all = getAllStudents();
+  const me = all.find(r=> r.name===state.student.name && r.studentId===state.student.studentId && r.finished);
+  if(!me){ alert('您尚未完成全部闯关，暂无学情详情。'); return; }
+  let wrongList = [];
+  for(let qid=1; qid<=6; qid++){
+    if(state.answers[qid] && !state.answers[qid].correct) wrongList.push('题'+qid);
+  }
+  const detail = `【学情详情】
+姓名：${me.name}
+学号：${me.studentId}
+总分：${me.totalScore} / 60
+正确率：${me.accuracy}%
+完成用时：${fmtDuration(me.durationSec)}
+错题记录：${wrongList.length? wrongList.join('、') : '无'}
+
+闯关完成情况：
+  第一关（三大规则）：题1 ${state.answers[1]?(state.answers[1].correct?'✓':'✗'):'未答'} / 题2 ${state.answers[2]?(state.answers[2].correct?'✓':'✗'):'未答'} / 题3 ${state.answers[3]?(state.answers[3].correct?'✓':'✗'):'未答'}
+  第二关（瞬变常变）：题4 ${state.answers[4]?(state.answers[4].correct?'✓':'✗'):'未答'} / 题5 ${state.answers[5]?(state.answers[5].correct?'✓':'✗'):'未答'}
+  第三关（重难点综合）：题6 ${state.answers[6]?(state.answers[6].correct?'✓':'✗'):'未答'}`;
+  alert(detail);
+}
+
+/* ============= Canvas动画引擎 ============= */
+const ANIM = {
+  BW: 720, BH: 260,
+  blinkPhase: 0,
+  states: {},
+  contexts: {},
+  timers: {}
+};
+for(let i=1; i<=9; i++){
+  ANIM.states[i] = { step: -1, playing: false, mode: 'real', done: false };
+}
+
+/* ---- 通用绘图函数 ---- */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function drawGrid(ctx){
+  ctx.save();
+  ctx.strokeStyle='rgba(48,54,61,0.4)';
+  ctx.lineWidth=1;
+  const step=40;
+  for(let x=0;x<=ANIM.BW;x+=step){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ANIM.BH);ctx.stroke(); }
+  for(let y=0;y<=ANIM.BH;y+=step){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(ANIM.BW,y);ctx.stroke(); }
+  ctx.restore();
+}
+function drawRigidBody(ctx,cx,cy,a,b,angle,color,label){
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(-angle*Math.PI/180);
+  ctx.fillStyle=color;
+  ctx.shadowColor=color;
+  ctx.shadowBlur=12;
+  ctx.beginPath();
+  ctx.ellipse(0,0,Math.max(1,a),Math.max(1,b),0,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.25)';
+  ctx.lineWidth=1;
+  ctx.stroke();
+  ctx.fillStyle='#fff';
+  ctx.font='bold 13px "Segoe UI"';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(label,0,0);
+  ctx.restore();
+}
+function drawPin(ctx,x,y){
+  ctx.save();
+  ctx.strokeStyle='#f778ba';
+  ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.arc(x,y,6,0,Math.PI*2);
+  ctx.stroke();
+  ctx.fillStyle='rgba(247,120,186,0.3)';
+  ctx.fill();
+  ctx.restore();
+}
+function drawLink(ctx,x1,y1,x2,y2){
+  ctx.save();
+  ctx.strokeStyle='#ffd700';
+  ctx.lineWidth=3;
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  // 端点小圆
+  ctx.fillStyle='#ffd700';
+  ctx.beginPath();ctx.arc(x1,y1,3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x2,y2,3,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawHinge(ctx,x,y){
+  ctx.save();
+  ctx.fillStyle='#a371f7';
+  ctx.shadowColor='#a371f7';
+  ctx.shadowBlur=8;
+  ctx.beginPath();
+  ctx.arc(x,y,6,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.5)';
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+function drawVirtualHinge(ctx,x,y,color){
+  ctx.save();
+  color = color || '#a371f7';
+  ctx.strokeStyle=color;
+  ctx.fillStyle='rgba(163,113,247,0.15)';
+  ctx.lineWidth=2;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.arc(x,y,8,0,Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x-4,y-4);ctx.lineTo(x+4,y+4);
+  ctx.moveTo(x+4,y-4);ctx.lineTo(x-4,y+4);
+  ctx.strokeStyle=color;
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+function drawGround(ctx,x,y,w){
+  ctx.save();
+  ctx.strokeStyle='#8b949e';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(x-w,y);ctx.lineTo(x+w,y);
+  ctx.stroke();
+  for(let i=-w+5;i<w;i+=12){
+    ctx.beginPath();
+    ctx.moveTo(x+i,y);
+    ctx.lineTo(x+i-5,y+7);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawLabel(ctx,text,x,y,color){
+  ctx.save();
+  color = color || '#e6edf3';
+  ctx.font='bold 12px "Segoe UI"';
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(13,17,23,0.85)';
+  const w = ctx.measureText(text).width + 10;
+  roundRect(ctx, x-w/2, y-9, w, 18, 4);
+  ctx.fill();
+  ctx.fillStyle=color;
+  ctx.textBaseline='middle';
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function drawLinkLabel(ctx,x1,y1,x2,y2,text,color){
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  drawLabel(ctx,text,mx,my-12,color||'#ffd700');
+}
+function drawHighlightEllipse(ctx,cx,cy,a,b,angle,color,alpha){
+  ctx.save();
+  alpha = alpha != null ? alpha : 1;
+  ctx.globalAlpha = alpha * (0.3 + 0.2 * Math.sin(ANIM.blinkPhase));
+  ctx.strokeStyle = color || '#58a6ff';
+  ctx.lineWidth = 4;
+  ctx.shadowColor = color || '#58a6ff';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,Math.max(1,a)+8,Math.max(1,b)+8,-angle*Math.PI/180,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawHighlightCircle(ctx,x,y,r,color,alpha){
+  ctx.save();
+  alpha = alpha != null ? alpha : 1;
+  ctx.globalAlpha = alpha * (0.3 + 0.2 * Math.sin(ANIM.blinkPhase));
+  ctx.strokeStyle = color || '#a371f7';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawHighlightLink(ctx,x1,y1,x2,y2,color,alpha){
+  ctx.save();
+  alpha = alpha != null ? alpha : 1;
+  ctx.globalAlpha = alpha * (0.4 + 0.2 * Math.sin(ANIM.blinkPhase));
+  ctx.strokeStyle = color || '#ffd700';
+  ctx.lineWidth = 6;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawHighlightRect(ctx,x,y,w,h,r,color,alpha){
+  ctx.save();
+  alpha = alpha != null ? alpha : 1;
+  ctx.globalAlpha = alpha * (0.15 + 0.1 * Math.sin(ANIM.blinkPhase));
+  ctx.strokeStyle = color || '#3fb950';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  roundRect(ctx, x, y, w, h, r||8);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawExtensionLine(ctx,x1,y1,x2,y2,color,alpha){
+  ctx.save();
+  ctx.globalAlpha = alpha != null ? alpha : 0.5;
+  ctx.strokeStyle = color || 'rgba(255,215,0,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawTriangle(ctx,p1,p2,p3,color,alpha){
+  ctx.save();
+  alpha = alpha != null ? alpha : 0.4;
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color || '#3fb950';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(p1.x,p1.y);
+  ctx.lineTo(p2.x,p2.y);
+  ctx.lineTo(p3.x,p3.y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawConclusion(ctx,x,y,color){
+  ctx.save();
+  color = color || '#3fb950';
+  ctx.font='bold 14px "Segoe UI"';
+  ctx.fillStyle=color;
+  ctx.textAlign='left';
+  ctx.fillText('✓ 几何不变体系', x, y);
+  ctx.restore();
+}
+function drawPoint(ctx,x,y,color,label){
+  ctx.save();
+  color = color || '#ffd700';
+  ctx.fillStyle=color;
+  ctx.shadowColor=color;
+  ctx.shadowBlur=10;
+  ctx.beginPath();
+  ctx.arc(x,y,5,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  if(label) drawLabel(ctx,label,x,y-16,color);
+  ctx.restore();
+}
+
+/* ---- 场景配置 ---- */
+const SCENES = {
+  1: {
+    bodies: [
+      {cx:360, cy:130, a:240, b:22, angle:0, color:'#58a6ff', label:'刚片'}
+    ],
+    point: {x:360, y:210, label:'A'},
+    links: [
+      {x1:300, y1:116, x2:340, y2:206},
+      {x1:420, y1:116, x2:380, y2:206}
+    ],
+    steps: [
+      '高亮<span class="hl-b">刚片</span>与<span class="hl-y">点 A</span>',
+      '添加<span class="hl-y">链杆 1</span>——A 获得沿杆方向约束',
+      '添加<span class="hl-y">链杆 2</span>——A 固定于刚片',
+      '<span class="hl-g">两杆不共线</span>→ A 完全固定',
+      '结论：点 + 2不共线链杆 = <span class="hl-g">几何不变</span>'
+    ],
+    conclusion: {title:'点-刚片规则', desc:'点 + 2不共线链杆 → A 完全固定，<b>无多余约束</b>。', type:'ok'}
+  },
+  7: {
+    bodies: [
+      {cx:360, cy:220, a:200, b:12, angle:0, color:'#58a6ff', label:'基础'},
+      {cx:360, cy:120, a:110, b:22, angle:0, color:'#f778ba', label:'刚片 II'}
+    ],
+    links: [
+      {x1:240, y1:213, x2:300, y2:141},
+      {x1:360, y1:213, x2:360, y2:141},
+      {x1:480, y1:213, x2:420, y2:141}
+    ],
+    commonPoint: {x:360, y:60},
+    steps: [
+      '高亮<span class="hl-b">基础</span>与<span class="hl-k">刚片 II</span>——两刚片用三链杆连接',
+      '高亮<span class="hl-y">三根链杆</span>——延长线将交于同一点',
+      '<span class="hl-r">三链杆延长线交于 O 点</span>——刚片可绕 O 瞬时转动',
+      '转动后三杆不再共点 → 体系"自愈"为几何不变',
+      '结论：体系为<span class="hl-r">瞬变体系</span>（临界共点）'
+    ],
+    conclusion: {title:'瞬变体系', desc:'三链杆共点 → 刚片绕 O <b>瞬时微小转动</b>，转动后变为不变。', type:'danger'}
+  },
+  8: {
+    bodies: [
+      {cx:360, cy:220, a:200, b:12, angle:0, color:'#58a6ff', label:'基础'},
+      {cx:360, cy:120, a:110, b:22, angle:0, color:'#f778ba', label:'刚片 II'}
+    ],
+    links: [
+      {x1:260, y1:213, x2:260, y2:141},
+      {x1:360, y1:213, x2:360, y2:141},
+      {x1:460, y1:213, x2:460, y2:141}
+    ],
+    steps: [
+      '高亮<span class="hl-b">基础</span>与<span class="hl-k">刚片 II</span>——三链杆平行连接',
+      '高亮<span class="hl-y">三根平行链杆</span>——刚片可水平移动',
+      '<span class="hl-r">三杆等长平行</span>→ 刚片持续平移，杆仍平行',
+      '位移后杆长不变 → 体系持续可动',
+      '结论：体系为<span class="hl-r">常变体系</span>（持续可动）'
+    ],
+    conclusion: {title:'常变体系', desc:'三链杆等长平行 → 刚片<b>持续平移</b>，平移后杆仍平行。', type:'danger'}
+  },
+  9: {
+    bodies: [
+      {cx:360, cy:220, a:200, b:12, angle:0, color:'#58a6ff', label:'基础'},
+      {cx:360, cy:120, a:110, b:22, angle:0, color:'#f778ba', label:'刚片 II'}
+    ],
+    links: [
+      {x1:260, y1:213, x2:300, y2:141},
+      {x1:460, y1:213, x2:420, y2:141},
+      {x1:310, y1:213, x2:340, y2:141},
+      {x1:410, y1:213, x2:380, y2:141}
+    ],
+    virtualHinges: [
+      {x:200, y:200, label:'虚铰 A'},
+      {x:360, y:200, label:'虚铰 B'},
+      {x:520, y:200, label:'虚铰 C'}
+    ],
+    steps: [
+      '高亮<span class="hl-b">基础</span>与<span class="hl-k">刚片 II</span>——用链杆对连接',
+      '高亮<span class="hl-p">三个虚铰</span>——由链杆对延长线相交形成',
+      '<span class="hl-r">三虚铰 A、B、C 共线</span>——位于同一直线上',
+      '体系发生瞬时微小位移后三虚铰不再共线 → 变为不变',
+      '结论：体系为<span class="hl-r">瞬变体系</span>（虚铰共线）'
+    ],
+    conclusion: {title:'瞬变体系', desc:'三虚铰共线 → 体系<b>瞬时微小位移</b>后自愈为不变。', type:'danger'}
+  }
+};
+
+/* ---- 渲染分发 ---- */
+function renderScene(sceneId){
+  const ctx = ANIM.contexts[sceneId];
+  if(!ctx) return;
+  const s = ANIM.states[sceneId];
+  const scene = SCENES[sceneId];
+  if(!scene) return;
+  ctx.clearRect(0,0,ANIM.BW,ANIM.BH);
+  drawGrid(ctx);
+  const alpha = s.step >= 0 ? 1 : 0;
+  const fnMap = {1:renderS1, 7:renderS7, 8:renderS8, 9:renderS9};
+  const fn = fnMap[sceneId];
+  if(fn) fn(ctx, s.step, scene, alpha, s);
+}
+
+function renderS1(ctx, s, scene, alpha){
+  const b = scene.bodies[0];
+  const pt = scene.point;
+  const links = scene.links;
+  // 刚片
+  if(s === 0) drawHighlightEllipse(ctx, b.cx, b.cy, b.a, b.b, b.angle, '#58a6ff', alpha);
+  drawRigidBody(ctx, b.cx, b.cy, b.a, b.b, b.angle, b.color, b.label);
+  drawGround(ctx, b.cx, b.cy+b.b+2, b.a);
+  // 点A
+  if(s === 0) drawHighlightCircle(ctx, pt.x, pt.y, 18, '#ffd700', alpha);
+  drawPoint(ctx, pt.x, pt.y, '#ffd700', s >= 0 ? pt.label : null);
+  // 链杆1
+  if(s >= 1){
+    if(s === 1) drawHighlightLink(ctx, links[0].x1, links[0].y1, links[0].x2, links[0].y2, '#ffd700', alpha);
+    drawLink(ctx, links[0].x1, links[0].y1, links[0].x2, links[0].y2);
+    drawLinkLabel(ctx, links[0].x1, links[0].y1, links[0].x2, links[0].y2, '链杆1');
+  }
+  // 链杆2
+  if(s >= 2){
+    if(s === 2) drawHighlightLink(ctx, links[1].x1, links[1].y1, links[1].x2, links[1].y2, '#ffd700', alpha);
+    drawLink(ctx, links[1].x1, links[1].y1, links[1].x2, links[1].y2);
+    drawLinkLabel(ctx, links[1].x1, links[1].y1, links[1].x2, links[1].y2, '链杆2');
+  }
+  // 结论
+  if(s >= 3){
+    drawLabel(ctx, '两杆不共线 → A 完全固定', 360, 250, '#3fb950');
+  }
+  if(s === 4){
+    drawHighlightRect(ctx, 280, 235, 160, 20, 0, '#3fb950', 0.3 + alpha * 0.4);
+    drawConclusion(ctx, 300, 250, '#3fb950');
+  }
+}
+
+function renderS7(ctx, s, scene, alpha){
+  const [b1, b2] = scene.bodies;
+  const links = scene.links;
+  const cp = scene.commonPoint;
+  if(s === 0){
+    drawHighlightEllipse(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, '#58a6ff', alpha);
+    drawHighlightEllipse(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, '#f778ba', alpha);
+  }
+  drawRigidBody(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, b1.color, b1.label);
+  drawRigidBody(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, b2.color, b2.label);
+  drawGround(ctx, b1.cx, b1.cy+b1.b+2, b1.a);
+  // 三链杆
+  if(s >= 1){
+    links.forEach((l,i)=>{
+      if(s === 1) drawHighlightLink(ctx, l.x1, l.y1, l.x2, l.y2, '#ffd700', alpha);
+      drawLink(ctx, l.x1, l.y1, l.x2, l.y2);
+    });
+  }
+  // 延长线交于O
+  if(s >= 2){
+    links.forEach(l=>{
+      drawExtensionLine(ctx, l.x1, l.y1, cp.x, cp.y, 'rgba(255,215,0,0.4)', alpha);
+    });
+    if(s === 2) drawHighlightCircle(ctx, cp.x, cp.y, 20, '#dc2626', alpha);
+    drawVirtualHinge(ctx, cp.x, cp.y, '#dc2626');
+    drawLabel(ctx, '共点 O', cp.x, cp.y - 20, '#dc2626');
+  }
+  // 转动后
+  if(s >= 3){
+    drawLabel(ctx, '转动后三杆不再共点 → "自愈"', 360, 50, '#3fb950');
+  }
+  if(s === 4){
+    drawHighlightRect(ctx, 280, 235, 160, 20, 0, '#dc2626', 0.3 + alpha * 0.4);
+    ctx.save();
+    ctx.font='bold 14px "Segoe UI"';
+    ctx.fillStyle='#dc2626';
+    ctx.textAlign='left';
+    ctx.fillText('⚠ 瞬变体系', 300, 250);
+    ctx.restore();
+  }
+}
+
+function renderS8(ctx, s, scene, alpha){
+  const [b1, b2] = scene.bodies;
+  const links = scene.links;
+  if(s === 0){
+    drawHighlightEllipse(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, '#58a6ff', alpha);
+    drawHighlightEllipse(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, '#f778ba', alpha);
+  }
+  drawRigidBody(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, b1.color, b1.label);
+  drawRigidBody(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, b2.color, b2.label);
+  drawGround(ctx, b1.cx, b1.cy+b1.b+2, b1.a);
+  // 三平行链杆
+  if(s >= 1){
+    links.forEach((l,i)=>{
+      if(s === 1) drawHighlightLink(ctx, l.x1, l.y1, l.x2, l.y2, '#ffd700', alpha);
+      drawLink(ctx, l.x1, l.y1, l.x2, l.y2);
+    });
+  }
+  // 平移箭头
+  if(s >= 2){
+    ctx.save();
+    ctx.strokeStyle='#dc2626';
+    ctx.fillStyle='#dc2626';
+    ctx.lineWidth=2;
+    const ay = 120;
+    ctx.beginPath();
+    ctx.moveTo(560,ay);ctx.lineTo(640,ay);
+    ctx.lineTo(632,ay-5);ctx.moveTo(640,ay);ctx.lineTo(632,ay+5);
+    ctx.stroke();
+    drawLabel(ctx,'持续平移', 600, ay - 16, '#dc2626');
+    ctx.restore();
+  }
+  if(s >= 3){
+    drawLabel(ctx, '杆长不变 → 平移后仍平行', 360, 50, '#dc2626');
+  }
+  if(s === 4){
+    drawHighlightRect(ctx, 280, 235, 160, 20, 0, '#dc2626', 0.3 + alpha * 0.4);
+    ctx.save();
+    ctx.font='bold 14px "Segoe UI"';
+    ctx.fillStyle='#dc2626';
+    ctx.textAlign='left';
+    ctx.fillText('⚠ 常变体系', 300, 250);
+    ctx.restore();
+  }
+}
+
+function renderS9(ctx, s, scene, alpha){
+  const [b1, b2] = scene.bodies;
+  const links = scene.links;
+  const vhs = scene.virtualHinges;
+  if(s === 0){
+    drawHighlightEllipse(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, '#58a6ff', alpha);
+    drawHighlightEllipse(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, '#f778ba', alpha);
+  }
+  drawRigidBody(ctx, b1.cx, b1.cy, b1.a, b1.b, b1.angle, b1.color, b1.label);
+  drawRigidBody(ctx, b2.cx, b2.cy, b2.a, b2.b, b2.angle, b2.color, b2.label);
+  drawGround(ctx, b1.cx, b1.cy+b1.b+2, b1.a);
+  // 链杆
+  if(s >= 1){
+    links.forEach(l=>{
+      drawLink(ctx, l.x1, l.y1, l.x2, l.y2);
+    });
+  }
+  // 三个虚铰
+  if(s >= 2){
+    vhs.forEach((vh,i)=>{
+      if(s === 2) drawHighlightCircle(ctx, vh.x, vh.y, 18, '#a371f7', alpha);
+      drawVirtualHinge(ctx, vh.x, vh.y, '#a371f7');
+      drawLabel(ctx, vh.label, vh.x, vh.y - 20, '#a371f7');
+    });
+  }
+  // 共线
+  if(s >= 3){
+    ctx.save();
+    ctx.strokeStyle='rgba(220,38,38,0.6)';
+    ctx.lineWidth=2;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(vhs[0].x - 20, vhs[0].y);
+    ctx.lineTo(vhs[2].x + 20, vhs[2].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    drawLabel(ctx, '三虚铰共线', 360, 180, '#dc2626');
+  }
+  if(s === 4){
+    drawHighlightRect(ctx, 280, 235, 160, 20, 0, '#dc2626', 0.3 + alpha * 0.4);
+    ctx.save();
+    ctx.font='bold 14px "Segoe UI"';
+    ctx.fillStyle='#dc2626';
+    ctx.textAlign='left';
+    ctx.fillText('⚠ 瞬变体系', 300, 250);
+    ctx.restore();
+  }
+}
+
+/* ---- 动画控制 ---- */
+function setAnimStatus(id, text, type){
+  const el = $('a'+id+'-status');
+  if(!el) return;
+  el.innerHTML = '<span class="dot '+(type||'')+'"></span>'+text;
+}
+function updateStepUI(id){
+  const scene = SCENES[id];
+  if(!scene) return;
+  const s = ANIM.states[id];
+  const stepper = $('step-'+id);
+  if(!stepper) return;
+  const dots = stepper.querySelectorAll('.sdot');
+  const maxStep = scene.steps.length;
+  // 动态调整dot数量
+  if(dots.length !== maxStep){
+    stepper.innerHTML = '';
+    for(let i=0;i<maxStep;i++){
+      const d = document.createElement('div');
+      d.className='sdot';
+      stepper.appendChild(d);
+    }
+  }
+  const allDots = stepper.querySelectorAll('.sdot');
+  allDots.forEach((dot,i)=>{
+    dot.classList.remove('active','done');
+    if(i < s.step) dot.classList.add('done');
+    else if(i === s.step) dot.classList.add('active');
+  });
+  // 更新hint
+  const hint = $('hint-'+id);
+  if(hint){
+    if(s.step >= 0 && s.step < scene.steps.length){
+      hint.innerHTML = scene.steps[s.step];
+    } else if(s.done){
+      hint.innerHTML = '<span class="hl-g">演示完成</span>';
+    } else {
+      hint.textContent = '点击"播放动画"开始演示';
+    }
+  }
+  // 更新结论
+  const conc = $('conc-'+id);
+  if(conc){
+    if(s.step === scene.steps.length - 1 || s.done){
+      const c = scene.conclusion;
+      conc.classList.add('show');
+      const ctitle = conc.querySelector('.ctitle');
+      const cdesc = conc.querySelector('.cdesc');
+      if(ctitle) ctitle.textContent = c.title;
+      if(cdesc) cdesc.innerHTML = c.desc;
+    } else {
+      conc.classList.remove('show');
+    }
+  }
+}
+function startScene(id){
+  const scene = SCENES[id];
+  if(!scene) return;
+  const s = ANIM.states[id];
+  if(s.done){ resetScene(id); return; }
+  if(s.step === -1){
+    s.step = 0;
+    s.playing = true;
+    setAnimStatus(id, '播放中…', 'playing');
+    renderScene(id);
+    updateStepUI(id);
+    ANIM.timers[id] = setInterval(()=>{
+      advanceScene(id);
+    }, 1800);
+  } else if(!s.playing){
+    s.playing = true;
+    setAnimStatus(id, '播放中…', 'playing');
+    ANIM.timers[id] = setInterval(()=>{
+      advanceScene(id);
+    }, 1800);
+  }
+}
+function advanceScene(id){
+  const scene = SCENES[id];
+  if(!scene) return;
+  const s = ANIM.states[id];
+  if(s.step < scene.steps.length - 1){
+    s.step++;
+    renderScene(id);
+    updateStepUI(id);
+  } else {
+    // 最后一步
+    s.playing = false;
+    s.done = true;
+    clearInterval(ANIM.timers[id]);
+    setAnimStatus(id, '已完成', 'done');
+    updateStepUI(id);
+  }
+}
+function resetScene(id){
+  if(!SCENES[id]) return;
+  const s = ANIM.states[id];
+  s.step = -1;
+  s.playing = false;
+  s.done = false;
+  if(ANIM.timers[id]) clearInterval(ANIM.timers[id]);
+  setAnimStatus(id, '未播放', '');
+  renderScene(id);
+  updateStepUI(id);
+}
+function pauseScene(id){
+  const s = ANIM.states[id];
+  if(s.playing){
+    s.playing = false;
+    clearInterval(ANIM.timers[id]);
+    setAnimStatus(id, '已暂停', 'pause');
+  }
+}
+
+/* ---- Canvas设置 ---- */
+function setupCanvas(id){
+  const cv = document.getElementById('cv-'+id);
+  if(!cv) return;
+  const rect = cv.parentElement.getBoundingClientRect();
+  const w = rect.width > 0 ? rect.width : cv.parentElement.offsetWidth || 640;
+  cv.width = ANIM.BW;
+  cv.height = ANIM.BH;
+  const ctx = cv.getContext('2d');
+  ANIM.contexts[id] = ctx;
+  renderScene(id);
+}
+function setupAllCanvases(){
+  for(let i=1; i<=9; i++){
+    const cv = document.getElementById('cv-'+i);
+    if(cv) setupCanvas(i);
+  }
+}
+function setupStageCanvases(sid){
+  const stage = $('stage-'+sid);
+  if(!stage) return;
+  stage.querySelectorAll('canvas.anim-cv').forEach(cv=>{
+    const id = parseInt(cv.id.replace('cv-',''));
+    setupCanvas(id);
+  });
+}
+
+/* ---- RAF循环（用于闪烁高亮） ---- */
+function animLoop(){
+  ANIM.blinkPhase += 0.08;
+  for(let id in ANIM.states){
+    const s = ANIM.states[id];
+    if(s.step >= 0 && ANIM.contexts[id]){
+      renderScene(parseInt(id));
+    }
+  }
+  requestAnimationFrame(animLoop);
+}
+
+/* ---- 初始化动画 ---- */
+function initAnimations(){
+  // 绑定按钮
+  document.querySelectorAll('.anim-btn').forEach(btn=>{
+    const attr = btn.dataset.anim;
+    if(!attr) return;
+    btn.addEventListener('click', ()=>{
+      const id = parseInt(attr);
+      if(attr.endsWith('-reset')){
+        resetScene(id);
+      } else if(attr.endsWith('-mode')){
+        // 模式切换（仅在cv-2/cv-3存在时使用，已被iframe替代）
+      } else {
+        const s = ANIM.states[id];
+        if(!s) return;
+        if(s.playing){ pauseScene(id); }
+        else { startScene(id); }
+      }
+    });
+  });
+  // 设置canvas
+  setupAllCanvases();
+  // 启动RAF
+  animLoop();
+}
+
+/* ============= 初始化 ============= */
+function init(){
+  initLogin();
+  for(let qid=1; qid<=6; qid++) initQuestion(qid);
+  initStageComplete();
+  initAnimations();
+  $('fb-next').addEventListener('click', closeFeedback);
+  $('btn-view-detail').addEventListener('click', showMyDetail);
+  $('btn-restart').addEventListener('click', ()=>{
+    if(!confirm('确定要重新开始吗？将清空本人在本设备的答题记录与排名数据。')) return;
+    clearMyRecord();
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+  $('btn-clear-all').addEventListener('click', ()=>{
+    if(!confirm('确定要清空全部排名数据吗？此操作不可恢复，将删除本设备所有学生的闯关记录。')) return;
+    clearAllRecords();
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+  // 启动时强制显示登录弹窗
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

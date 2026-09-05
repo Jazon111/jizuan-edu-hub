@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>机动法绘制多跨静定梁影响线</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --panel: #ffffff;
+      --text: #212529;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+      --accent-2: #198754;
+      --danger: #dc3545;
+      --border: #dee2e6;
+      --shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .main {
+      display: flex;
+      height: calc(100vh - 58px);
+    }
+    .controls {
+      width: 360px;
+      min-width: 360px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 18px;
+      overflow-y: auto;
+    }
+    .canvas-wrap {
+      flex: 1;
+      min-width: 0;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .canvas-main {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+      display: flex;
+    }
+    #svgCanvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      min-width: 0;
+    }
+    .canvas-formation {
+      flex: none;
+      height: 320px;
+      border-top: 1px solid var(--border);
+      background: #fbfcfd;
+      display: flex;
+      flex-direction: column;
+    }
+    .formation-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+    .formation-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-right: auto;
+    }
+    .formation-header button { padding: 5px 12px; font-size: 12px; }
+    #formationSvg {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin: 18px 0 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title:first-child { margin-top: 0; }
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      margin-bottom: 8px;
+    }
+    .node-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .node-row label {
+      width: 32px;
+      margin: 0;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .node-row select { flex: 1; margin: 0; }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button {
+      padding: 7px 14px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      transition: .15s;
+    }
+    button:hover { background: #f1f3f5; }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button.primary:hover { background: #0b5ed7; }
+    button.success {
+      background: var(--accent-2);
+      color: #fff;
+      border-color: var(--accent-2);
+    }
+    button.success:hover { background: #157347; }
+    .info {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .legend {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255,255,255,.95);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      box-shadow: var(--shadow);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .legend-line { width: 24px; height: 3px; border-radius: 2px; }
+    .status {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(255,255,255,.95);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13px;
+      max-width: 60%;
+      box-shadow: var(--shadow);
+    }
+    .parts-info {
+      font-size: 12px;
+      margin-top: 8px;
+      padding: 8px;
+      background: #f1f3f5;
+      border-radius: 4px;
+      color: var(--text);
+    }
+    .part-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-right: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .part-basic { background: #cfe2ff; color: #084298; }
+    .part-subs { background: #d1e7dd; color: #0f5132; }
+    .range-wrap { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .range-wrap input { flex: 1; }
+    .range-wrap span { font-size: 12px; color: var(--muted); min-width: 40px; text-align: right; }
+    .checkbox-wrap { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+    .checkbox-wrap input { margin: 0; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>机动法绘制多跨静定梁影响线</h1>
+  <span style="font-size:13px;color:var(--muted)">多跨静定梁 · 刚体虚位移 · 影响线</span>
+</header>
+<div class="main">
+  <aside class="controls">
+    <div class="section-title">梁段长度（各跨长度 a 的倍数，可修改）</div>
+    <label>跨长列表（用逗号或空格分隔）</label>
+    <input type="text" id="spanInput" value="1,1,1,1,1,1" onchange="onParamChange()">
+
+    <div class="section-title">结点类型</div>
+    <div id="nodeTypes"></div>
+
+    <div class="section-title">待求量</div>
+    <label>绘制模式</label>
+    <select id="modeSelect" onchange="onParamChange()">
+      <option value="single">单个待求量</option>
+      <option value="all_reactions">全部支座反力</option>
+    </select>
+
+    <div id="singleQtyPanel">
+      <label>量类型</label>
+      <select id="qtyTypeSelect" onchange="onQtyTypeChange()">
+        <option value="reaction">支座反力</option>
+        <option value="shear">截面剪力</option>
+        <option value="shear_left">截面左剪力</option>
+        <option value="shear_right">截面右剪力</option>
+        <option value="moment">截面弯矩</option>
+      </select>
+      <div id="reactionPosWrap">
+        <label>支座位置（结点）</label>
+        <select id="reactionNodeSelect" onchange="onParamChange()"></select>
+      </div>
+      <div id="sectionXWrap" style="display:none">
+        <label>截面坐标 x（a 的倍数）</label>
+        <input type="number" id="sectionXInput" step="0.05" min="0" value="4.5" onchange="onParamChange()">
+        <div class="info" id="sectionHint" style="margin-top:0"></div>
+      </div>
+    </div>
+
+    <div class="section-title">动画与显示</div>
+    <div class="btn-row">
+      <button class="primary" onclick="playAnimation()">播放机动动画</button>
+      <button onclick="resetAnimation()">复位</button>
+      <button class="success" onclick="loadExample()">载入附图例题</button>
+    </div>
+    <div class="range-wrap">
+      <input type="range" id="animSlider" min="0" max="100" value="0" oninput="setProgress(this.value/100)">
+      <span id="animVal">0%</span>
+    </div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="showHatch" checked onchange="draw()">
+      <label for="showHatch" style="margin:0">填充阴影线（虚位移图 = 影响线）</label>
+    </div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="showOrdinates" checked onchange="draw()">
+      <label for="showOrdinates" style="margin:0">标注关键纵坐标</label>
+    </div>
+
+    <div class="section-title">基本部分 / 附属部分</div>
+    <div id="partsInfo" class="parts-info">点击“载入附图例题”后自动识别。</div>
+
+    <div class="info">
+      说明：按机动法，解除与待求量对应的约束，令体系沿该量正方向发生单位虚位移，所得刚体虚位移图即该量影响线（图上以阴影线填充）。固定铰/可动铰支座处梁连续、两侧转角相等；固定/定向支座转角为 0；未解除约束的支座竖向位移为 0；中间铰处允许折角。弯矩影响线按「受拉侧」原则绘制（正弯矩画在下侧受拉边）。可切换「全部支座反力」模式，或输入任意截面坐标绘制内力影响线。图上单位荷载 Fp=1 可沿梁拖动，实时显示其位置与对应影响线纵坐标。
+    </div>
+  </aside>
+
+  <div class="canvas-wrap">
+    <div class="canvas-main">
+      <svg id="svgCanvas" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+          </marker>
+          <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#dc3545"/>
+          </marker>
+        </defs>
+      </svg>
+      <div class="legend" id="legend"></div>
+      <div class="status" id="status">已就绪，点击“载入附图例题”开始。</div>
+    </div>
+    <div class="canvas-formation">
+      <div class="formation-header">
+        <span class="formation-title">虚位移轮廓形成过程（先解除约束 → 再牵连各刚体部分）</span>
+        <button class="primary" onclick="playFormation()">播放形成过程</button>
+        <button onclick="resetFormation()">复位</button>
+      </div>
+      <svg id="formationSvg"></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   机动法绘制多跨静定梁影响线
+   ============================================================ */
+
+const TYPE = {
+  FIXED_HINGE: 'fixed_hinge',       // 固定铰支座
+  MOVABLE_HINGE: 'movable_hinge',   // 可动铰支座
+  DIRECTIONAL: 'directional',       // 定向支座
+  FIXED: 'fixed',                   // 固定支座
+  INTERNAL_HINGE: 'internal_hinge', // 中间铰
+  FREE: 'free'                      // 自由端
+};
+
+const TYPE_LABEL = {
+  [TYPE.FIXED_HINGE]: '固定铰支座',
+  [TYPE.MOVABLE_HINGE]: '可动铰支座',
+  [TYPE.DIRECTIONAL]: '定向支座',
+  [TYPE.FIXED]: '固定支座',
+  [TYPE.INTERNAL_HINGE]: '中间铰',
+  [TYPE.FREE]: '自由端'
+};
+
+// 结点类型下拉选项（去掉“刚接结点”“中间铰+可动支”两个选项）
+const TYPE_OPTIONS = [
+  TYPE.FIXED_HINGE,
+  TYPE.MOVABLE_HINGE,
+  TYPE.DIRECTIONAL,
+  TYPE.FIXED,
+  TYPE.INTERNAL_HINGE,
+  TYPE.FREE
+];
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+// 支座反力影响线配色（用于「全部支座反力」模式）
+const REACTION_COLORS = ['#dc3545', '#0d6efd', '#198754', '#fd7e14', '#6f42c1', '#20c997', '#d63384', '#0dcaf0'];
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+let state = {
+  lengths: [1, 1, 1, 1, 1, 1],
+  nodeTypes: [],
+  reactionNode: 1,
+  solutions: [],
+  animProgress: 0,
+  formationProgress: 0,
+  parts: [],
+  loadX: 3.0,          // 单位荷载 Fp=1 的横坐标（a 的倍数）
+  draggingLoad: false
+};
+
+// 当前视图变换（供拖拽事件使用）
+let view = { marginLeft: 0, xScale: 1, totalL: 1 };
+
+/* ---------- 初始化与例题 ---------- */
+function init() {
+  loadExample();
+  window.addEventListener('resize', draw);
+
+  // 单位荷载拖拽
+  const svg = document.getElementById('svgCanvas');
+  svg.addEventListener('pointerdown', onPointerDown);
+  svg.addEventListener('pointermove', onPointerMove);
+  svg.addEventListener('pointerup', onPointerUp);
+  svg.addEventListener('pointercancel', onPointerUp);
+}
+
+function loadExample() {
+  // 附图例题（多跨静定梁）：A-B-C-D-E-F-G，六跨各长 a
+  // A固定铰，B可动铰，C中间铰，D中间铰，E可动铰，F可动铰，G自由端
+  state.lengths = [1, 1, 1, 1, 1, 1];
+  state.nodeTypes = [
+    TYPE.FIXED_HINGE,     // A
+    TYPE.MOVABLE_HINGE,   // B（FyB）
+    TYPE.INTERNAL_HINGE,  // C
+    TYPE.INTERNAL_HINGE,  // D
+    TYPE.MOVABLE_HINGE,   // E
+    TYPE.MOVABLE_HINGE,   // F
+    TYPE.FREE             // G
+  ];
+  state.reactionNode = 1;   // 默认支座反力取 B 点
+  state.animProgress = 0;
+  state.loadX = state.lengths.reduce((s, l) => s + l, 0) / 2;  // 单位荷载默认置于跨中
+  document.getElementById('modeSelect').value = 'single';
+  document.getElementById('qtyTypeSelect').value = 'reaction';
+  document.getElementById('sectionXInput').value = '4.5';
+  rebuildUI();
+  onParamChange();
+}
+
+function rebuildUI() {
+  document.getElementById('spanInput').value = state.lengths.join(', ');
+  const ntDiv = document.getElementById('nodeTypes');
+  ntDiv.innerHTML = '';
+  state.nodeTypes.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'node-row';
+    row.innerHTML = `<label>${LETTERS[i]}</label><select data-idx="${i}" onchange="onNodeTypeChange(this)">${typeOptions(t)}</select>`;
+    ntDiv.appendChild(row);
+  });
+
+  // 支座反力结点下拉（仅列出有竖向反力的支座）
+  const rSel = document.getElementById('reactionNodeSelect');
+  const supports = state.nodeTypes
+    .map((t, i) => [TYPE.FIXED_HINGE, TYPE.MOVABLE_HINGE, TYPE.DIRECTIONAL, TYPE.FIXED].includes(t) ? i : -1)
+    .filter(i => i >= 0);
+  rSel.innerHTML = '';
+  supports.forEach(i => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${LETTERS[i]}（${TYPE_LABEL[state.nodeTypes[i]]}）`;
+    rSel.appendChild(opt);
+  });
+  if (supports.includes(state.reactionNode)) rSel.value = state.reactionNode;
+  else if (supports.length) { state.reactionNode = supports[0]; rSel.value = supports[0]; }
+
+  updateQtyVisibility();
+}
+
+function onQtyTypeChange() {
+  updateQtyVisibility();
+  onParamChange();
+}
+
+function updateQtyVisibility() {
+  const mode = document.getElementById('modeSelect').value;
+  const t = document.getElementById('qtyTypeSelect').value;
+  const single = mode === 'single';
+  document.getElementById('singleQtyPanel').style.display = single ? '' : 'none';
+  document.getElementById('reactionPosWrap').style.display = (single && t === 'reaction') ? '' : 'none';
+  document.getElementById('sectionXWrap').style.display = (single && t !== 'reaction') ? '' : 'none';
+}
+
+function typeOptions(selected) {
+  return TYPE_OPTIONS.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${TYPE_LABEL[k]}</option>`).join('');
+}
+
+function onNodeTypeChange(sel) {
+  const idx = parseInt(sel.dataset.idx);
+  state.nodeTypes[idx] = sel.value;
+  onParamChange();
+}
+
+function onParamChange() {
+  // 解析跨长
+  const raw = document.getElementById('spanInput').value;
+  const parsed = raw.split(/[,，\s]+/).map(s => parseFloat(s)).filter(x => !isNaN(x) && x > 0);
+  if (parsed.length >= 1) {
+    state.lengths = parsed;
+    // 调整结点数
+    const n = parsed.length + 1;
+    while (state.nodeTypes.length < n) state.nodeTypes.push(TYPE.MOVABLE_HINGE);
+    state.nodeTypes.length = n;
+  }
+  // 先读取控件当前值，再重建 UI（避免被重置）
+  state.reactionNode = parseInt(document.getElementById('reactionNodeSelect').value) || 0;
+  rebuildUI();
+  // 约束单位荷载位置在梁长范围内
+  const total = state.lengths.reduce((s, l) => s + l, 0);
+  state.loadX = Math.max(0, Math.min(total, state.loadX));
+  state.animProgress = 0;
+  state.formationProgress = 0;
+  updateAnimSlider();
+  solve();
+  identifyParts();
+  draw();
+}
+
+/* ---------- 基本/附属部分识别 ---------- */
+function identifyParts() {
+  // 将梁按中间铰拆分成若干“部分”
+  const n = state.nodeTypes.length;
+  const partBoundaries = [0];
+  for (let i = 1; i < n - 1; i++) {
+    const t = state.nodeTypes[i];
+    if (t === TYPE.INTERNAL_HINGE) partBoundaries.push(i);
+  }
+  partBoundaries.push(n - 1);
+
+  // 每个部分的“自身支座约束数”（竖向 + 转动两个自由度；水平自由度对竖向影响线无贡献，忽略）
+  const parts = [];
+  for (let p = 0; p < partBoundaries.length - 1; p++) {
+    const start = partBoundaries[p];
+    const end = partBoundaries[p + 1];
+    let external = 0;
+    for (let i = start; i <= end; i++) {
+      const t = state.nodeTypes[i];
+      if (t === TYPE.FIXED_HINGE) external += 1;      // 竖向
+      else if (t === TYPE.MOVABLE_HINGE) external += 1; // 竖向
+      else if (t === TYPE.DIRECTIONAL) external += 1;  // 转动
+      else if (t === TYPE.FIXED) external += 2;        // 竖向 + 转动
+    }
+    parts.push({ start, end, external, kind: null, dependsOn: [] });
+  }
+
+  // 相邻部分经由内部铰连接（铰提供 1 个竖向连续约束）
+  const adj = parts.map(() => []);
+  for (let p = 0; p < parts.length - 1; p++) {
+    if (state.nodeTypes[parts[p].end] === TYPE.INTERNAL_HINGE) {
+      adj[p].push(p + 1);
+      adj[p + 1].push(p);
+    }
+  }
+
+  // 迭代确定基本/附属部分：自身约束 >= 2 即基本；否则叠加“与已稳定部分相连的铰”约束
+  const stable = new Array(parts.length).fill(false);
+  parts.forEach((pt, i) => { if (pt.external >= 2) { stable[i] = true; pt.kind = 'basic'; } });
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < parts.length; i++) {
+      if (stable[i]) continue;
+      const pt = parts[i];
+      let support = pt.external;
+      const deps = [];
+      adj[i].forEach(j => { if (stable[j]) { support += 1; deps.push(j); } });
+      if (support >= 2) {
+        stable[i] = true;
+        pt.kind = 'subsidiary';
+        pt.dependsOn = deps;
+        changed = true;
+      }
+    }
+  }
+
+  // 兜底：仍未稳定（理论上不应出现，几何可变）则标记为附属
+  parts.forEach((pt, i) => {
+    if (!stable[i]) { pt.kind = 'subsidiary'; pt.dependsOn = adj[i]; }
+  });
+
+  state.parts = parts;
+  renderPartsInfo();
+}
+
+function renderPartsInfo() {
+  const div = document.getElementById('partsInfo');
+  if (!state.parts.length) { div.textContent = '暂无'; return; }
+  const letters = (s, e) => LETTERS[s] + (s === e ? '' : '-' + LETTERS[e]);
+  const html = state.parts.map((p, i) => {
+    const tag = p.kind === 'basic'
+      ? `<span class="part-tag part-basic">基本部分</span>`
+      : `<span class="part-tag part-subs">附属部分</span>`;
+    const deps = p.dependsOn.length ? `（依赖 ${p.dependsOn.map(j => letters(state.parts[j].start, state.parts[j].end)).join('、')}）` : '';
+    return `<div style="margin:4px 0">${tag} ${letters(p.start, p.end)} ${deps}</div>`;
+  }).join('');
+  div.innerHTML = html;
+}
+
+/* ---------- 线性代数求解器 ---------- */
+function solveLinear(A, b) {
+  const n = A.length;
+  if (n === 0) return [];
+  const m = A[0].length;
+  // 高斯消元（列主元）
+  const M = A.map((row, i) => [...row, b[i]]);
+  let rank = 0;
+  for (let col = 0; col < m && rank < n; col++) {
+    let maxRow = rank;
+    let maxVal = Math.abs(M[rank][col]);
+    for (let r = rank + 1; r < n; r++) {
+      if (Math.abs(M[r][col]) > maxVal) { maxVal = Math.abs(M[r][col]); maxRow = r; }
+    }
+    if (maxVal < 1e-10) continue;
+    [M[rank], M[maxRow]] = [M[maxRow], M[rank]];
+    const pivot = M[rank][col];
+    for (let c = col; c <= m; c++) M[rank][c] /= pivot;
+    for (let r = 0; r < n; r++) {
+      if (r === rank) continue;
+      const factor = M[r][col];
+      if (Math.abs(factor) < 1e-12) continue;
+      for (let c = col; c <= m; c++) M[r][c] -= factor * M[rank][c];
+    }
+    rank++;
+  }
+  // 若秩不足，使用最小二乘/伪逆作为教学兜底
+  if (rank < m) {
+    return solveLeastSquares(A, b);
+  }
+  const x = new Array(m).fill(0);
+  for (let r = 0; r < rank; r++) {
+    for (let c = 0; c < m; c++) {
+      if (Math.abs(M[r][c]) > 0.5) { x[c] = M[r][m]; break; }
+    }
+  }
+  return x;
+}
+
+function solveLeastSquares(A, b) {
+  // 正规方程 A^T A x = A^T b
+  const n = A.length, m = A[0].length;
+  const AtA = Array.from({length: m}, () => new Array(m).fill(0));
+  const Atb = new Array(m).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let c = 0; c < m; c++) {
+      Atb[c] += A[i][c] * b[i];
+      for (let d = 0; d < m; d++) AtA[c][d] += A[i][c] * A[i][d];
+    }
+  }
+  // 加微小正则化防止奇异
+  for (let i = 0; i < m; i++) AtA[i][i] += 1e-9;
+  return solveLinear(AtA, Atb);
+}
+
+/* ---------- 建立并求解虚位移 ---------- */
+function buildNodesFromLengths() {
+  const nodes = [{ x: 0, type: state.nodeTypes[0], label: LETTERS[0] }];
+  for (let i = 0; i < state.lengths.length; i++) {
+    nodes.push({
+      x: nodes[i].x + state.lengths[i],
+      type: state.nodeTypes[i + 1],
+      label: LETTERS[i + 1]
+    });
+  }
+  return nodes;
+}
+
+function reactionNodeIndices() {
+  const supportTypes = [TYPE.FIXED_HINGE, TYPE.MOVABLE_HINGE, TYPE.DIRECTIONAL, TYPE.FIXED];
+  const idxs = [];
+  state.nodeTypes.forEach((t, i) => { if (supportTypes.includes(t)) idxs.push(i); });
+  return idxs;
+}
+
+function locateSection(x) {
+  const nodes = buildNodesFromLengths();
+  const total = nodes[nodes.length - 1].x;
+  if (x < -1e-9 || x > total + 1e-9) return null;
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const x0 = nodes[i].x, x1 = nodes[i + 1].x;
+    if (x >= x0 - 1e-9 && x <= x1 + 1e-9) {
+      return { segIndex: i, ratio: (x - x0) / (x1 - x0), nodeX: x, leftNode: i, rightNode: i + 1 };
+    }
+  }
+  return null;
+}
+
+function describeSpec(spec) {
+  if (spec.kind === 'reaction') return `支座反力 ${spec.label}`;
+  const nm = { shear_left: '截面左剪力', shear_right: '截面右剪力', shear: '截面剪力', moment: '截面弯矩' }[spec.kind];
+  return `x=${formatVal(spec.x)} 处${nm}`;
+}
+
+function updateSectionHint(x, loc) {
+  const el = document.getElementById('sectionHint');
+  if (!el) return;
+  const nodes = buildNodesFromLengths();
+  if (!loc) el.textContent = `x=${formatVal(x)}：超出梁长范围（0 ~ ${formatVal(nodes[nodes.length - 1].x)}）`;
+  else el.textContent = `截面位于 ${LETTERS[loc.leftNode]}–${LETTERS[loc.rightNode]} 段，x=${formatVal(loc.nodeX)}`;
+}
+
+/* 求解单条虚位移图（即该量的影响线） */
+function solveOne(spec) {
+  const nodes = buildNodesFromLengths();
+  let eqNodes = nodes.map((n, i) => ({ ...n, origIndex: i, isSplit: false }));
+  let eqSegments = [];
+  for (let i = 0; i < eqNodes.length - 1; i++) {
+    eqSegments.push({ left: i, right: i + 1, length: eqNodes[i + 1].x - eqNodes[i].x });
+  }
+  let shearNodes = null;
+  let momentNodeIdx = -1;
+
+  if (spec.kind === 'shear_left' || spec.kind === 'shear_right' || spec.kind === 'shear') {
+    const k = spec.segIndex, r = spec.ratio;
+    const xLeft = eqNodes[eqSegments[k].left].x;
+    const xSplit = xLeft + r * eqSegments[k].length;
+    const leftNode = { x: xSplit, type: 'shear_left', label: 'L', origIndex: null, isSplit: true };
+    const rightNode = { x: xSplit, type: 'shear_right', label: 'R', origIndex: null, isSplit: true };
+    eqNodes.splice(k + 1, 0, leftNode, rightNode);
+    const oldRight = eqSegments[k].right;
+    eqSegments[k] = { left: k, right: k + 1, length: xSplit - eqNodes[k].x };
+    eqSegments.splice(k + 1, 0, { left: k + 2, right: oldRight + 2, length: eqNodes[oldRight + 2].x - xSplit });
+    for (let i = k + 2; i < eqSegments.length; i++) { eqSegments[i].left += 2; eqSegments[i].right += 2; }
+    shearNodes = { leftIdx: k + 1, rightIdx: k + 2 };
+  } else if (spec.kind === 'moment') {
+    const k = spec.segIndex, r = spec.ratio;
+    const xLeft = eqNodes[eqSegments[k].left].x;
+    const xSplit = xLeft + r * eqSegments[k].length;
+    const splitNode = { x: xSplit, type: 'moment_hinge', label: 'K', origIndex: null, isSplit: true };
+    eqNodes.splice(k + 1, 0, splitNode);
+    momentNodeIdx = k + 1;
+    const oldRight = eqSegments[k].right;
+    eqSegments[k] = { left: k, right: k + 1, length: xSplit - eqNodes[k].x };
+    eqSegments.splice(k + 1, 0, { left: k + 1, right: oldRight + 1, length: eqNodes[oldRight + 1].x - xSplit });
+    for (let i = k + 2; i < eqSegments.length; i++) { eqSegments[i].left += 1; eqSegments[i].right += 1; }
+  }
+
+  const Nn = eqNodes.length, Ns = eqSegments.length;
+  const varCount = Nn + Ns;
+  const varY = i => i;
+  const varTheta = i => Nn + i;
+  const rows = [], rhs = [];
+  const addEq = (coeffs, val) => {
+    const row = new Array(varCount).fill(0);
+    for (const [idx, c] of coeffs) row[idx] += c;
+    rows.push(row); rhs.push(val);
+  };
+
+  // 1) 梁段直线方程：y_R - y_L = θ_i · L_i
+  for (let i = 0; i < Ns; i++) {
+    const s = eqSegments[i];
+    addEq([[varY(s.right), 1], [varY(s.left), -1], [varTheta(i), -s.length]], 0);
+  }
+
+  // 2) 结点约束（随结点类型自动重新判断）
+  for (let j = 0; j < Nn; j++) {
+    const t = eqNodes[j].type;
+    const leftSeg = eqSegments.findIndex(s => s.right === j);
+    const rightSeg = eqSegments.findIndex(s => s.left === j);
+
+    if (t === 'shear_left' || t === 'shear_right' || t === 'moment_hinge') continue;
+
+    // 竖向支座约束
+    if ([TYPE.FIXED_HINGE, TYPE.MOVABLE_HINGE, TYPE.DIRECTIONAL, TYPE.FIXED].includes(t)) {
+      const released = spec.kind === 'reaction' && spec.nodeIndex === eqNodes[j].origIndex;
+      addEq([[varY(j), 1]], released ? 1 : 0);
+    }
+
+    // 转动约束：
+    // 固定支座 / 定向支座 → 相邻梁段转角为 0（不允许转动）
+    if (t === TYPE.FIXED || t === TYPE.DIRECTIONAL) {
+      if (leftSeg >= 0) addEq([[varTheta(leftSeg), 1]], 0);
+      if (rightSeg >= 0) addEq([[varTheta(rightSeg), 1]], 0);
+    }
+    // 刚接（连续）支座：固定铰 / 可动铰 → 两侧转角相等（不允许折角）
+    else if (t === TYPE.FIXED_HINGE || t === TYPE.MOVABLE_HINGE) {
+      if (leftSeg >= 0 && rightSeg >= 0) addEq([[varTheta(leftSeg), 1], [varTheta(rightSeg), -1]], 0);
+    }
+    // 中间铰 / 中间铰+可动支 → 允许折角，不添加转角连续方程
+  }
+
+  // 3) 释放约束的虚位移方程
+  if (shearNodes) {
+    const L = shearNodes.leftIdx, R = shearNodes.rightIdx;
+    addEq([[varY(R), 1], [varY(L), -1]], 1);
+    const leftSeg = eqSegments.findIndex(s => s.right === L);
+    const rightSeg = eqSegments.findIndex(s => s.left === R);
+    addEq([[varTheta(leftSeg), 1], [varTheta(rightSeg), -1]], 0);
+  }
+  if (spec.kind === 'moment') {
+    const leftSeg = eqSegments.findIndex(s => s.right === momentNodeIdx);
+    const rightSeg = eqSegments.findIndex(s => s.left === momentNodeIdx);
+    addEq([[varTheta(rightSeg), 1], [varTheta(leftSeg), -1]], -1);
+  }
+
+  const x = solveLinear(rows, rhs);
+  if (!x) return null;
+
+  return {
+    eqNodes, eqSegments,
+    nodeY: eqNodes.map((_, i) => x[varY(i)]),
+    segTheta: eqSegments.map((_, i) => x[varTheta(i)]),
+    shearNodes, momentNodeIdx
+  };
+}
+
+function solve() {
+  const mode = document.getElementById('modeSelect').value;
+
+  if (mode === 'all_reactions') {
+    const idxs = reactionNodeIndices();
+    const sols = [];
+    idxs.forEach(ni => {
+      const spec = { kind: 'reaction', nodeIndex: ni, label: 'F_{y' + LETTERS[ni] + '}' };
+      const sol = solveOne(spec);
+      if (sol) { sol.spec = spec; sols.push(sol); }
+    });
+    state.solutions = sols;
+    setStatus(`全部支座反力影响线：共 ${sols.length} 个。每条虚位移图即对应反力的影响线。`);
+    return;
+  }
+
+  // 单个待求量
+  const t = document.getElementById('qtyTypeSelect').value;
+  let spec;
+  if (t === 'reaction') {
+    const ni = state.reactionNode;
+    spec = { kind: 'reaction', nodeIndex: ni, label: 'F_{y' + LETTERS[ni] + '}' };
+  } else {
+    const x = parseFloat(document.getElementById('sectionXInput').value);
+    const loc = locateSection(x);
+    updateSectionHint(x, loc);
+    if (!loc) {
+      setStatus(`截面坐标 x=${x} 超出梁长范围，请重新输入。`, true);
+      state.solutions = [];
+      return;
+    }
+    const nm = { shear_left: 'F_{Q左}', shear_right: 'F_{Q右}', shear: 'F_{Q}', moment: 'M_{K}' }[t];
+    spec = { kind: t, segIndex: loc.segIndex, ratio: loc.ratio, x, label: nm };
+  }
+
+  const sol = solveOne(spec);
+  if (!sol) {
+    setStatus('求解失败：体系可能为几何可变或约束设置有误。', true);
+    state.solutions = [];
+    return;
+  }
+  sol.spec = spec;
+  state.solutions = [sol];
+  setStatus(`已求解：${describeSpec(spec)}。虚位移图即影响线。`);
+}
+
+/* ---------- 绘图 ---------- */
+function draw() {
+  const svg = document.getElementById('svgCanvas');
+  svg.innerHTML = `
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+      </marker>
+      <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#dc3545"/>
+      </marker>
+      <pattern id="hatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(220,53,69,0.45)" stroke-width="1"/>
+      </pattern>
+    </defs>
+  `;
+  if (!state.solutions || !state.solutions.length) return;
+
+  const sols = state.solutions;
+  const refSol = sols[0];
+  const rect = svg.getBoundingClientRect();
+  const W = rect.width, H = rect.height;
+  const margin = { top: 50, bottom: 50, left: 70, right: 90 };
+
+  const totalL = refSol.eqNodes[refSol.eqNodes.length - 1].x;
+  const xScale = (W - margin.left - margin.right) / totalL;
+  const yScale = 90;
+  const anim = state.animProgress;
+  const toSvgX = x => margin.left + x * xScale;
+
+  // 每个解的正方向：弯矩 → 画在受拉侧（正弯矩向下），其余 → 正号向上
+  const ySignOf = sol => (sol.spec && sol.spec.kind === 'moment') ? -1 : 1;
+
+  // 垂直居中：统计全图纵向像素范围（屏幕向下为正），预留荷载/字母/标注空间
+  let minOff = -70, maxOff = 90;
+  sols.forEach(sol => {
+    const sgn = ySignOf(sol);
+    sol.nodeY.forEach(v => {
+      const off = -sgn * v * yScale;
+      if (off < minOff) minOff = off;
+      if (off > maxOff) maxOff = off;
+    });
+  });
+  const baseY = Math.max(margin.top + 20, H / 2 - (minOff + maxOff) / 2);
+
+  // 记录视图变换供拖拽使用
+  view.marginLeft = margin.left;
+  view.xScale = xScale;
+  view.totalL = totalL;
+  view.baseY = baseY;
+
+  // 原梁（虚线）
+  const origPath = `M ${toSvgX(refSol.eqNodes[0].x)} ${baseY} ` +
+    refSol.eqSegments.map(s => `L ${toSvgX(refSol.eqNodes[s.right].x)} ${baseY}`).join(' ');
+  createPath(svg, origPath, '#adb5bd', 2, '5,5');
+
+  const single = sols.length === 1;
+  const showHatch = document.getElementById('showHatch').checked;
+
+  // 各条虚位移图（即影响线）
+  sols.forEach((sol, si) => {
+    const color = single ? '#dc3545' : REACTION_COLORS[si % REACTION_COLORS.length];
+    const sgn = ySignOf(sol);
+    const toY = v => baseY - sgn * v * yScale * anim;   // 动画位移
+    const d = buildDisplacedPath(sol, toSvgX, toY);
+    // 阴影填充：位移曲线与基线之间
+    if (showHatch) {
+      const x0 = toSvgX(sol.eqNodes[0].x);
+      const x1 = toSvgX(sol.eqNodes[sol.eqNodes.length - 1].x);
+      const close = `M ${x0} ${baseY} ` + d.slice(1) + ` L ${x1} ${baseY} Z`;
+      const f = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      f.setAttribute('d', close);
+      f.setAttribute('fill', single ? 'url(#hatch)' : hexToRgba(color, 0.12));
+      svg.appendChild(f);
+    }
+    createPath(svg, d, color, single ? 3 : 2.5);
+  });
+
+  // 支座、铰符号（固定于地面，画在原梁位置）
+  for (let i = 0; i < refSol.eqNodes.length; i++) {
+    const n = refSol.eqNodes[i];
+    drawNodeSymbol(svg, n.type, toSvgX(n.x), baseY);
+  }
+
+  // 关键纵坐标标注
+  if (document.getElementById('showOrdinates').checked) {
+    annotateOrdinates(svg, sols, toSvgX, baseY, yScale, ySignOf);
+  }
+
+  // 结点字母（最上层，带白色描边，避免遮挡）
+  drawNodeLabels(svg, refSol, toSvgX, baseY);
+
+  // 单位荷载 Fp=1（可拖动）
+  drawUnitLoad(svg, toSvgX, baseY, ySignOf);
+
+  renderLegend(sols);
+
+  // 形成过程副图
+  drawFormation();
+}
+
+/* 构建位移轮廓路径（含剪力截面的竖直错位线） */
+function buildDisplacedPath(sol, toSvgX, toY) {
+  const pts = sol.eqNodes.map((n, i) => [toSvgX(n.x), toY(sol.nodeY[i], i)]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < sol.eqSegments.length; i++) {
+    const s = sol.eqSegments[i];
+    if (i > 0) {
+      const prevRight = sol.eqSegments[i - 1].right;
+      if (s.left !== prevRight) {
+        // 剪力错位：前段右端与本段左端为同 x、不同 y 的两个面，先画竖直错位线
+        d += ` L ${pts[s.left][0]} ${pts[s.left][1]}`;
+      }
+    }
+    d += ` L ${pts[s.right][0]} ${pts[s.right][1]}`;
+  }
+  return d;
+}
+
+/* 每个解的正方向：弯矩 → 画在受拉侧（正弯矩向下），其余 → 正号向上 */
+function ySignOfSol(sol) {
+  return (sol.spec && sol.spec.kind === 'moment') ? -1 : 1;
+}
+
+/* 释放约束的“源”结点（虚位移首先发生的位置） */
+function formationSourceNodes(sol) {
+  const spec = sol.spec;
+  if (!spec) return [];
+  if (spec.kind === 'reaction') {
+    const ni = sol.eqNodes.findIndex(n => n.origIndex === spec.nodeIndex);
+    return ni >= 0 ? [ni] : [];
+  }
+  if (spec.kind === 'shear' || spec.kind === 'shear_left' || spec.kind === 'shear_right') {
+    return sol.shearNodes ? [sol.shearNodes.leftIdx, sol.shearNodes.rightIdx] : [];
+  }
+  if (spec.kind === 'moment') {
+    return sol.momentNodeIdx >= 0 ? [sol.momentNodeIdx] : [];
+  }
+  return [];
+}
+
+/* 计算各结点的“触发顺序”：按刚体组传播，保证刚体部分整体移动 */
+function computeFormationSchedule(sol) {
+  const Nn = sol.eqNodes.length, Ns = sol.eqSegments.length;
+  const isBreakType = t => (t === TYPE.INTERNAL_HINGE ||
+                     t === 'shear_left' || t === 'shear_right' || t === 'moment_hinge');
+
+  // 1) 刚体组划分：铰/截断/改铰处两侧不属同一刚体组
+  const groupOf = new Array(Ns).fill(0);
+  for (let i = 1; i < Ns; i++) {
+    const shared = sol.eqSegments[i].left;
+    groupOf[i] = isBreakType(sol.eqNodes[shared].type) ? groupOf[i - 1] + 1 : groupOf[i - 1];
+  }
+  const ngroups = Ns ? groupOf[Ns - 1] + 1 : 0;
+
+  // 2) 组邻接（共享铰/截断/改铰结点的两组相邻）
+  const groupAdj = Array.from({ length: ngroups }, () => new Set());
+  for (let i = 1; i < Ns; i++) {
+    const shared = sol.eqSegments[i].left;
+    if (isBreakType(sol.eqNodes[shared].type)) {
+      const g1 = groupOf[i - 1], g2 = groupOf[i];
+      groupAdj[g1].add(g2); groupAdj[g2].add(g1);
+    }
+  }
+
+  // 3) 源组（含释放约束结点的刚体组）
+  const sources = formationSourceNodes(sol);
+  const sourceGroups = new Set();
+  sources.forEach(ni => {
+    for (let i = 0; i < Ns; i++) {
+      if (sol.eqSegments[i].left === ni || sol.eqSegments[i].right === ni) sourceGroups.add(groupOf[i]);
+    }
+  });
+
+  // 4) 组级 BFS
+  const groupDist = new Array(ngroups).fill(Infinity);
+  const q = [];
+  sourceGroups.forEach(g => { if (groupDist[g] === Infinity) { groupDist[g] = 0; q.push(g); } });
+  let head = 0;
+  while (head < q.length) {
+    const g = q[head++];
+    groupAdj[g].forEach(ng => { if (groupDist[ng] === Infinity) { groupDist[ng] = groupDist[g] + 1; q.push(ng); } });
+  }
+
+  // 5) 结点有效触发距离 = 其相邻刚体组的最小触发距离（刚体整体移动）
+  const effDist = new Array(Nn).fill(Infinity);
+  for (let i = 0; i < Ns; i++) {
+    const g = groupOf[i];
+    const l = sol.eqSegments[i].left, r = sol.eqSegments[i].right;
+    if (groupDist[g] < effDist[l]) effDist[l] = groupDist[g];
+    if (groupDist[g] < effDist[r]) effDist[r] = groupDist[g];
+  }
+  sources.forEach(s => { if (s >= 0 && s < Nn) effDist[s] = 0; });
+
+  let maxDist = 0;
+  effDist.forEach(d => { if (d !== Infinity && d > maxDist) maxDist = d; });
+  return { effDist, maxDist };
+}
+
+function drawFormation() {
+  const svg = document.getElementById('formationSvg');
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  const W = rect.width, H = rect.height;
+  svg.innerHTML = `<defs>
+      <marker id="fArrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#dc3545"/>
+      </marker>
+      <pattern id="fHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(220,53,69,0.45)" stroke-width="1"/>
+      </pattern>
+    </defs>`;
+
+  const single = state.solutions && state.solutions.length === 1;
+  if (!single || W < 60 || H < 60) {
+    createText(svg, W / 2, H / 2, '请在「单个待求量」模式下查看虚位移轮廓的形成过程', '#6c757d', 13);
+    return;
+  }
+
+  const sol = state.solutions[0];
+  const spec = sol.spec;
+  const totalL = sol.eqNodes[sol.eqNodes.length - 1].x;
+  const margin = { top: 46, bottom: 22, left: 70, right: 90 };
+  const xScale = (W - margin.left - margin.right) / totalL;
+  const yScale = 62;
+  const sgn = ySignOfSol(sol);
+  const toSvgX = x => margin.left + x * xScale;
+
+  // 纵向范围（sgn·v 空间）
+  let minV = 0, maxV = 0;
+  sol.nodeY.forEach(v => {
+    const sv = sgn * v;
+    if (sv < minV) minV = sv;
+    if (sv > maxV) maxV = sv;
+  });
+  const centerY = (margin.top + (H - margin.bottom)) / 2;
+  const baseY = centerY + (minV + maxV) / 2 * yScale;
+
+  // 原梁（虚线）
+  const origPath = `M ${toSvgX(sol.eqNodes[0].x)} ${baseY} ` +
+    sol.eqSegments.map(s => `L ${toSvgX(sol.eqNodes[s.right].x)} ${baseY}`).join(' ');
+  createPath(svg, origPath, '#adb5bd', 1.5, '5,4');
+
+  const prog = state.formationProgress;
+  const flashEnd = 0.30;   // 闪烁阶段占比（方向箭头闪烁展示）
+  const sched = computeFormationSchedule(sol);
+  const effDist = sched.effDist;
+  const maxDist = sched.maxDist;
+  const rampT = 0.32;      // 每个刚体部分缓慢移动的过渡时长
+  const stepT = maxDist > 0 ? (1 - rampT) / maxDist : 0;
+
+  const nodeScale = i => {
+    if (prog <= flashEnd) return 0;
+    const t = (prog - flashEnd) / (1 - flashEnd);
+    const d = effDist[i];
+    if (d === Infinity || d === undefined) return 0;
+    const p = (t - d * stepT) / rampT;
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    return easeOutCubic(p);
+  };
+
+  const toY = (v, i) => baseY - sgn * v * yScale * nodeScale(i);
+  const d = buildDisplacedPath(sol, toSvgX, toY);
+
+  // 阴影填充（逐渐显现）
+  if (prog > flashEnd) {
+    const x0 = toSvgX(sol.eqNodes[0].x);
+    const x1 = toSvgX(sol.eqNodes[sol.eqNodes.length - 1].x);
+    const close = `M ${x0} ${baseY} ` + d.slice(1) + ` L ${x1} ${baseY} Z`;
+    const f = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    f.setAttribute('d', close);
+    f.setAttribute('fill', 'url(#fHatch)');
+    f.setAttribute('opacity', Math.min(1, (prog - flashEnd) * 2.2));
+    svg.appendChild(f);
+  }
+  createPath(svg, d, '#dc3545', 2.5);
+
+  // 支座、铰符号 + 字母
+  for (let i = 0; i < sol.eqNodes.length; i++) {
+    drawNodeSymbol(svg, sol.eqNodes[i].type, toSvgX(sol.eqNodes[i].x), baseY);
+  }
+  drawNodeLabels(svg, sol, toSvgX, baseY);
+
+  // 释放源高亮
+  drawFormationSource(svg, sol, spec, toSvgX, baseY, prog, flashEnd);
+
+  // 顶部两步说明
+  const c1 = prog < flashEnd ? '#0d6efd' : '#198754';
+  const c2 = prog < flashEnd ? '#adb5bd' : (prog < 0.999 ? '#fd7e14' : '#198754');
+  const s1 = prog < flashEnd ? '① 解除约束：产生单位虚位移（闪烁示意）' : '① 解除约束：单位虚位移 ✓';
+  const s2 = prog < flashEnd ? '② 牵连各刚体部分' : (prog < 0.999 ? '② 虚位移向两侧牵连、扩展…' : '② 牵连各刚体部分：影响线轮廓形成 ✓');
+  createText(svg, margin.left, 18, s1, c1, 12, 'start', true);
+  createText(svg, margin.left, 34, s2, c2, 12, 'start', true);
+}
+
+function drawFormationSource(svg, sol, spec, toSvgX, baseY, prog, flashEnd) {
+  const sources = formationSourceNodes(sol);
+  if (!sources.length) return;
+  const sgn = ySignOfSol(sol);
+  const cx = toSvgX(sol.eqNodes[sources[0]].x);
+  const cy = baseY;
+
+  const blink = prog < flashEnd;
+  // 箭头闪烁脉冲：明暗交替，突出即将发生的虚位移方向
+  const pulse = 0.3 + 0.7 * Math.abs(Math.sin(prog * 30));
+  // 位移开始后箭头逐渐淡出
+  const fade = blink ? 1 : Math.max(0, 1 - (prog - flashEnd) * 6);
+  const arrowColor = `rgba(220,53,69,${(pulse * fade).toFixed(3)})`;
+  const labelColor = `rgba(220,53,69,${fade.toFixed(3)})`;
+
+  // 脉冲光环
+  if (blink) {
+    const rr = 8 + 18 * Math.abs(Math.sin(prog * 30));
+    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+    ring.setAttribute('r', rr);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', arrowColor);
+    ring.setAttribute('stroke-width', 3);
+    svg.appendChild(ring);
+  }
+
+  if (spec.kind === 'reaction') {
+    // 反力：释放后该点沿反力正方向（向上）发生单位虚位移
+    const dir = sgn;
+    fArrow(svg, cx, cy - 6 * dir, cx, cy - 42 * dir, arrowColor, 3.5);
+    createText(svg, cx, cy - 52 * dir, '单位虚位移', labelColor, 12);
+  } else if (spec.kind === 'shear' || spec.kind === 'shear_left' || spec.kind === 'shear_right') {
+    // 剪力：两侧一对大小相等、方向相反的相对错动
+    const lx = cx - 5, rx = cx + 5;
+    fArrow(svg, lx, cy - 5, lx, cy - 38, arrowColor, 3.5);
+    fArrow(svg, rx, cy + 5, rx, cy + 38, arrowColor, 3.5);
+    createText(svg, cx, cy - 46, '相对错动', labelColor, 12);
+  } else {
+    // 弯矩：相对转角（弧线箭头，画在受拉侧）
+    const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    arc.setAttribute('d', `M ${cx - 24} ${cy - 15} A 27 27 0 0 1 ${cx + 18} ${cy + 14}`);
+    arc.setAttribute('stroke', arrowColor); arc.setAttribute('stroke-width', 3.5);
+    arc.setAttribute('fill', 'none'); arc.setAttribute('marker-end', 'url(#fArrowRed)');
+    svg.appendChild(arc);
+    createText(svg, cx, cy - 34, '相对转角', labelColor, 12);
+  }
+}
+
+function fArrow(svg, x1, y1, x2, y2, color, width) {
+  const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
+  ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+  ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', width || 2.5);
+  svg.appendChild(ln);
+  // 手工箭头头，与线同色，随闪烁同步淡入淡出
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  const h = 9;
+  const tx = x2, ty = y2;
+  const hx1 = tx - h * Math.cos(ang - 0.42), hy1 = ty - h * Math.sin(ang - 0.42);
+  const hx2 = tx - h * Math.cos(ang + 0.42), hy2 = ty - h * Math.sin(ang + 0.42);
+  const head = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  head.setAttribute('points', `${tx},${ty} ${hx1},${hy1} ${hx2},${hy2}`);
+  head.setAttribute('fill', color);
+  svg.appendChild(head);
+}
+
+let formationReq = null;
+function playFormation() {
+  cancelAnimationFrame(formationReq);
+  state.formationProgress = 0;
+  const startTime = performance.now();
+  const duration = 8000;   // 缓慢变形，便于观察
+  function step(t) {
+    const p = Math.min(1, (t - startTime) / duration);
+    state.formationProgress = p;
+    drawFormation();
+    if (p < 1) formationReq = requestAnimationFrame(step);
+  }
+  formationReq = requestAnimationFrame(step);
+}
+
+function resetFormation() {
+  cancelAnimationFrame(formationReq);
+  state.formationProgress = 0;
+  drawFormation();
+}
+
+function createPath(svg, d, color, width, dash) {
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', d);
+  p.setAttribute('stroke', color);
+  p.setAttribute('stroke-width', width);
+  p.setAttribute('fill', 'none');
+  if (dash) p.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(p);
+}
+
+function createText(svg, x, y, text, color, size, anchor, noHalo) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', x);
+  t.setAttribute('y', y);
+  t.setAttribute('fill', color || '#333');
+  t.setAttribute('font-size', size || 12);
+  t.setAttribute('font-family', 'Microsoft YaHei, sans-serif');
+  t.setAttribute('text-anchor', anchor || 'middle');
+  if (!noHalo) {
+    // 白色描边底衬，保证文字不被曲线/符号遮挡
+    t.setAttribute('stroke', '#fff');
+    t.setAttribute('stroke-width', 3);
+    t.setAttribute('stroke-linejoin', 'round');
+    t.setAttribute('paint-order', 'stroke');
+  }
+  t.textContent = text;
+  svg.appendChild(t);
+}
+
+function drawNodeSymbol(svg, type, x, y) {
+  // y = 原梁位置（支座固定于地面）；字母另行在最上层绘制
+
+  if (type === 'shear_left' || type === 'shear_right') {
+    // 剪力剖分点：小圆点
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 3);
+    c.setAttribute('fill', '#dc3545');
+    svg.appendChild(c);
+    return;
+  }
+
+  if (type === 'moment_hinge') {
+    // 弯矩释放：插入一个铰
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 4);
+    c.setAttribute('fill', '#fff'); c.setAttribute('stroke', '#dc3545'); c.setAttribute('stroke-width', 1.5);
+    svg.appendChild(c);
+    return;
+  }
+
+  // 支座绘制
+  if ([TYPE.FIXED_HINGE, TYPE.MOVABLE_HINGE].includes(type)) {
+    const baseH = 12;
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', `${x-8},${y+6} ${x+8},${y+6} ${x},${y+6+baseH}`);
+    poly.setAttribute('fill', '#e9ecef');
+    poly.setAttribute('stroke', '#333');
+    poly.setAttribute('stroke-width', 1.2);
+    svg.appendChild(poly);
+    createPath(svg, `M ${x-10} ${y+6+baseH} L ${x+10} ${y+6+baseH}`, '#333', 1.5);
+    if (type === TYPE.MOVABLE_HINGE) {
+      createPath(svg, `M ${x-5} ${y+20} A 2.5 2.5 0 0 1 ${x} ${y+20} A 2.5 2.5 0 0 1 ${x+5} ${y+20}`, '#333', 1);
+    }
+  } else if (type === TYPE.DIRECTIONAL) {
+    createPath(svg, `M ${x-6} ${y+6} L ${x-6} ${y+22} M ${x+6} ${y+6} L ${x+6} ${y+22}`, '#333', 1.5);
+    createPath(svg, `M ${x-10} ${y+22} L ${x+10} ${y+22}`, '#333', 1.5);
+  } else if (type === TYPE.FIXED) {
+    createPath(svg, `M ${x-10} ${y-10} L ${x-10} ${y+22}`, '#333', 2);
+    for (let k = -6; k <= 18; k += 5) createPath(svg, `M ${x-10} ${y+k} L ${x-15} ${y+k+3}`, '#333', 1);
+  }
+
+  // 铰（中间铰）
+  if (type === TYPE.INTERNAL_HINGE) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 5);
+    c.setAttribute('fill', '#fff'); c.setAttribute('stroke', '#333'); c.setAttribute('stroke-width', 1.5);
+    svg.appendChild(c);
+  }
+
+  // 梁端小圆点（非自由端）
+  if (type !== TYPE.FREE) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 3);
+    c.setAttribute('fill', '#0d6efd');
+    svg.appendChild(c);
+  }
+}
+
+function drawNodeLabels(svg, refSol, toSvgX, baseY) {
+  // 有弯矩时位移朝下（受拉侧），字母置于梁上方；否则位移朝上，字母置于梁下方
+  const anyMoment = refSol.spec && refSol.spec.kind === 'moment';
+  const labelY = anyMoment ? baseY - 20 : baseY + 38;
+  refSol.eqNodes.forEach(n => {
+    if (n.type === 'shear_left' || n.type === 'shear_right') return;  // 剪力剖分点不标字母
+    if (n.isSplit && n.type !== 'moment_hinge') return;
+    const x = toSvgX(n.x);
+    createText(svg, x, labelY, n.label, '#0b5ed7', 14, 'middle', true);
+  });
+}
+
+function annotateOrdinates(svg, sols, toSvgX, baseY, yScale, ySignOf) {
+  const single = sols.length === 1;
+  sols.forEach((sol, si) => {
+    const color = single ? '#dc3545' : REACTION_COLORS[si % REACTION_COLORS.length];
+    const sgn = ySignOf(sol);
+    const toFullY = v => baseY - sgn * v * yScale;
+    sol.eqNodes.forEach((n, i) => {
+      const v = sol.nodeY[i];
+      if (Math.abs(v) < 0.02) return;
+      const x = toSvgX(n.x);
+      const y = toFullY(v);
+      const above = (v * sgn) > 0; // 曲线点位于基线上方
+      if (n.isSplit) {
+        if (!single) return;
+        const side = n.type === 'shear_left' ? '左' : (n.type === 'shear_right' ? '右' : '');
+        const off = n.type === 'shear_left' ? -12 : (n.type === 'shear_right' ? 12 : 0);
+        const anchor = n.type === 'shear_left' ? 'end' : (n.type === 'shear_right' ? 'start' : 'middle');
+        createText(svg, x + off, y + (above ? -7 : 14), side + formatVal(v), color, 11, anchor);
+        return;
+      }
+      if (single) createPath(svg, `M ${x} ${baseY} L ${x} ${y}`, '#dc3545', 1, '2,2');
+      createText(svg, x, y + (above ? -7 : 14), formatVal(v), color, 11);
+    });
+  });
+}
+
+function influenceValueAt(sol, x) {
+  for (let i = 0; i < sol.eqSegments.length; i++) {
+    const s = sol.eqSegments[i];
+    const xL = sol.eqNodes[s.left].x, xR = sol.eqNodes[s.right].x;
+    if (x >= xL - 1e-9 && x <= xR + 1e-9) {
+      const yL = sol.nodeY[s.left], yR = sol.nodeY[s.right];
+      const t = (xR - xL) > 1e-9 ? (x - xL) / (xR - xL) : 0;
+      return yL + t * (yR - yL);
+    }
+  }
+  return 0;
+}
+
+function drawUnitLoad(svg, toSvgX, baseY, ySignOf) {
+  const totalL = view.totalL;
+  const lx = Math.max(0, Math.min(totalL, state.loadX));
+  const sx = toSvgX(lx);
+  const single = state.solutions.length === 1;
+
+  // 荷载位置竖向虚线
+  createPath(svg, `M ${sx} ${baseY - 82} L ${sx} ${baseY}`, '#adb5bd', 1, '4,3');
+
+  // 荷载箭头（向下指向梁），带透明抓取手柄
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('cursor', 'grab');
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', sx); line.setAttribute('y1', baseY - 46);
+  line.setAttribute('x2', sx); line.setAttribute('y2', baseY - 6);
+  line.setAttribute('stroke', '#333'); line.setAttribute('stroke-width', 2.5);
+  line.setAttribute('marker-end', 'url(#arrow)');
+  g.appendChild(line);
+  const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  hit.setAttribute('cx', sx); hit.setAttribute('cy', baseY - 26);
+  hit.setAttribute('r', 24); hit.setAttribute('fill', 'transparent');
+  g.appendChild(hit);
+  svg.appendChild(g);
+
+  // 标签：Fp=1 与横坐标
+  createText(svg, sx, baseY - 52, 'Fp=1', '#333', 13);
+  createText(svg, sx, baseY - 67, `x = ${formatVal(lx)}a`, '#0d6efd', 12);
+
+  // 该处影响线纵坐标
+  if (single) {
+    const sol = state.solutions[0];
+    const val = influenceValueAt(sol, lx);
+    const lab = (sol.spec.label || '').replace(/[{}_]/g, '');
+    const sgn = ySignOf(sol);
+    const vy = baseY + (sgn === 1 ? 24 : -24);
+    createText(svg, sx, vy, `${lab} = ${formatVal(val)}`, '#dc3545', 12);
+  } else {
+    state.solutions.forEach((sol, i) => {
+      const val = influenceValueAt(sol, lx);
+      const lab = (sol.spec.label || '').replace(/[{}_]/g, '');
+      const color = REACTION_COLORS[i % REACTION_COLORS.length];
+      createText(svg, sx + 12, baseY + 14 + i * 16, `${lab} = ${formatVal(val)}`, color, 11, 'start');
+    });
+  }
+}
+
+function renderLegend(sols) {
+  const el = document.getElementById('legend');
+  if (!sols || !sols.length) { el.innerHTML = ''; return; }
+  const single = sols.length === 1;
+  const items = ['<div class="legend-item"><div class="legend-line" style="background:#adb5bd;border:1px dashed #adb5bd;height:1px"></div>原梁位置</div>'];
+  if (single) {
+    const lab = sols[0].spec && sols[0].spec.label ? sols[0].spec.label.replace(/[{}_]/g, '') : '待求量';
+    items.push(`<div class="legend-item"><div class="legend-line" style="background:#dc3545"></div>虚位移图（影响线 · ${lab}）</div>`);
+  } else {
+    sols.forEach((sol, i) => {
+      const color = REACTION_COLORS[i % REACTION_COLORS.length];
+      const lab = sol.spec.label.replace(/[{}_]/g, '');
+      items.push(`<div class="legend-item"><div class="legend-line" style="background:${color}"></div>${lab}</div>`);
+    });
+  }
+  el.innerHTML = items.join('');
+}
+
+function formatVal(v) {
+  const rounded = Math.round(v * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
+}
+
+function setStatus(msg, isError) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isError ? '#dc3545' : '#333';
+}
+
+/* ---------- 动画控制 ---------- */
+let animReq = null;
+function playAnimation() {
+  cancelAnimationFrame(animReq);
+  state.animProgress = 0;
+  const startTime = performance.now();
+  const duration = 1800;
+  function step(t) {
+    const p = Math.min(1, (t - startTime) / duration);
+    state.animProgress = easeOutCubic(p);
+    updateAnimSlider();
+    draw();
+    if (p < 1) animReq = requestAnimationFrame(step);
+  }
+  animReq = requestAnimationFrame(step);
+}
+
+function resetAnimation() {
+  cancelAnimationFrame(animReq);
+  state.animProgress = 0;
+  updateAnimSlider();
+  draw();
+}
+
+function setProgress(p) {
+  state.animProgress = Math.max(0, Math.min(1, p));
+  updateAnimSlider();
+  draw();
+}
+
+function updateAnimSlider() {
+  const s = document.getElementById('animSlider');
+  const v = document.getElementById('animVal');
+  s.value = Math.round(state.animProgress * 100);
+  v.textContent = Math.round(state.animProgress * 100) + '%';
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/* ---------- 单位荷载拖拽 ---------- */
+function svgClientX(e) {
+  const svg = document.getElementById('svgCanvas');
+  const rect = svg.getBoundingClientRect();
+  return e.clientX - rect.left;
+}
+
+function onPointerDown(e) {
+  if (!state.solutions || !state.solutions.length) return;
+  const px = svgClientX(e);
+  const bx = (px - view.marginLeft) / view.xScale;
+  if (bx < 0 || bx > view.totalL) return;
+  state.loadX = bx;
+  state.draggingLoad = true;
+  try { document.getElementById('svgCanvas').setPointerCapture(e.pointerId); } catch (_) {}
+  draw();
+}
+
+function onPointerMove(e) {
+  if (!state.draggingLoad) return;
+  const px = svgClientX(e);
+  const bx = (px - view.marginLeft) / view.xScale;
+  state.loadX = Math.max(0, Math.min(view.totalL, bx));
+  draw();
+}
+
+function onPointerUp() {
+  state.draggingLoad = false;
+}
+
+// 启动
+init();
+</script>
+</body>
+</html>

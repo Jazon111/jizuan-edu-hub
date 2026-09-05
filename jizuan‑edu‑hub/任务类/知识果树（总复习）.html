@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>结构力学 · 知识果树</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", -apple-system, sans-serif; }
+body { background: linear-gradient(180deg, #87ceeb 0%, #b8e0f5 60%, #d6f0c8 100%); color: #2d3a4a; user-select: none; }
+
+/* ====== 背景画布 ====== */
+#scene-canvas { position: fixed; inset: 0; z-index: 0; display: block; }
+
+/* ====== 顶部信息条 ====== */
+.top-bar {
+  position: fixed; top: 16px; left: 16px; right: 16px; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  pointer-events: none;
+}
+.top-bar > * { pointer-events: auto; }
+.user-card {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+  border-radius: 14px; padding: 8px 16px;
+  box-shadow: 0 4px 16px rgba(0, 80, 60, 0.12);
+  border: 1px solid rgba(120, 200, 160, 0.4);
+  font-size: 14px;
+}
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #6fcf97, #4a9d6f);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 14px;
+}
+.user-info { display: flex; flex-direction: column; line-height: 1.3; }
+.user-name { font-weight: 600; color: #2d3a4a; }
+.user-id { font-size: 11px; color: #6c7a8a; }
+.admin-badge {
+  background: linear-gradient(135deg, #ffb84a, #ff8c42);
+  color: white; font-size: 10px; padding: 2px 6px; border-radius: 6px;
+  font-weight: 600; margin-left: 6px;
+}
+
+.action-bar { display: flex; gap: 8px; }
+.action-btn {
+  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+  border: 1px solid rgba(120, 200, 160, 0.4); border-radius: 12px;
+  padding: 8px 14px; font-size: 13px; color: #2d3a4a;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(0, 80, 60, 0.08);
+}
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 80, 60, 0.15); background: rgba(255, 255, 255, 0.95); }
+.action-btn.danger { color: #d63a4a; border-color: rgba(255, 100, 120, 0.4); }
+.action-btn.danger:hover { background: rgba(255, 100, 120, 0.08); }
+.action-btn.primary { background: linear-gradient(135deg, #6fcf97, #4a9d6f); color: white; border: none; }
+.action-btn.primary:hover { background: linear-gradient(135deg, #7fdfa7, #5aad7f); }
+
+/* ====== 统计条 ====== */
+.stat-bar {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+  border-radius: 14px; padding: 10px 20px;
+  display: flex; gap: 24px; font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 80, 60, 0.12);
+  border: 1px solid rgba(120, 200, 160, 0.4);
+}
+.stat-item { display: flex; align-items: center; gap: 6px; color: #4a5a6a; }
+.stat-num { font-size: 18px; font-weight: 700; color: #4a9d6f; }
+.stat-num.gold { color: #d4a017; }
+.stat-num.blue { color: #4488dd; }
+
+/* ====== 登录界面 ====== */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: linear-gradient(135deg, rgba(135, 206, 235, 0.95) 0%, rgba(214, 240, 200, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.login-card {
+  background: white; border-radius: 24px;
+  padding: 40px 36px; width: 400px; max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 80, 60, 0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.login-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, #6fcf97, #4a9d6f, #2d8a55);
+}
+.login-icon { font-size: 56px; margin-bottom: 12px; }
+.login-title { font-size: 24px; font-weight: 700; color: #2d3a4a; margin-bottom: 6px; }
+.login-subtitle { font-size: 13px; color: #6c7a8a; margin-bottom: 28px; }
+
+.login-field { margin-bottom: 16px; text-align: left; }
+.login-field label {
+  display: block; font-size: 12px; color: #6c7a8a;
+  margin-bottom: 6px; font-weight: 500;
+}
+.login-input {
+  width: 100%; padding: 12px 14px; font-size: 14px;
+  border: 2px solid #e2eaf0; border-radius: 10px;
+  outline: none; transition: all 0.2s; font-family: inherit;
+  background: #f8fbf9;
+}
+.login-input:focus { border-color: #6fcf97; background: white; box-shadow: 0 0 0 3px rgba(111, 207, 151, 0.15); }
+.login-input.error { border-color: #ff6b7a; background: rgba(255, 107, 122, 0.05); }
+
+.login-error {
+  color: #d63a4a; font-size: 12px; margin-top: 6px;
+  min-height: 16px; text-align: left;
+}
+
+.login-btn {
+  width: 100%; padding: 14px; margin-top: 8px;
+  background: linear-gradient(135deg, #6fcf97, #4a9d6f);
+  color: white; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(74, 157, 111, 0.3);
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(74, 157, 111, 0.4); }
+.login-btn:active { transform: translateY(0); }
+
+.login-hint {
+  margin-top: 16px; font-size: 11px; color: #8a98a8;
+  padding: 8px 12px; background: #f0f7f3; border-radius: 8px;
+  line-height: 1.5;
+}
+
+/* ====== 果实 ====== */
+.fruit-layer {
+  position: fixed; inset: 0; z-index: 5;
+  pointer-events: none;
+}
+.fruit {
+  position: absolute; transform: translate(-50%, -50%);
+  pointer-events: auto; cursor: pointer;
+  transition: filter 0.3s, transform 0.2s;
+  animation: fruitSway 4s ease-in-out infinite;
+  animation-delay: var(--sway-delay, 0s);
+}
+@keyframes fruitSway {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
+  50% { transform: translate(-50%, -50%) rotate(2deg); }
+}
+
+.fruit:hover { filter: brightness(1.1); }
+
+.fruit-body {
+  width: 90px; height: 90px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ff8a4a, #d63a4a 60%, #8a1a2a);
+  box-shadow:
+    inset -6px -6px 12px rgba(0, 0, 0, 0.25),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.4),
+    0 4px 12px rgba(214, 58, 74, 0.4);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: white;
+  text-align: center; padding: 8px; line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.fruit-stem {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 8px; height: 14px; background: #6d4226;
+  border-radius: 4px 4px 0 0;
+}
+.fruit-leaf {
+  position: absolute; top: -10px; right: -6px;
+  width: 22px; height: 14px;
+  background: radial-gradient(ellipse at 30% 50%, #7fcf6f, #4a9d3f);
+  border-radius: 0 50% 50% 0;
+  transform: rotate(35deg);
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* 状态颜色 */
+.fruit[data-state="ripe"] .fruit-body {
+  background: radial-gradient(circle at 30% 30%, #ffb88a, #ff7a3a 60%, #c54a1a);
+}
+.fruit[data-state="picked"] .fruit-body {
+  background: radial-gradient(circle at 30% 30%, #ffe28a, #ffc14a 50%, #b87a1a);
+  box-shadow:
+    inset -6px -6px 12px rgba(0, 0, 0, 0.25),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.5),
+    0 4px 18px rgba(255, 193, 74, 0.6),
+    0 0 30px rgba(255, 220, 100, 0.5);
+}
+.fruit[data-state="picked"] .fruit-body::before {
+  content: '★';
+  position: absolute; top: -10px; right: -10px;
+  font-size: 22px; color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+  animation: starSpin 3s linear infinite;
+}
+@keyframes starSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.fruit[data-state="picking"] .fruit-body {
+  animation: fruitGlow 1.5s ease-in-out infinite;
+}
+@keyframes fruitGlow {
+  0%, 100% { box-shadow:
+    inset -6px -6px 12px rgba(0, 0, 0, 0.25),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.4),
+    0 4px 12px rgba(214, 58, 74, 0.4),
+    0 0 20px rgba(255, 200, 100, 0.4); }
+  50% { box-shadow:
+    inset -6px -6px 12px rgba(0, 0, 0, 0.25),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.4),
+    0 4px 18px rgba(255, 200, 100, 0.7),
+    0 0 40px rgba(255, 200, 100, 0.7); }
+}
+
+.fruit-label {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(8px);
+  padding: 4px 10px; border-radius: 8px; font-size: 11px;
+  color: #2d3a4a; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(120, 200, 160, 0.3);
+}
+.fruit-score {
+  display: inline-block; margin-left: 4px;
+  font-size: 10px; color: #4a9d6f; font-weight: 700;
+}
+
+/* ====== 通用模态框 ====== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 30, 20, 0.55); backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: white; border-radius: 20px;
+  width: 540px; max-width: 92vw; max-height: 88vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 50, 30, 0.35);
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.modal-header {
+  padding: 20px 24px; border-bottom: 1px solid #e8eef0;
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, #f0f7f3, #e8f3ed);
+}
+.modal-title { font-size: 18px; font-weight: 700; color: #2d3a4a; }
+.modal-subtitle { font-size: 12px; color: #6c7a8a; margin-top: 4px; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05); border: none; cursor: pointer;
+  font-size: 18px; color: #6c7a8a;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: rgba(214, 58, 74, 0.15); color: #d63a4a; }
+
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+
+/* ====== 练习弹窗 ====== */
+.practice-progress {
+  display: flex; gap: 4px; margin-bottom: 16px;
+}
+.progress-dot {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: #e8eef0; transition: all 0.3s;
+}
+.progress-dot.done { background: #6fcf97; }
+.progress-dot.current { background: #4a9d6f; height: 6px; }
+.progress-dot.wrong { background: #d63a4a; }
+
+.practice-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px; font-size: 13px; color: #6c7a8a;
+}
+.practice-counter { font-weight: 600; color: #4a9d6f; font-size: 16px; }
+
+.question-card {
+  background: #f8fbf9; border-radius: 14px;
+  padding: 20px; border: 1px solid #e8eef0;
+  margin-bottom: 16px;
+}
+.question-type {
+  display: inline-block; padding: 2px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; margin-bottom: 10px;
+}
+.question-type.choice { background: #e8f3ed; color: #4a9d6f; }
+.question-type.judge { background: #fff3e0; color: #ff8c42; }
+.question-type.fill { background: #e8eef5; color: #4488dd; }
+
+.question-text {
+  font-size: 15px; color: #2d3a4a; line-height: 1.6;
+  font-weight: 500;
+}
+
+.options { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.option {
+  padding: 12px 16px; background: white;
+  border: 2px solid #e8eef0; border-radius: 12px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; color: #2d3a4a;
+}
+.option:hover { border-color: #6fcf97; background: #f8fbf9; }
+.option.selected { border-color: #6fcf97; background: #f0f7f3; }
+.option.correct { border-color: #6fcf97; background: #e8f3ed; }
+.option.wrong { border-color: #d63a4a; background: #fce8eb; }
+.option-letter {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #e8eef0; color: #6c7a8a;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; flex-shrink: 0;
+}
+.option.selected .option-letter { background: #6fcf97; color: white; }
+.option.correct .option-letter { background: #4a9d6f; color: white; }
+.option.wrong .option-letter { background: #d63a4a; color: white; }
+
+.fill-input {
+  width: 100%; padding: 12px 14px; font-size: 15px;
+  border: 2px solid #e8eef0; border-radius: 10px;
+  outline: none; margin-top: 14px; font-family: inherit;
+  transition: all 0.2s;
+}
+.fill-input:focus { border-color: #6fcf97; box-shadow: 0 0 0 3px rgba(111, 207, 151, 0.15); }
+
+.feedback {
+  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  font-size: 13px; line-height: 1.5;
+  display: none; animation: fadeIn 0.3s ease;
+}
+.feedback.show { display: block; }
+.feedback.correct { background: #e8f3ed; color: #2d8a55; border-left: 4px solid #6fcf97; }
+.feedback.wrong { background: #fce8eb; color: #b8323a; border-left: 4px solid #d63a4a; }
+.feedback-title { font-weight: 700; margin-bottom: 4px; }
+
+.practice-actions {
+  display: flex; gap: 10px; margin-top: 18px;
+}
+.practice-btn {
+  flex: 1; padding: 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; border: none; font-family: inherit;
+}
+.practice-btn.primary { background: linear-gradient(135deg, #6fcf97, #4a9d6f); color: white; }
+.practice-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(74, 157, 111, 0.3); }
+.practice-btn.primary:disabled { background: #d4dde4; cursor: not-allowed; transform: none; box-shadow: none; }
+.practice-btn.secondary { background: #f0f4f6; color: #4a5a6a; }
+.practice-btn.secondary:hover { background: #e8eef0; }
+
+/* ====== 完成结果 ====== */
+.result-card {
+  text-align: center; padding: 16px 0;
+}
+.result-icon { font-size: 64px; margin-bottom: 12px; }
+.result-title { font-size: 22px; font-weight: 700; color: #2d3a4a; margin-bottom: 6px; }
+.result-score { font-size: 48px; font-weight: 800; margin: 14px 0; }
+.result-score.full { color: #d4a017; text-shadow: 0 0 20px rgba(212, 160, 23, 0.4); }
+.result-score.partial { color: #4a9d6f; }
+.result-score.low { color: #d63a4a; }
+.result-desc { font-size: 14px; color: #6c7a8a; margin-bottom: 18px; line-height: 1.6; }
+
+.result-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin: 20px 0; padding: 16px; background: #f8fbf9; border-radius: 12px;
+}
+.result-stat-item { text-align: center; }
+.result-stat-num { font-size: 22px; font-weight: 700; color: #4a9d6f; }
+.result-stat-num.err { color: #d63a4a; }
+.result-stat-label { font-size: 11px; color: #6c7a8a; margin-top: 2px; }
+
+.result-actions { display: flex; gap: 10px; }
+
+/* ====== 管理员面板 ====== */
+.admin-empty {
+  text-align: center; padding: 40px 20px; color: #8a98a8;
+}
+.admin-empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+.student-record {
+  background: #f8fbf9; border: 1px solid #e8eef0; border-radius: 12px;
+  padding: 14px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.student-record-info { flex: 1; }
+.student-record-name { font-weight: 600; color: #2d3a4a; font-size: 14px; }
+.student-record-id { font-size: 11px; color: #6c7a8a; margin-top: 2px; }
+.student-record-stats { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: #6c7a8a; }
+.student-record-stats span { display: inline-flex; align-items: center; gap: 3px; }
+.student-record-stats .v { color: #4a9d6f; font-weight: 600; }
+.record-del-btn {
+  background: rgba(214, 58, 74, 0.1); color: #d63a4a;
+  border: 1px solid rgba(214, 58, 74, 0.3); border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; cursor: pointer;
+  transition: all 0.2s; font-family: inherit;
+}
+.record-del-btn:hover { background: #d63a4a; color: white; }
+
+/* ====== Toast ====== */
+.toast {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  z-index: 300; padding: 12px 22px; border-radius: 12px;
+  font-size: 14px; color: white; font-weight: 500;
+  background: rgba(45, 58, 74, 0.95); backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  opacity: 0; transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: linear-gradient(135deg, #4a9d6f, #2d8a55); }
+.toast.error { background: linear-gradient(135deg, #d63a4a, #b8323a); }
+.toast.info { background: linear-gradient(135deg, #4488dd, #2266bb); }
+
+/* ====== 庆祝特效 ====== */
+.celebration {
+  position: fixed; inset: 0; z-index: 250; pointer-events: none;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; width: 10px; height: 14px;
+  background: #ffb84a; top: -20px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ====== 提示卡 ====== */
+.tip {
+  position: fixed; bottom: 80px; left: 16px; z-index: 10;
+  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+  border-radius: 12px; padding: 10px 14px;
+  font-size: 12px; color: #4a5a6a; line-height: 1.6;
+  box-shadow: 0 4px 12px rgba(0, 80, 60, 0.08);
+  border: 1px solid rgba(120, 200, 160, 0.3);
+  max-width: 220px;
+}
+.tip strong { color: #4a9d6f; }
+
+/* ====== 滚动条 ====== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(74, 157, 111, 0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(74, 157, 111, 0.5); }
+
+@media (max-width: 600px) {
+  .login-card { padding: 32px 24px; }
+  .fruit-body { width: 70px; height: 70px; font-size: 10px; }
+  .top-bar { flex-wrap: wrap; }
+  .user-card { padding: 6px 12px; font-size: 12px; }
+  .stat-bar { gap: 14px; padding: 8px 14px; }
+  .tip { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景画布 -->
+<canvas id="scene-canvas"></canvas>
+
+<!-- 登录界面 -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div class="login-icon">🌳</div>
+    <div class="login-title">结构力学 · 知识果树</div>
+    <div class="login-subtitle">登入学习，开启你的知识果实之旅</div>
+
+    <div class="login-field">
+      <label>学号</label>
+      <input type="text" class="login-input" id="login-id" placeholder="请输入学号" autocomplete="off" maxlength="20">
+    </div>
+    <div class="login-field">
+      <label>姓名</label>
+      <input type="text" class="login-input" id="login-name" placeholder="请输入姓名" autocomplete="off" maxlength="20">
+    </div>
+    <div class="login-error" id="login-error"></div>
+
+    <button class="login-btn" id="login-btn">进入知识果树</button>
+
+    <div class="login-hint">
+      管理员账号：<strong>2023011624</strong> 谭积钻<br>
+      管理员登录后可见【管理后台】按钮
+    </div>
+  </div>
+</div>
+
+<!-- 顶部信息条 -->
+<div class="top-bar" id="top-bar" style="display:none">
+  <div class="user-card">
+    <div class="user-avatar" id="user-avatar">学</div>
+    <div class="user-info">
+      <div><span class="user-name" id="user-name"></span><span class="admin-badge" id="admin-badge" style="display:none">管理员</span></div>
+      <div class="user-id" id="user-id"></div>
+    </div>
+  </div>
+  <div class="action-bar">
+    <button class="action-btn" id="btn-admin" style="display:none" onclick="openAdmin()">🛠 管理后台</button>
+    <button class="action-btn" onclick="resetOwnData()">🔄 重置我的果实</button>
+    <button class="action-btn danger" onclick="logout()">🚪 退出登录</button>
+  </div>
+</div>
+
+<!-- 统计条 -->
+<div class="stat-bar" id="stat-bar" style="display:none">
+  <div class="stat-item"><span class="stat-num" id="stat-picked">0</span>/8 已摘取</div>
+  <div class="stat-item"><span class="stat-num gold" id="stat-score">0</span> 总分</div>
+  <div class="stat-item"><span class="stat-num blue" id="stat-attempts">0</span> 练习次数</div>
+</div>
+
+<!-- 操作提示 -->
+<div class="tip" id="tip" style="display:none">
+  💡 <strong>点击果实</strong>开始答题练习<br>
+  答对全部 10 题即可摘取果实<br>
+  可反复练习巩固知识
+</div>
+
+<!-- 果实层 -->
+<div class="fruit-layer" id="fruit-layer" style="display:none"></div>
+
+<!-- 练习弹窗 -->
+<div class="modal-overlay" id="practice-overlay">
+  <div class="modal" id="practice-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="practice-title">练习题目</div>
+        <div class="modal-subtitle" id="practice-subtitle">本章知识点 AI 问答</div>
+      </div>
+      <button class="modal-close" onclick="closePractice()">×</button>
+    </div>
+    <div class="modal-body" id="practice-body"></div>
+  </div>
+</div>
+
+<!-- 管理员弹窗 -->
+<div class="modal-overlay" id="admin-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🛠 学生记录管理</div>
+        <div class="modal-subtitle">查看所有学生答题记录，可删除任意学生数据</div>
+      </div>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div class="modal-body" id="admin-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 1. 数据：8 个 L1 知识点（果实）
+// ============================================================
+const FRUITS = [
+  { id: 'ch1', chapter: 1, name: '第1章', topic: '绪论', color: '#ff6b6b' },
+  { id: 'ch2', chapter: 2, name: '第2章', topic: '几何组成分析', color: '#ffa94d' },
+  { id: 'ch3', chapter: 3, name: '第3章', topic: '静定结构内力', color: '#ffd43b' },
+  { id: 'ch4', chapter: 4, name: '第4章', topic: '影响线及应用', color: '#a9e34b' },
+  { id: 'ch5', chapter: 5, name: '第5章', topic: '位移计算', color: '#51cf66' },
+  { id: 'ch6', chapter: 6, name: '第6章', topic: '力法', color: '#22b8cf' },
+  { id: 'ch7', chapter: 7, name: '第7章', topic: '位移法', color: '#4dabf7' },
+  { id: 'ch8', chapter: 8, name: '第8章', topic: '实用分析方法', color: '#9775fa' }
+];
+
+// ============================================================
+// 2. 题目库（每章 30+ 题，练习时随机抽 10 题）
+// ============================================================
+const QUESTION_BANK = {
+  ch1: [
+    { type: 'choice', q: '结构力学主要研究的是', opts: ['静力学问题', '杆系结构在荷载作用下的力学行为', '流体力学问题', '材料合成问题'], a: 'B',
+      e: '结构力学研究对象为杆系结构，主要分析其在荷载作用下的内力、位移和稳定性问题。' },
+    { type: 'choice', q: '结构力学课程的入门章节中，结构被简化为以下哪一类基本对象？', opts: ['板壳', '杆件', '流体', '颗粒'], a: 'B',
+      e: '结构力学中结构简化的基本对象为杆件（梁、柱等），其他类型的结构属于其他力学分支。' },
+    { type: 'choice', q: '下列哪种结构不属于结构力学的主要研究对象？', opts: ['梁', '桁架', '刚架', '实体坝'], a: 'D',
+      e: '结构力学主要研究杆系结构（梁、桁架、刚架、组合结构等），实体结构属于弹性力学研究范畴。' },
+    { type: 'choice', q: '下列哪位科学家提出了"悬臂梁受弯承载力"问题？', opts: ['伽利略', '欧拉', '牛顿', '麦克斯韦'], a: 'A',
+      e: '1638 年伽利略提出悬臂梁受弯承载力问题，开启了材料力学和结构力学的研究。' },
+    { type: 'choice', q: '欧拉勒·压杆稳定主要研究的是', opts: ['梁的弯曲', '柱的稳定性', '板的屈曲', '壳的振动'], a: 'B',
+      e: '欧拉建立了压杆稳定分析理论，给出了细长压杆临界荷载公式。' },
+    { type: 'choice', q: '卡氏定理（Castigliano 定理）主要用于', opts: ['静定结构内力', '结构位移计算', '截面应力分析', '支座反力计算'], a: 'B',
+      e: '卡斯蒂利亚诺提出的卡氏第一、第二定理和最小势能原理，用于结构位移的能量法计算。' },
+    { type: 'choice', q: '下列哪一项是绘制影响线的比拟法（穆勒-布雷斯劳准则）的提出者？', opts: ['伽利略', '麦克斯韦', '穆勒-布雷斯劳', '莫尔'], a: 'C',
+      e: '穆勒-布雷斯劳提出了绘制影响线的比拟法，是机动法绘制影响线的理论依据。' },
+    { type: 'choice', q: '下列哪种简化在结构力学计算简图中最为关键？', opts: ['材料简化', '荷载简化', '杆件、连接、支座的简化', '环境简化'], a: 'C',
+      e: '计算简图的核心是对实际结构进行三方面简化——杆件、连接（结点）、支座。' },
+    { type: 'choice', q: '下列哪种支座提供两个方向的反力？', opts: ['可动铰支座', '固定铰支座', '固定端支座', '定向支座'], a: 'B',
+      e: '固定铰支座限制水平和竖向位移，提供两个方向反力；可动铰支座仅提供 1 个方向反力。' },
+    { type: 'choice', q: '下列哪种结点允许各杆端发生相对转动？', opts: ['刚结点', '铰结点', '固定端', '定向结点'], a: 'B',
+      e: '铰结点允许各杆端自由转动，不能传递弯矩；刚结点既传递弯矩也限制相对转动。' },
+    { type: 'judge', q: '结构力学中所有结构都可以完全忽略次要因素进行精确分析。', a: '错误',
+      e: '结构力学分析需要做简化假设，存在近似性，但并非完全忽略所有次要因素。' },
+    { type: 'judge', q: '结构力学的研究对象仅限于平面杆系结构。', a: '错误',
+      e: '结构力学的研究对象包括平面和空间杆系结构，其中平面杆系是最基础的研究对象。' },
+    { type: 'judge', q: '麦克斯韦提出了位移互等定理。', a: '正确',
+      e: '麦克斯韦提出了位移互等定理，并给出了计算超静定桁架的一般方法。' },
+    { type: 'judge', q: '本迪克森和威尔逊提出了力矩分配法。', a: '错误',
+      e: '本迪克森和威尔逊提出的是转角位移法；力矩分配法由克罗斯提出。' },
+    { type: 'judge', q: '固定端支座能提供三个反力分量。', a: '正确',
+      e: '固定端支座限制水平和竖向位移及转动，提供 3 个反力（水平、竖向、弯矩）。' },
+    { type: 'judge', q: '结构力学通常将荷载简化为集中荷载和分布荷载两大类。', a: '正确',
+      e: '荷载按其分布形式可分为集中荷载和分布荷载，是结构力学的基本简化方式。' },
+    { type: 'fill', q: '结构力学中将实际结构简化为能反映其主要受力特征的图形，称为结构的______。', a: '计算简图',
+      e: '计算简图是结构力学分析的基础，反映结构的主要受力特征。' },
+    { type: 'fill', q: '1638 年提出悬臂梁受弯承载力问题的科学家是______。', a: '伽利略',
+      e: '伽利略 1638 年在《关于两门新科学的对话》中提出悬臂梁受弯问题。' },
+    { type: 'fill', q: '结构力学中连接各杆件的关键部位称为______。', a: '结点',
+      e: '结点是连接杆件的关键部位，分刚结点和铰结点两大类。' },
+    { type: 'fill', q: '克罗斯提出的求解超静定结构的渐近方法称为______法。', a: '力矩分配',
+      e: '克罗斯 1932 年提出力矩分配法，是求解无侧移刚架和连续梁的经典渐近方法。' }
+  ],
+  ch2: [
+    { type: 'choice', q: '一个刚片在平面内具有的自由度数为', opts: ['1', '2', '3', '4'], a: 'C',
+      e: '一个刚片在平面内有 3 个自由度：水平、竖向位移和转动。' },
+    { type: 'choice', q: '一个单铰连接两个刚片，相当于施加多少约束？', opts: ['1', '2', '3', '4'], a: 'B',
+      e: '单铰连接两个刚片，相当于施加 2 个约束（限制两个方向的相对位移）。' },
+    { type: 'choice', q: '用一根本端不变的链杆与基础相连，相当于施加多少约束？', opts: ['0', '1', '2', '3'], a: 'B',
+      e: '一根链杆相当于 1 个约束，限制沿链杆方向的相对位移。' },
+    { type: 'choice', q: '下列哪个体系是几何不变的？', opts: ['三铰不共线的三刚片', '两刚片用三根不交也不平行的链杆相连', '可变体系', '瞬变体系'], a: 'A',
+      e: '三刚片用三个不共线的铰两两相连是几何不变体系；选项 B 应改为"用三根不全平行也不交于一点的链杆相连"。' },
+    { type: 'choice', q: '两刚片规则中，三根链杆必须满足下列哪个条件才构成几何不变体系？', opts: ['三链杆共线', '三链杆相交于一点', '三链杆不全平行也不交于一点', '任意位置'], a: 'C',
+      e: '两刚片用三链杆相连时，三链杆不能全平行也不能交于一点，否则体系可变。' },
+    { type: 'choice', q: '下列哪个体系是瞬变体系？', opts: ['三铰共线的三刚片', '两刚片用三根不平行也不共点的链杆', '三刚片用三个不共线的铰两两相连', '一个刚片加一个铰支座'], a: 'A',
+      e: '三铰共线时，刚片可在该方向产生微小位移，属于瞬变体系。' },
+    { type: 'choice', q: '计算自由度的公式 W=3m-(2h+r) 中，r 表示', opts: ['刚片数', '单铰数', '支座链杆数', '多余约束数'], a: 'C',
+      e: '计算自由度公式 W=3m-(2h+r) 中，r 表示支座链杆数（约束数）。' },
+    { type: 'choice', q: '若计算自由度 W>0，则体系必然是', opts: ['几何不变', '几何可变', '静定', '超静定'], a: 'B',
+      e: 'W>0 表明缺少约束，体系一定是几何可变的（含常变或瞬变）。' },
+    { type: 'choice', q: '下列哪个体系的多余约束数为 3？', opts: ['连续梁两端固定', '两端铰支单跨梁', '简支桁架', '三铰拱'], a: 'A',
+      e: '连续梁两端固定有 6 个支座反力、3 个平衡方程，超静定次数=6-3=3。' },
+    { type: 'choice', q: '三刚片用三个铰两两相连时，若三铰共线，则体系为', opts: ['几何不变', '瞬变', '常变', '静定'], a: 'B',
+      e: '三铰共线时，刚片只能在该方向产生瞬时微小位移，称瞬变体系。' },
+    { type: 'judge', q: 'W=0 一定是几何不变体系。', a: '错误',
+      e: 'W=0 是几何不变的必要条件而非充分条件，还需满足几何组成规则。' },
+    { type: 'judge', q: '两刚片用三根交于一点的链杆相连，必为瞬变体系。', a: '正确',
+      e: '两刚片用三根交于一点的链杆相连时，三链杆瞬时交于一公共点，刚片产生瞬时转动。' },
+    { type: 'judge', q: '瞬变体系可以作为结构使用。', a: '错误',
+      e: '瞬变体系在微小位移后即变为机构，不能作为结构使用。' },
+    { type: 'judge', q: '多余约束数 = -W（当 W<0 时）。', a: '正确',
+      e: '当 W<0 时，多余约束数 = -W，表示体系具有相应数目的多余约束。' },
+    { type: 'judge', q: '几何不变体系一定是静定结构。', a: '错误',
+      e: '几何不变是结构分析的前提，是否静定还需看是否有多余约束。' },
+    { type: 'fill', q: '在计算自由度公式 W=3m-(2h+r) 中，m 表示______数。', a: '刚片',
+      e: 'm 表示刚片数，每个刚片有 3 个自由度。' },
+    { type: 'fill', q: '两刚片用一个单铰和一根不通过该铰的链杆相连，是______体系。', a: '几何不变',
+      e: '这是两刚片规则的标准形式，构成几何不变体系。' },
+    { type: 'fill', q: '一个刚片上加一个固定铰支座和一个可动铰支座（链杆不共线），是______体系。', a: '几何不变静定',
+      e: '3 个不共线约束恰好限制刚片 3 个自由度，构成静定几何不变体系。' },
+    { type: 'fill', q: '三刚片用三个铰两两相连，三个铰______时，体系为几何不变。', a: '不共线',
+      e: '三刚片三铰规则要求三铰不共线，否则体系为瞬变。' },
+    { type: 'fill', q: '若计算自由度 W<0，则体系具有______约束。', a: '多余',
+      e: 'W<0 表示约束数大于所需约束数，存在多余约束。' }
+  ],
+  ch3: [
+    { type: 'choice', q: '求梁内力的方法是', opts: ['能量法', '截面法', '图乘法', '叠加法'], a: 'B',
+      e: '截面法（隔离体法）是求梁内力的基本方法。' },
+    { type: 'choice', q: '求桁架内力的两种基本方法是', opts: ['截面法与结点法', '能量法与图乘法', '叠加法与积分法', '代数法与几何法'], a: 'A',
+      e: '桁架内力计算的两种基本方法是截面法和结点法。' },
+    { type: 'choice', q: '在三铰拱中，水平推力的大小取决于', opts: ['跨度', '矢高', '荷载和矢高', '材料'], a: 'C',
+      e: '三铰拱水平推力 H=M₀/f，其中 M₀ 为相应简梁的跨中弯矩，f 为矢高。' },
+    { type: 'choice', q: '静定结构在荷载作用下，下列哪个量唯一确定？', opts: ['应力', '内力', '应变', '位移'], a: 'B',
+      e: '静定结构内力仅由静力平衡条件唯一确定，与材料性质和截面尺寸无关。' },
+    { type: 'choice', q: '区段叠加法绘制弯矩图时，将分段荷载分为', opts: ['集中荷载与分布荷载', '简支梁弯矩与悬臂梁弯矩', '均布荷载与集中力偶', '均布荷载与集中力'], a: 'B',
+      e: '区段叠加法将弯矩图视为简支段弯矩与杆端弯矩叠加的结果。' },
+    { type: 'choice', q: '静定多跨梁的基本部分是', opts: ['只能承受竖向荷载', '不依赖其他部分就能独立维持几何不变', '必须与附属部分相连', '只能有一跨'], a: 'B',
+      e: '基本部分是不依赖于其他部分就能独立维持几何不变的部分，可独立承载。' },
+    { type: 'choice', q: '静定结构的内力调整，下列哪个说法正确？', opts: ['可以通过改变支座调整', '可以通过改变荷载调整', '由静力平衡唯一确定', '与材料有关'], a: 'C',
+      e: '静定结构内力仅由静力平衡条件唯一确定，不能通过其他方式调整。' },
+    { type: 'choice', q: '刚架弯矩图的特征不包括', opts: ['刚结点处弯矩平衡', '铰结点处弯矩为零', '杆端有集中力偶则突变', '弯矩图处处连续光滑'], a: 'D',
+      e: '刚架弯矩图在集中力偶处不连续，在集中力处剪力突变但弯矩连续。' },
+    { type: 'choice', q: '三铰拱合理拱轴线的定义是', opts: ['截面最大的轴线', '在给定荷载下弯矩处处为零的轴线', '跨度最小的轴线', '矢高最大的轴线'], a: 'B',
+      e: '合理拱轴线是在给定荷载下，各截面只承受轴力（弯矩处处为零）的拱轴线。' },
+    { type: 'choice', q: '组合结构通常包含', opts: ['只有梁式杆', '只有桁架杆', '梁式杆与桁架杆', '只有受拉杆'], a: 'C',
+      e: '组合结构由梁式杆（受弯）和桁架杆（受轴力）混合组成。' },
+    { type: 'judge', q: '静定结构的内力与杆件截面尺寸无关。', a: '正确',
+      e: '静定结构内力仅由平衡条件确定，与材料性质、截面尺寸无关。' },
+    { type: 'judge', q: '三铰拱在均布荷载作用下合理拱轴线是抛物线。', a: '正确',
+      e: '三铰拱在满跨均布荷载下的合理拱轴线为二次抛物线。' },
+    { type: 'judge', q: '静定结构在支座移动下会产生内力。', a: '错误',
+      e: '静定结构在支座移动、温度变化等非荷载因素作用下不产生内力。' },
+    { type: 'judge', q: '刚架中铰结点处弯矩为零。', a: '正确',
+      e: '铰结点不能传递弯矩，所以铰结点处弯矩必为零。' },
+    { type: 'judge', q: '多跨静定梁的附属部分承受荷载时会向基本部分传递力。', a: '正确',
+      e: '附属部分荷载通过铰接点传递给基本部分，由基本部分承担最终荷载。' },
+    { type: 'fill', q: '截面法求内力的基本思路是：将结构沿指定截面切开，取______为隔离体进行分析。', a: '一部分',
+      e: '截面法的关键是取隔离体，再列平衡方程求出轴力、剪力、弯矩。' },
+    { type: 'fill', q: '在三铰拱的水平推力公式 H=M₀/f 中，f 表示______。', a: '矢高',
+      e: 'f 是拱的矢高（拱顶到两铰连线的距离），水平推力与 f 成反比。' },
+    { type: 'fill', q: '静定多跨梁中，不依赖其他部分就能独立维持几何不变的部分称为______部分。', a: '基本',
+      e: '基本部分独立承载；附属部分依赖基本部分。' },
+    { type: 'fill', q: '绘制弯矩图时，将杆段两端弯矩连线作为基线，再叠加______荷载下的简支梁弯矩图。', a: '跨间',
+      e: '区段叠加法的核心：基线 + 跨间荷载下的简支梁弯矩图。' },
+    { type: 'fill', q: '静定结构的内力仅由______条件唯一确定。', a: '静力平衡',
+      e: '静定结构内力只取决于静力平衡条件，与材料、截面无关。' }
+  ],
+  ch4: [
+    { type: 'choice', q: '影响线表示的是', opts: ['固定荷载作用下某量沿结构的变化', '单位移动荷载下某量随荷载位置的变化', '结构的总位移', '材料的应力分布'], a: 'B',
+      e: '影响线表示单位移动荷载（通常为 1）沿结构移动时，某一量值（如某截面弯矩）随荷载位置的变化规律。' },
+    { type: 'choice', q: '绘制静定梁影响线最常用的两种方法是', opts: ['结点法和截面法', '静力法和机动法', '图乘法和叠加法', '能量法和位移法'], a: 'B',
+      e: '绘制静定梁影响线最常用的两种方法是静力法和机动法。' },
+    { type: 'choice', q: '机动法作影响线的理论依据是', opts: ['卡氏定理', '虚功原理（穆勒-布雷斯劳准则）', '最小势能原理', '位移互等定理'], a: 'B',
+      e: '机动法作影响线基于虚功原理，即穆勒-布雷斯劳准则：将影响线视为去掉约束后机构的位移图。' },
+    { type: 'choice', q: '简支梁跨中弯矩影响线在跨中处的纵距为', opts: ['0', 'L/4', 'L/2', 'L'], a: 'B',
+      e: '简支梁跨中弯矩影响线在跨中处的纵距为 ab/L，当荷载在跨中时 a=b=L/2，故为 L/4。' },
+    { type: 'choice', q: '求连续梁最不利荷载位置时，应将移动荷载布置在影响线的', opts: ['最大正值处', '最大负值处', '同号区域并尽量靠近峰值', '任意位置'], a: 'C',
+      e: '最不利荷载位置应使各集中力尽量布置在影响线同号区域的峰值附近。' },
+    { type: 'choice', q: '影响线的应用包括', opts: ['求某量在固定荷载下的值', '求移动荷载下某量的最大值', '求结构自振频率', '求材料强度'], a: 'B',
+      e: '影响线的主要应用是求移动荷载作用下某量（反力、内力）的最大值。' },
+    { type: 'choice', q: '简支梁支座反力影响线在左支座处纵距为', opts: ['0', '1', '2', '无穷'], a: 'B',
+      e: '简支梁左支座反力影响线：从左支座 1 线性变化到右支座 0。' },
+    { type: 'choice', q: '机动法作影响线时，所得到的图形是结构的', opts: ['内力图', '位移图', '应力图', '应变图'], a: 'B',
+      e: '机动法得到的图形是去掉约束后体系的位移图（几何尺寸图）。' },
+    { type: 'choice', q: '用静力法作影响线时，需要先确定', opts: ['影响线峰值', '单位荷载位置作为参数 x', '材料参数', '截面尺寸'], a: 'B',
+      e: '静力法以单位荷载位置 x 为参数，列静力平衡方程求某量随 x 的变化。' },
+    { type: 'choice', q: '在影响线中，"临界荷载"是指', opts: ['使结构破坏的荷载', '使某量达到最大值的移动荷载位置', '最小的荷载', '任意的荷载'], a: 'B',
+      e: '临界荷载是使所求量达到极值的移动荷载位置，需布置在最不利位置。' },
+    { type: 'judge', q: '影响线反映的是固定荷载作用下某量的大小。', a: '错误',
+      e: '影响线反映的是单位移动荷载下某量随荷载位置的变化。' },
+    { type: 'judge', q: '机动法作影响线时，去掉一个约束得到的机构位移图即为影响线。', a: '正确',
+      e: '机动法（穆勒-布雷斯劳准则）将去掉约束后的机构位移图作为影响线。' },
+    { type: 'judge', q: '影响线的纵距无量纲。', a: '正确',
+      e: '影响线纵距 = 某量 / 单位荷载，无量纲；纵距乘以实际荷载得实际量值。' },
+    { type: 'judge', q: '简支梁支座反力影响线是三角形。', a: '正确',
+      e: '简支梁左、右支座反力影响线均为直线（左支座从 1 到 0，右支座从 0 到 1），构成两个三角形。' },
+    { type: 'judge', q: '临界荷载位置只能通过试算确定。', a: '正确',
+      e: '临界荷载位置需逐一尝试将集中力布置在影响线峰值附近，找到使量值最大的位置。' },
+    { type: 'fill', q: '影响线反映单位移动荷载（通常取为______）沿结构移动时，某一固定量值的变化规律。', a: '1',
+      e: '影响线单位荷载通常取 1，使纵距无量纲便于应用。' },
+    { type: 'fill', q: '绘制静定结构影响线的两种主要方法是静力法和______。', a: '机动法',
+      e: '静力法基于平衡条件，机动法基于虚功原理。' },
+    { type: 'fill', q: '机动法作影响线的理论依据是虚功原理，又称______准则。', a: '穆勒-布雷斯劳',
+      e: '穆勒-布雷斯劳准则是机动法的理论基础。' },
+    { type: 'fill', q: '求最不利荷载位置时，应将移动荷载布置在影响线同号区域的______附近。', a: '峰值',
+      e: '最不利荷载应尽量集中布置在影响线峰值附近，以获得最大量值。' },
+    { type: 'fill', q: '影响线在简支梁支座反力中，左支座反力影响线在跨中处的纵距为______。', a: '1/2',
+      e: '简支梁左支座反力影响线从左支座 1 线性变化到右支座 0，跨中处纵距为 1/2。' }
+  ],
+  ch5: [
+    { type: 'choice', q: '结构位移计算的基本公式来源于', opts: ['静力平衡条件', '虚功原理', '能量守恒', '牛顿第二定律'], a: 'B',
+      e: '结构位移计算的基本公式来自虚功原理（单位荷载法）。' },
+    { type: 'choice', q: '图乘法适用于以下哪种情况？', opts: ['任意荷载下的位移', '杆件为等截面直杆，且至少一个弯矩图为直线', '曲线杆', '变截面杆'], a: 'B',
+      e: '图乘法适用条件：杆件为等截面直杆，至少一个弯矩图为直线（最好两图都为直线）。' },
+    { type: 'choice', q: '单位荷载法中的"单位荷载"是', opts: ['任意大小的力', '人为施加的虚拟单位力', '结构的自重', '支座反力'], a: 'B',
+      e: '单位荷载法中的"单位荷载"是人为施加的虚拟单位力（虚拟力状态）。' },
+    { type: 'choice', q: '图乘法公式 ∑(A·y₀/EI) 中，y₀ 是', opts: ['另一个弯矩图的面积', '一个弯矩图面积形心对应的另一个弯矩图纵距', '惯性矩', '长度'], a: 'B',
+      e: '图乘法：y₀ 是一个弯矩图面积形心处对应的另一个弯矩图的纵距。' },
+    { type: 'choice', q: '位移互等定理中的两个位移必须', opts: ['方向相同', '大小相等', '方向相反但数值相等', '完全无关'], a: 'B',
+      e: '位移互等定理：第一状态中单位力引起的第二状态位移 = 第二状态中单位力引起的第一状态位移。' },
+    { type: 'choice', q: '互等定理不包括以下哪个？', opts: ['位移互等', '力互等', '力-位移互等', '应力互等'], a: 'D',
+      e: '互等定理包括位移互等、力互等、力-位移互等三种，应力互等不是互等定理内容。' },
+    { type: 'choice', q: '温度变化引起的位移计算公式中，不包含', opts: ['温度变化值', '材料线膨胀系数', '杆件长度', '荷载大小'], a: 'D',
+      e: '温度位移公式 Δt = Σαt₀·∫ds + Σα·Δt·∫|M̄/EI|ds，不含外荷载项。' },
+    { type: 'choice', q: '支座移动引起的位移计算应采用', opts: ['荷载作用下的位移公式', '刚体虚功原理', '图乘法', '叠加法'], a: 'B',
+      e: '支座移动引起的位移采用刚体虚功原理计算（虚拟力状态对应刚体位移）。' },
+    { type: 'choice', q: '在荷载作用下的位移计算中，下列哪一项影响最大？', opts: ['轴力项', '剪力项', '弯矩项', '扭矩项'], a: 'C',
+      e: '在一般梁和刚架中，弯矩项对位移的贡献最大，轴力和剪力项通常可忽略。' },
+    { type: 'choice', q: '功的互等定理（力互等定理）适用于', opts: ['线性弹性体系', '非线性体系', '塑性体系', '任意体系'], a: 'A',
+      e: '功的互等定理只适用于线性弹性体系。' },
+    { type: 'judge', q: '图乘法可以代替积分法计算位移。', a: '正确',
+      e: '图乘法是积分法的图形化简算形式，适用条件下与积分法等价。' },
+    { type: 'judge', q: '位移互等定理表明：第一状态力引起的位移等于第二状态力引起的位移（数值相等）。', a: '正确',
+      e: '位移互等定理：δ₁₂ = δ₂₁，单位力 1 引起的位移互等。' },
+    { type: 'judge', q: '图乘法要求两个弯矩图中至少有一个为曲线。', a: '错误',
+      e: '图乘法要求至少一个弯矩图为直线（另一可为曲线）。' },
+    { type: 'judge', q: '温度变化不会引起静定结构的位移。', a: '错误',
+      e: '静定结构在温度变化下会产生位移（但不产生内力）。' },
+    { type: 'judge', q: '单位荷载法中单位力的施加位置必须是所求位移对应的位置和方向。', a: '正确',
+      e: '单位荷载法的关键是：单位力施加在所求位移对应的位置和方向上。' },
+    { type: 'fill', q: '结构位移计算的基本方法是______荷载法，基于虚功原理。', a: '单位',
+      e: '单位荷载法（虚功法）是结构位移计算的基本方法。' },
+    { type: 'fill', q: '图乘法计算位移的公式为 Δ = Σ ______/(EI)，其中 A 为弯矩图面积。', a: 'A·y₀',
+      e: '图乘法公式 Δ = Σ A·y₀/(EI)，y₀ 为形心对应另一弯矩图纵距。' },
+    { type: 'fill', q: '位移互等定理中，单位力 P₁=1 引起的与 P₂=1 对应的位移，等于______引起的与 P₁ 对应的位移。', a: 'P₂=1',
+      e: '位移互等定理：δ₁₂ = δ₂₁。' },
+    { type: 'fill', q: '温度变化引起的位移计算中，材料线膨胀系数用______表示。', a: 'α',
+      e: '线膨胀系数 α 是材料基本参数，影响温度位移大小。' },
+    { type: 'fill', q: '在线性弹性体系中，功的互等定理（力互等定理）适用于______。', a: '线性弹性',
+      e: '互等定理基于线弹性假设和小变形。' }
+  ],
+  ch6: [
+    { type: 'choice', q: '力法中超静定结构的基本未知量是', opts: ['结点位移', '多余约束力', '支座反力', '杆端弯矩'], a: 'B',
+      e: '力法的基本未知量是多余约束力（去掉多余约束后对应的力）。' },
+    { type: 'choice', q: '力法方程的物理意义是', opts: ['静力平衡条件', '变形协调条件', '能量守恒', '物理方程'], a: 'B',
+      e: '力法方程的物理意义：基本结构在荷载和多余力共同作用下，沿多余力方向的位移应与原结构一致（即变形协调）。' },
+    { type: 'choice', q: '力法方程中，主系数 δᵢᵢ 恒为', opts: ['正', '负', '零', '不确定'], a: 'A',
+      e: '主系数 δᵢᵢ 是基本结构在单位力 Xᵢ=1 作用下沿 Xᵢ 方向的位移，由内力平方项积分恒为正。' },
+    { type: 'choice', q: '利用结构对称性可以', opts: ['减少未知量数目', '改变荷载', '改变约束', '不影响计算'], a: 'A',
+      e: '利用对称性可将对称荷载或反对称荷载分组，只计算一半结构，显著减少基本未知量。' },
+    { type: 'choice', q: '对称结构在对称荷载作用下，下列哪个量在对称轴上为零？', opts: ['轴力', '弯矩', '剪力', '扭矩'], a: 'C',
+      e: '对称结构在对称荷载下，对称轴处剪力为零；反对称荷载下，对称轴处弯矩、轴力为零。' },
+    { type: 'choice', q: '连续梁两跨固定、支座间距离均为 L，超静定次数为', opts: ['1', '2', '3', '4'], a: 'C',
+      e: '连续梁两端固定加中间铰支，每跨超静定次数 2，两跨共 6 个反力、3 个方程，超静定次数 = 6 - 3 = 3。' },
+    { type: 'choice', q: '力法解超静定结构的核心步骤不包括', opts: ['选择基本结构', '建立力法方程', '解方程求多余力', '解结点平衡'], a: 'D',
+      e: '力法核心：选基本未知量→建立力法方程→解方程求多余力→叠加求内力；不包括解结点平衡（位移法步骤）。' },
+    { type: 'choice', q: '当力法基本未知量较多时，可采用', opts: ['位移法', '力矩分配法', '迭代法或分组简化', '图乘法'], a: 'C',
+      e: '力法基本未知量多时，可采用迭代法或分组利用对称性简化计算。' },
+    { type: 'choice', q: '在力法中，计算超静定结构内力的最终公式是', opts: ['M = M̄₁·X₁ + ... + Mₚ', 'M = X₁', 'M = -Mₚ', 'M = EI·φ'], a: 'A',
+      e: '力法最终内力 = 单位力引起内力·多余力 + 荷载引起内力（叠加原理）。' },
+    { type: 'choice', q: '支座移动引起的超静定结构内力计算，需要', opts: ['只考虑荷载', '只考虑支座位移', '同时考虑荷载和支座位移', '忽略支座位移'], a: 'C',
+      e: '超静定结构在支座位移下会产生内力，需要同时考虑荷载和支座位移的影响。' },
+    { type: 'judge', q: '力法的基本结构必须是几何不变的静定结构。', a: '正确',
+      e: '力法的基本结构是去掉多余约束后得到的几何不变静定结构。' },
+    { type: 'judge', q: '力法方程中的副系数 δᵢⱼ 等于 δⱼᵢ。', a: '正确',
+      e: '由位移互等定理，副系数满足 δᵢⱼ = δⱼᵢ，力法方程的系数矩阵是对称的。' },
+    { type: 'judge', q: '对称结构在反对称荷载下，对称轴处的弯矩为零。', a: '正确',
+      e: '对称结构在反对称荷载下，对称轴处弯矩、轴力为零，只有剪力。' },
+    { type: 'judge', q: '力法可以解静定结构。', a: '正确',
+      e: '力法理论上也可解静定结构（多余力=0），但通常不必要。' },
+    { type: 'judge', q: '超静定次数等于多余约束数。', a: '正确',
+      e: '超静定次数 = 多余约束数 = 全部约束数 - 必要约束数。' },
+    { type: 'fill', q: '力法的基本未知量是去掉多余约束后对应的______。', a: '多余约束力',
+      e: '力法以多余约束力作为基本未知量。' },
+    { type: 'fill', q: '力法方程的物理意义是基本结构沿多余力方向的位移应等于______结构的相应位移。', a: '原',
+      e: '变形协调条件：基本结构位移 = 原结构位移（即给定位移）。' },
+    { type: 'fill', q: '对称结构在对称荷载作用下，对称轴上的______为零。', a: '剪力',
+      e: '对称荷载 → 对称轴处剪力为零（反对称量）。' },
+    { type: 'fill', q: '力法方程中，主系数 δᵢᵢ 是基本结构在单位力 Xᵢ=1 作用下沿______方向的位移。', a: 'Xᵢ',
+      e: '主系数 δᵢᵢ 物理意义：单位力 Xᵢ=1 沿 Xᵢ 方向引起的位移。' },
+    { type: 'fill', q: '当超静定结构同时受荷载和支座位移作用时，最终内力为两者______。', a: '叠加',
+      e: '线性弹性体系中，多种因素引起的内力可以叠加计算。' }
+  ],
+  ch7: [
+    { type: 'choice', q: '位移法中超静定结构的基本未知量是', opts: ['多余约束力', '结点位移（角位移和线位移）', '杆端弯矩', '支座反力'], a: 'B',
+      e: '位移法以结点位移（角位移和独立线位移）作为基本未知量。' },
+    { type: 'choice', q: '位移法方程的物理意义是', opts: ['变形协调条件', '静力平衡条件', '能量守恒', '物理方程'], a: 'B',
+      e: '位移法方程的物理意义：结点或截面处的静力平衡条件（弯矩平衡或剪力平衡）。' },
+    { type: 'choice', q: '位移法中等截面直杆的杆端弯矩与杆端转角的关系称为', opts: ['力矩分配', '转角位移方程', '刚度方程', '剪力方程'], a: 'B',
+      e: '等截面直杆的杆端弯矩与杆端转角、侧移的关系称为转角位移方程（刚度方程）。' },
+    { type: 'choice', q: '位移法中结点角位移数等于', opts: ['刚结点数', '铰结点数', '刚结点数 + 半铰结点数', '支座数'], a: 'C',
+      e: '位移法中角位移未知量数 = 刚结点数 + 组合结点中的半铰数（半铰结点需独立转角未知量）。' },
+    { type: 'choice', q: '用位移法计算时，下列哪一项不属于基本未知量？', opts: ['刚结点角位移', '独立结点线位移', '杆端弯矩', '支座位移'], a: 'C',
+      e: '杆端弯矩是位移法求解的结果，不是基本未知量。' },
+    { type: 'choice', q: '远端固定的杆件，杆端转动刚度 S 等于', opts: ['EI/L', '2EI/L', '3EI/L', '4EI/L'], a: 'D',
+      e: '远端固定时，杆端转动刚度 S = 4EI/L；远端铰支时 S = 3EI/L。' },
+    { type: 'choice', q: '远端铰支的杆件，杆端转动刚度 S 等于', opts: ['4EI/L', '3EI/L', '2EI/L', 'EI/L'], a: 'B',
+      e: '远端铰支的杆件，杆端转动刚度 S = 3EI/L。' },
+    { type: 'choice', q: '位移法中独立结点线位移数通常采用下列哪种方法确定？', opts: ['铰接体系法', '截面法', '结点法', '能量法'], a: 'A',
+      e: '独立结点线位移数通常用"铰接体系法"——将刚架所有刚结点改为铰结点，分析铰接体系的几何可变度确定。' },
+    { type: 'choice', q: '位移法中关于附加刚臂和附加链杆的说法，正确的是', opts: ['仅用于静定结构', '是位移法形成基本结构的关键', '可以省略', '不改变原结构'], a: 'B',
+      e: '附加刚臂（约束角位移）和附加链杆（约束线位移）是位移法形成基本结构的关键。' },
+    { type: 'choice', q: '对称结构在反对称荷载作用下，下列哪个量在对称轴上为零？', opts: ['剪力', '轴力', '弯矩', '扭矩'], a: 'C',
+      e: '对称结构在反对称荷载下，对称轴处弯矩为零；对称荷载下，对称轴处剪力为零。' },
+    { type: 'judge', q: '位移法基本未知量的数目与超静定次数无关。', a: '正确',
+      e: '位移法未知量是结点位移数，与超静定次数无直接对应关系。' },
+    { type: 'judge', q: '位移法基本结构的各杆都被视为单跨超静定梁。', a: '正确',
+      e: '位移法的基本结构是：原结构的各杆加上附加约束后得到的结构，每根杆被视为单跨超静定梁。' },
+    { type: 'judge', q: '位移法方程的系数矩阵是对称的。', a: '正确',
+      e: '由反力互等定理，位移法方程的系数矩阵是对称的。' },
+    { type: 'judge', q: '位移法不适用于有侧移刚架。', a: '错误',
+      e: '位移法适用于有侧移刚架，只需增加独立线位移未知量即可。' },
+    { type: 'judge', q: '杆端弯矩的正负号规定：顺时针为正。', a: '正确',
+      e: '位移法中通常采用顺时针为正的约定，与结构力学一般约定一致。' },
+    { type: 'fill', q: '位移法的基本未知量包括结点______位移和独立结点线位移。', a: '角',
+      e: '角位移 + 线位移 = 位移法两类基本未知量。' },
+    { type: 'fill', q: '等截面直杆远端固定时，转动刚度 S = ______EI/L。', a: '4',
+      e: '远端固定：S = 4EI/L；远端铰支：S = 3EI/L。' },
+    { type: 'fill', q: '等截面直杆远端铰支时，转动刚度 S = ______EI/L。', a: '3',
+      e: '远端铰支：S = 3EI/L。' },
+    { type: 'fill', q: '位移法方程的物理意义是结点处的______平衡条件。', a: '静力',
+      e: '位移法方程基于结点静力平衡（弯矩平衡或剪力平衡）。' },
+    { type: 'fill', q: '对称结构在对称荷载下，对称轴上的剪力为______。', a: '零',
+      e: '对称荷载下，对称轴处剪力为零（反对称量）。' }
+  ],
+  ch8: [
+    { type: 'choice', q: '力矩分配法主要用于求解', opts: ['静定结构', '无侧移刚架和连续梁', '桁架', '拱'], a: 'B',
+      e: '力矩分配法以力矩分配和传递为核心，适用于无侧移刚架和连续梁。' },
+    { type: 'choice', q: '在力矩分配法中，分配系数 μ 等于', opts: ['S/S_total', 'EI/L', 'S_total/S', 'L/EI'], a: 'A',
+      e: '分配系数 μ = 汇交于同一结点的各杆转动刚度 S / 同一结点所有杆的转动刚度之和 S_total。' },
+    { type: 'choice', q: '远端固定的杆件，传递系数 C 为', opts: ['0', '1/4', '1/2', '3/4'], a: 'C',
+      e: '远端固定时传递系数 C = 1/2；远端铰支时 C = 0。' },
+    { type: 'choice', q: '远端铰支的杆件，传递系数 C 为', opts: ['0', '1/4', '1/2', '1'], a: 'A',
+      e: '远端铰支时，铰结点不能承受弯矩，传递系数 C = 0。' },
+    { type: 'choice', q: '力矩分配法的迭代收敛条件是', opts: ['任意外力', '仅结点外力偶', '仅结点角位移', '仅支座位移'], a: 'B',
+      e: '力矩分配法的标准形式仅适用于仅有结点外力偶（不平衡力矩）的情况。' },
+    { type: 'choice', q: '剪力分配法主要用于', opts: ['连续梁', '高层刚架', '排架', '桁架'], a: 'C',
+      e: '剪力分配法主要用于排架结构在水平荷载下的内力分析。' },
+    { type: 'choice', q: '影响线包络图反映', opts: ['某量随移动荷载位置的变化范围', '结构自振频率', '材料强度', '施工顺序'], a: 'A',
+      e: '影响线包络图反映移动荷载下某量的最大值和最小值随截面位置的变化范围。' },
+    { type: 'choice', q: '力矩分配法的基本步骤不包括', opts: ['计算分配系数', '计算传递系数', '迭代分配与传递', '列结点平衡方程'], a: 'D',
+      e: '力矩分配法无需列结点平衡方程，通过迭代分配和传递直接计算杆端弯矩。' },
+    { type: 'choice', q: '当结点上有多根杆件时，分配系数之和恒等于', opts: ['0', '1', '2', '不一定'], a: 'B',
+      e: '同一结点上所有杆件的分配系数之和 = 1（按定义是各杆刚度占总刚度的比例）。' },
+    { type: 'choice', q: '超静定结构的影响线可以用以下哪种方法绘制？', opts: ['只能用静力法', '只能用机动法', '可用静力法或机动法', '不能用静力法也不能用机动法'], a: 'C',
+      e: '超静定结构影响线绘制：① 静力法：用超静定结构分析方法求各截面影响线；② 机动法：基于虚功原理绘制。' },
+    { type: 'judge', q: '力矩分配法可直接用于有侧移的刚架。', a: '错误',
+      e: '力矩分配法的标准形式仅适用于无侧移刚架；侧移刚架需先处理侧移。' },
+    { type: 'judge', q: '分配系数之和等于 1。', a: '正确',
+      e: '同一结点所有杆件分配系数之和 = S_total/S_total = 1。' },
+    { type: 'judge', q: '远端铰支杆的传递系数为 0。', a: '正确',
+      e: '远端铰支时铰结点不能承受弯矩，故传递系数 C = 0。' },
+    { type: 'judge', q: '剪力分配法与力矩分配法是同一种方法。', a: '错误',
+      e: '剪力分配法和力矩分配法是两种不同的实用分析方法，分别针对排架和无侧移刚架。' },
+    { type: 'judge', q: '影响线包络图反映了某量在移动荷载下的最大值变化范围。', a: '正确',
+      e: '影响线包络图描绘移动荷载下某量最大值随截面位置变化的曲线。' },
+    { type: 'fill', q: '力矩分配法中，分配系数 μᵢ = Sᵢ / ______。', a: 'S_total',
+      e: 'μᵢ = Sᵢ / S_total，S_total 是同一结点所有杆件转动刚度之和。' },
+    { type: 'fill', q: '远端固定时，传递系数 C = ______。', a: '1/2',
+      e: '远端固定：传递系数 C = 1/2（远端弯矩 = 杆端弯矩的一半）。' },
+    { type: 'fill', q: '力矩分配法的核心操作是力矩的______和传递。', a: '分配',
+      e: '力矩分配法的核心：分配不平衡力矩 + 传递到远端，反复迭代直至收敛。' },
+    { type: 'fill', q: '剪力分配法主要用于 ______ 结构在水平荷载下的分析。', a: '排架',
+      e: '剪力分配法主要分析排架（如工业厂房）在风荷载、水平地震作用下的内力。' },
+    { type: 'fill', q: '影响线包络图反映移动荷载下某量的______值变化范围。', a: '最大',
+      e: '包络图：移动荷载下某量最大值随截面位置的变化。' }
+  ]
+};
+
+// ============================================================
+// 3. 全局状态
+// ============================================================
+const ADMIN_ID = '2023011624';
+const ADMIN_NAME = '谭积钻';
+const STORAGE_KEY_RECORD = 'fruit_tree_user_records_v1';
+const STORAGE_KEY_CURRENT = 'fruit_tree_current_user_v1';
+
+let currentUser = null;          // {id, name, isAdmin}
+let userRecords = {};            // 学号 -> {name, scores: {ch1: bestScore, ...}, picked: {ch1: bool, ...}, attempts: {...}}
+let currentFruit = null;
+let practiceState = null;        // {questions, current, answers, score}
+
+// ============================================================
+// 4. Canvas 场景绘制（果树 + 背景）
+// ============================================================
+const canvas = document.getElementById('scene-canvas');
+const ctx = canvas.getContext('2d');
+let clouds = [];
+let time = 0;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initClouds();
+  computeFruitPositions();
+  renderFruits();
+}
+
+function initClouds() {
+  clouds = [];
+  const count = Math.max(3, Math.floor(canvas.width / 300));
+  for (let i = 0; i < count; i++) {
+    clouds.push({
+      x: Math.random() * canvas.width,
+      y: 40 + Math.random() * (canvas.height * 0.25),
+      r: 20 + Math.random() * 30,
+      v: 0.1 + Math.random() * 0.2
+    });
+  }
+}
+
+function drawSky() {
+  // 天空
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, '#87ceeb');
+  sky.addColorStop(0.6, '#b8e0f5');
+  sky.addColorStop(0.85, '#d6f0c8');
+  sky.addColorStop(1, '#a8d68f');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 太阳
+  const sunX = canvas.width - 120;
+  const sunY = 110;
+  const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 80);
+  sunGrad.addColorStop(0, 'rgba(255, 240, 180, 0.9)');
+  sunGrad.addColorStop(0.3, 'rgba(255, 220, 120, 0.5)');
+  sunGrad.addColorStop(1, 'rgba(255, 200, 80, 0)');
+  ctx.fillStyle = sunGrad;
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, 80, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff5b8';
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, 38, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 云朵
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  clouds.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+    ctx.arc(c.x + c.r * 0.8, c.y + 5, c.r * 0.7, 0, Math.PI * 2);
+    ctx.arc(c.x - c.r * 0.8, c.y + 5, c.r * 0.7, 0, Math.PI * 2);
+    ctx.arc(c.x + c.r * 0.4, c.y - c.r * 0.4, c.r * 0.6, 0, Math.PI * 2);
+    ctx.arc(c.x - c.r * 0.4, c.y - c.r * 0.3, c.r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 远山
+  ctx.fillStyle = 'rgba(120, 160, 130, 0.4)';
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height * 0.78);
+  for (let x = 0; x <= canvas.width; x += 80) {
+    const y = canvas.height * 0.78 - Math.abs(Math.sin(x * 0.005)) * 60 - 20;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+
+  // 草地
+  const grass = ctx.createLinearGradient(0, canvas.height * 0.82, 0, canvas.height);
+  grass.addColorStop(0, '#8fbc6f');
+  grass.addColorStop(1, '#5a8f3f');
+  ctx.fillStyle = grass;
+  ctx.fillRect(0, canvas.height * 0.82, canvas.width, canvas.height * 0.18);
+
+  // 草地纹理
+  ctx.fillStyle = 'rgba(74, 130, 60, 0.4)';
+  for (let i = 0; i < 80; i++) {
+    const gx = Math.random() * canvas.width;
+    const gy = canvas.height * 0.85 + Math.random() * canvas.height * 0.12;
+    ctx.fillRect(gx, gy, 2, 6);
+  }
+}
+
+function drawTree() {
+  const cx = canvas.width / 2;
+  const groundY = canvas.height * 0.85;
+  const trunkBaseY = groundY;
+  const trunkTopY = canvas.height * 0.32;
+
+  // 树干
+  const trunkWidth = canvas.width * 0.07;
+  const trunkGrad = ctx.createLinearGradient(cx - trunkWidth/2, 0, cx + trunkWidth/2, 0);
+  trunkGrad.addColorStop(0, '#6d4226');
+  trunkGrad.addColorStop(0.5, '#9c6840');
+  trunkGrad.addColorStop(1, '#5a3620');
+  ctx.fillStyle = trunkGrad;
+  ctx.beginPath();
+  ctx.moveTo(cx - trunkWidth/2 - 8, trunkBaseY);
+  ctx.bezierCurveTo(
+    cx - trunkWidth/2, trunkBaseY - 60,
+    cx - trunkWidth/2 + 5, trunkTopY + 80,
+    cx - trunkWidth * 0.3, trunkTopY
+  );
+  ctx.lineTo(cx + trunkWidth * 0.3, trunkTopY);
+  ctx.bezierCurveTo(
+    cx + trunkWidth/2 - 5, trunkTopY + 80,
+    cx + trunkWidth/2, trunkBaseY - 60,
+    cx + trunkWidth/2 + 8, trunkBaseY
+  );
+  ctx.closePath();
+  ctx.fill();
+
+  // 树干纹理
+  ctx.strokeStyle = 'rgba(60, 35, 18, 0.4)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    const y1 = trunkBaseY - 20 - i * 30;
+    ctx.moveTo(cx - trunkWidth/2 + 4, y1);
+    ctx.bezierCurveTo(
+      cx - 5, y1 - 10,
+      cx + 5, y1 - 20,
+      cx + trunkWidth/2 - 4, y1 - 8
+    );
+    ctx.stroke();
+  }
+
+  // 主分叉点（树枝从此处向四周展开）
+  const branchY = trunkTopY + 20;
+  const branchSpread = canvas.width * 0.36;
+
+  // 树枝（在果实位置前绘制）
+  const branches = [
+    // 左下分支
+    { x1: cx, y1: branchY + 30, x2: cx - branchSpread * 0.55, y2: branchY + 90, w: 16 },
+    // 右下分支
+    { x1: cx, y1: branchY + 30, x2: cx + branchSpread * 0.55, y2: branchY + 90, w: 16 },
+    // 左中分支
+    { x1: cx, y1: branchY, x2: cx - branchSpread * 0.85, y2: branchY - 30, w: 18 },
+    // 右中分支
+    { x1: cx, y1: branchY, x2: cx + branchSpread * 0.85, y2: branchY - 30, w: 18 },
+    // 左上分支
+    { x1: cx, y1: branchY - 10, x2: cx - branchSpread * 0.45, y2: branchY - 90, w: 14 },
+    // 右上分支
+    { x1: cx, y1: branchY - 10, x2: cx + branchSpread * 0.45, y2: branchY - 90, w: 14 },
+    // 顶部直立分支
+    { x1: cx, y1: branchY - 20, x2: cx, y2: branchY - 130, w: 12 },
+    // 左前分支（短）
+    { x1: cx - branchSpread * 0.3, y1: branchY - 20, x2: cx - branchSpread * 0.95, y2: branchY + 20, w: 12 },
+    // 右前分支（短）
+    { x1: cx + branchSpread * 0.3, y1: branchY - 20, x2: cx + branchSpread * 0.95, y2: branchY + 20, w: 12 }
+  ];
+
+  ctx.strokeStyle = '#8a5a36';
+  ctx.lineCap = 'round';
+  branches.forEach(b => {
+    const grad = ctx.createLinearGradient(b.x1, b.y1, b.x2, b.y2);
+    grad.addColorStop(0, '#9c6840');
+    grad.addColorStop(1, '#7a4a26');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = b.w;
+    ctx.beginPath();
+    ctx.moveTo(b.x1, b.y1);
+    ctx.quadraticCurveTo(
+      (b.x1 + b.x2) / 2 + (b.y1 - b.y2) * 0.1,
+      (b.y1 + b.y2) / 2 - 20,
+      b.x2, b.y2
+    );
+    ctx.stroke();
+  });
+
+  // 树冠（叶丛）
+  drawCanopy(cx, branchY, branchSpread);
+
+  // 树根
+  ctx.fillStyle = '#6d4226';
+  ctx.beginPath();
+  ctx.ellipse(cx, trunkBaseY + 5, trunkWidth * 1.2, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 树根两侧小根
+  ctx.fillStyle = '#8a5a36';
+  ctx.beginPath();
+  ctx.ellipse(cx - trunkWidth * 0.7, trunkBaseY - 5, 18, 8, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + trunkWidth * 0.7, trunkBaseY - 5, 18, 8, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCanopy(cx, branchY, branchSpread) {
+  // 叶丛：用多个半透明圆形模拟茂密树冠
+  const leaves = [
+    { x: cx, y: branchY - 50, r: 80 },
+    { x: cx - branchSpread * 0.4, y: branchY - 30, r: 70 },
+    { x: cx + branchSpread * 0.4, y: branchY - 30, r: 70 },
+    { x: cx - branchSpread * 0.7, y: branchY - 50, r: 60 },
+    { x: cx + branchSpread * 0.7, y: branchY - 50, r: 60 },
+    { x: cx, y: branchY - 130, r: 50 },
+    { x: cx - branchSpread * 0.25, y: branchY - 90, r: 55 },
+    { x: cx + branchSpread * 0.25, y: branchY - 90, r: 55 },
+    { x: cx - branchSpread * 0.6, y: branchY - 90, r: 50 },
+    { x: cx + branchSpread * 0.6, y: branchY - 90, r: 50 }
+  ];
+
+  leaves.forEach(l => {
+    const sway = Math.sin(time * 0.001 + l.x * 0.005) * 2;
+    const grad = ctx.createRadialGradient(l.x + sway, l.y, 0, l.x + sway, l.y, l.r);
+    grad.addColorStop(0, 'rgba(74, 157, 90, 0.8)');
+    grad.addColorStop(0.6, 'rgba(94, 167, 100, 0.7)');
+    grad.addColorStop(1, 'rgba(74, 157, 90, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(l.x + sway, l.y, l.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawGroundDetails() {
+  const groundY = canvas.height * 0.85;
+  // 散落的小花
+  const flowers = [
+    { x: canvas.width * 0.08, y: groundY + 30, c: '#ffb84a' },
+    { x: canvas.width * 0.15, y: groundY + 60, c: '#ff6b7a' },
+    { x: canvas.width * 0.92, y: groundY + 40, c: '#ffb84a' },
+    { x: canvas.width * 0.85, y: groundY + 70, c: '#fff' },
+    { x: canvas.width * 0.05, y: groundY + 80, c: '#a8e6cf' }
+  ];
+  flowers.forEach(f => {
+    ctx.fillStyle = f.c;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function animateScene() {
+  time++;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSky();
+  drawTree();
+  drawGroundDetails();
+
+  // 云朵移动
+  clouds.forEach(c => {
+    c.x += c.v;
+    if (c.x > canvas.width + 100) c.x = -100;
+  });
+
+  requestAnimationFrame(animateScene);
+}
+
+// ============================================================
+// 5. 果实定位与渲染
+// ============================================================
+const FRUIT_POS = [];
+
+function computeFruitPositions() {
+  const cx = canvas.width / 2;
+  const baseY = canvas.height * 0.32 + 20;  // 树枝分叉点
+  const spread = canvas.width * 0.36;
+
+  // 8 个果实分布在树冠四周，避开中心
+  FRUIT_POS.length = 0;
+  FRUITS.forEach((f, i) => {
+    let x, y;
+    // 在树周围做环形分布，但留出中心让树冠透出
+    const angle = (-Math.PI / 2) + (i - 3.5) * 0.42;
+    const r = Math.min(canvas.width, canvas.height) * 0.32;
+    x = cx + Math.cos(angle) * r;
+    y = baseY + Math.sin(angle) * r * 0.55 - 20;
+
+    FRUIT_POS.push({ x, y });
+  });
+}
+
+function renderFruits() {
+  const layer = document.getElementById('fruit-layer');
+  layer.innerHTML = '';
+  if (!currentUser) return;
+
+  const record = getRecord(currentUser.id);
+
+  FRUITS.forEach((f, i) => {
+    const pos = FRUIT_POS[i];
+    if (!pos) return;
+    const state = getFruitState(record, f.id);
+
+    const el = document.createElement('div');
+    el.className = 'fruit';
+    el.dataset.fruitId = f.id;
+    el.dataset.state = state;
+    el.style.left = pos.x + 'px';
+    el.style.top = pos.y + 'px';
+    el.style.setProperty('--sway-delay', (i * 0.3) + 's');
+
+    const best = record.scores[f.id] || 0;
+    const labelText = `${f.topic}`;
+    const scoreText = state === 'picked' ? `★${best}分` : (best > 0 ? `${best}分` : '');
+    const colorStyle = state === 'picked' ? 'color:#b87a1a;' : `color:${f.color};`;
+
+    el.innerHTML = `
+      <div class="fruit-stem"></div>
+      <div class="fruit-leaf"></div>
+      <div class="fruit-body" style="background:radial-gradient(circle at 30% 30%, ${lightenColor(f.color, 40)}, ${f.color} 60%, ${darkenColor(f.color, 30)});">
+        ${f.name}
+      </div>
+      <div class="fruit-label">
+        <span style="${colorStyle}">${labelText}</span>
+        <span class="fruit-score">${scoreText}</span>
+      </div>
+    `;
+
+    el.addEventListener('click', () => openPractice(f));
+    layer.appendChild(el);
+  });
+}
+
+function getFruitState(record, fruitId) {
+  if (record.picked && record.picked[fruitId]) return 'picked';
+  if (record.scoring && record.scoring[fruitId]) return 'picking';
+  return 'unpicked';
+}
+
+function lightenColor(hex, amount) {
+  const num = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, ((num >> 16) & 0xff) + amount);
+  const g = Math.min(255, ((num >> 8) & 0xff) + amount);
+  const b = Math.min(255, (num & 0xff) + amount);
+  return `rgb(${r},${g},${b})`;
+}
+function darkenColor(hex, amount) {
+  const num = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, ((num >> 16) & 0xff) - amount);
+  const g = Math.max(0, ((num >> 8) & 0xff) - amount);
+  const b = Math.max(0, (num & 0xff) - amount);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ============================================================
+// 6. 登录 / 身份验证
+// ============================================================
+function initLogin() {
+  const idInput = document.getElementById('login-id');
+  const nameInput = document.getElementById('login-name');
+  const errorEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  function clearError() {
+    errorEl.textContent = '';
+    idInput.classList.remove('error');
+    nameInput.classList.remove('error');
+  }
+
+  function tryLogin() {
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+    clearError();
+
+    if (!id) {
+      errorEl.textContent = '请输入学号';
+      idInput.classList.add('error');
+      idInput.focus();
+      return;
+    }
+    if (!name) {
+      errorEl.textContent = '请输入姓名';
+      nameInput.classList.add('error');
+      nameInput.focus();
+      return;
+    }
+
+    currentUser = {
+      id,
+      name,
+      isAdmin: (id === ADMIN_ID && name === ADMIN_NAME)
+    };
+
+    localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify(currentUser));
+    enterApp();
+  }
+
+  btn.addEventListener('click', tryLogin);
+  [idInput, nameInput].forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') tryLogin();
+    });
+    inp.addEventListener('input', clearError);
+  });
+
+  // 自动登录
+  const saved = localStorage.getItem(STORAGE_KEY_CURRENT);
+  if (saved) {
+    try {
+      const u = JSON.parse(saved);
+      currentUser = u;
+      enterApp();
+      return;
+    } catch(e) {}
+  }
+  document.getElementById('login-id').focus();
+}
+
+function enterApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('top-bar').style.display = 'flex';
+  document.getElementById('stat-bar').style.display = 'flex';
+  document.getElementById('tip').style.display = 'block';
+  document.getElementById('fruit-layer').style.display = 'block';
+
+  document.getElementById('user-name').textContent = currentUser.name;
+  document.getElementById('user-id').textContent = '学号：' + currentUser.id;
+  document.getElementById('user-avatar').textContent = currentUser.name.charAt(0);
+  document.getElementById('admin-badge').style.display = currentUser.isAdmin ? 'inline-block' : 'none';
+  document.getElementById('btn-admin').style.display = currentUser.isAdmin ? 'inline-block' : 'none';
+
+  updateStats();
+  renderFruits();
+}
+
+function logout() {
+  if (!confirm('确定要退出登录吗？\n（不会删除答题记录）')) return;
+  currentUser = null;
+  localStorage.removeItem(STORAGE_KEY_CURRENT);
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('top-bar').style.display = 'none';
+  document.getElementById('stat-bar').style.display = 'none';
+  document.getElementById('tip').style.display = 'none';
+  document.getElementById('fruit-layer').style.display = 'none';
+  document.getElementById('login-id').value = '';
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-id').focus();
+}
+
+function resetOwnData() {
+  if (!currentUser) return;
+  if (!confirm('确定要重置你的所有果实练习记录吗？\n包括已摘取的果实和得分。')) return;
+  const rec = getRecord(currentUser.id);
+  rec.scores = {};
+  rec.picked = {};
+  rec.attempts = {};
+  rec.scoring = {};
+  saveRecords();
+  renderFruits();
+  updateStats();
+  showToast('已重置你的果实记录', 'success');
+}
+
+// ============================================================
+// 7. 本地存储管理
+// ============================================================
+function loadRecords() {
+  const saved = localStorage.getItem(STORAGE_KEY_RECORD);
+  if (saved) {
+    try { userRecords = JSON.parse(saved); return; } catch(e) {}
+  }
+  userRecords = {};
+}
+
+function saveRecords() {
+  localStorage.setItem(STORAGE_KEY_RECORD, JSON.stringify(userRecords));
+}
+
+function getRecord(userId) {
+  if (!userRecords[userId]) {
+    userRecords[userId] = {
+      name: '',
+      scores: {},
+      picked: {},
+      attempts: {},
+      scoring: {}
+    };
+  }
+  const r = userRecords[userId];
+  if (!r.scores) r.scores = {};
+  if (!r.picked) r.picked = {};
+  if (!r.attempts) r.attempts = {};
+  if (!r.scoring) r.scoring = {};
+  if (currentUser && !r.name) r.name = currentUser.name;
+  return r;
+}
+
+function updateStats() {
+  if (!currentUser) return;
+  const r = getRecord(currentUser.id);
+  const picked = Object.values(r.picked).filter(Boolean).length;
+  const totalScore = Object.values(r.scores).reduce((a, b) => a + b, 0);
+  const totalAttempts = Object.values(r.attempts).reduce((a, b) => a + b, 0);
+  document.getElementById('stat-picked').textContent = picked;
+  document.getElementById('stat-score').textContent = totalScore;
+  document.getElementById('stat-attempts').textContent = totalAttempts;
+}
+
+// ============================================================
+// 8. 练习弹窗
+// ============================================================
+function openPractice(fruit) {
+  currentFruit = fruit;
+  const r = getRecord(currentUser.id);
+  r.scoring[fruit.id] = true;
+  saveRecords();
+  renderFruits();
+
+  // 抽 10 题
+  const bank = QUESTION_BANK[fruit.id];
+  const shuffled = shuffle([...bank]);
+  const questions = shuffled.slice(0, Math.min(10, shuffled.length));
+
+  practiceState = {
+    fruit,
+    questions,
+    current: 0,
+    answers: new Array(questions.length).fill(null),
+    score: 0
+  };
+
+  document.getElementById('practice-title').textContent = `${fruit.name} · ${fruit.topic}`;
+  document.getElementById('practice-subtitle').textContent = `共 10 道题 · 答对全部即可摘取果实`;
+  document.getElementById('practice-overlay').classList.add('show');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const body = document.getElementById('practice-body');
+  const { questions, current } = practiceState;
+  const q = questions[current];
+
+  const progressHtml = questions.map((_, i) => {
+    let cls = 'progress-dot';
+    if (i < current) {
+      cls += practiceState.answers[i]?.correct ? ' done' : ' wrong';
+    } else if (i === current) {
+      cls += ' current';
+    }
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  let typeLabel = '选择题';
+  if (q.type === 'judge') typeLabel = '判断题';
+  else if (q.type === 'fill') typeLabel = '填空题';
+
+  let optsHtml = '';
+  if (q.type === 'choice') {
+    const letters = ['A', 'B', 'C', 'D'];
+    optsHtml = `<div class="options">${q.opts.map((o, i) => `
+      <div class="option" data-letter="${letters[i]}" onclick="selectOption(this, '${letters[i]}')">
+        <span class="option-letter">${letters[i]}</span>
+        <span>${o}</span>
+      </div>
+    `).join('')}</div>`;
+  } else if (q.type === 'judge') {
+    optsHtml = `<div class="options">
+      <div class="option" data-letter="正确" onclick="selectOption(this, '正确')">
+        <span class="option-letter">✓</span>
+        <span>正确</span>
+      </div>
+      <div class="option" data-letter="错误" onclick="selectOption(this, '错误')">
+        <span class="option-letter">✗</span>
+        <span>错误</span>
+      </div>
+    </div>`;
+  } else if (q.type === 'fill') {
+    optsHtml = `<input type="text" class="fill-input" id="fill-input" placeholder="请输入答案" maxlength="50">`;
+  }
+
+  body.innerHTML = `
+    <div class="practice-progress">${progressHtml}</div>
+    <div class="practice-meta">
+      <span class="practice-counter">第 ${current + 1} / ${questions.length} 题</span>
+      <span>当前得分：${practiceState.score}</span>
+    </div>
+    <div class="question-card">
+      <span class="question-type ${q.type}">${typeLabel}</span>
+      <div class="question-text">${q.q}</div>
+      ${optsHtml}
+      <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="practice-actions">
+      <button class="practice-btn secondary" onclick="closePractice()">退出练习</button>
+      <button class="practice-btn primary" id="submit-btn" onclick="submitAnswer()" disabled>提交答案</button>
+    </div>
+  `;
+
+  if (q.type === 'fill') {
+    const input = document.getElementById('fill-input');
+    input.addEventListener('input', () => {
+      document.getElementById('submit-btn').disabled = !input.value.trim();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && input.value.trim()) submitAnswer();
+    });
+    input.focus();
+  }
+}
+
+function selectOption(el, letter) {
+  if (practiceState.answers[practiceState.current] !== null) return;
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  practiceState.selected = letter;
+  document.getElementById('submit-btn').disabled = false;
+}
+
+function submitAnswer() {
+  const { questions, current } = practiceState;
+  const q = questions[current];
+  let userAns;
+
+  if (q.type === 'choice' || q.type === 'judge') {
+    userAns = practiceState.selected;
+    if (!userAns) return;
+  } else if (q.type === 'fill') {
+    const input = document.getElementById('fill-input');
+    userAns = input.value.trim();
+    if (!userAns) return;
+  }
+
+  // 判分
+  let correct = false;
+  if (q.type === 'fill') {
+    correct = userAns === q.a;
+  } else {
+    correct = userAns === q.a;
+  }
+
+  practiceState.answers[current] = { userAns, correct, q };
+
+  // 显示反馈
+  const feedback = document.getElementById('feedback');
+  if (correct) {
+    practiceState.score++;
+    feedback.className = 'feedback correct show';
+    feedback.innerHTML = `<div class="feedback-title">✓ 回答正确</div><div>${q.e || ''}</div>`;
+  } else {
+    feedback.className = 'feedback wrong show';
+    feedback.innerHTML = `<div class="feedback-title">✗ 回答错误</div>
+      <div>正确答案：<strong>${q.a}</strong>${q.type === 'fill' ? '' : (q.type === 'choice' ? '' : '')}</div>
+      <div style="margin-top:6px">${q.e || ''}</div>`;
+  }
+
+  // 高亮选项
+  if (q.type === 'choice' || q.type === 'judge') {
+    document.querySelectorAll('.option').forEach(o => {
+      const l = o.dataset.letter;
+      if (l === q.a) o.classList.add('correct');
+      else if (l === userAns && !correct) o.classList.add('wrong');
+    });
+  }
+
+  // 切换按钮
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.textContent = current === practiceState.questions.length - 1 ? '查看结果' : '下一题';
+  submitBtn.disabled = false;
+  submitBtn.onclick = nextQuestion;
+
+  // 禁用选项
+  if (q.type === 'choice' || q.type === 'judge') {
+    document.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
+  }
+  if (q.type === 'fill') {
+    const input = document.getElementById('fill-input');
+    input.disabled = true;
+  }
+}
+
+function nextQuestion() {
+  const { questions, current } = practiceState;
+  if (current < questions.length - 1) {
+    practiceState.current++;
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  const { fruit, score, questions } = practiceState;
+  const total = questions.length;
+  const full = score === total;
+  const body = document.getElementById('practice-body');
+
+  // 更新记录
+  const r = getRecord(currentUser.id);
+  r.attempts[fruit.id] = (r.attempts[fruit.id] || 0) + 1;
+  const prev = r.scores[fruit.id] || 0;
+  if (score > prev) r.scores[fruit.id] = score;
+  if (full) r.picked[fruit.id] = true;
+  delete r.scoring[fruit.id];
+  saveRecords();
+  renderFruits();
+  updateStats();
+
+  let resultClass = 'partial';
+  let icon = '🌟';
+  let title = '再接再厉！';
+  let desc = `本章已记录 ${score} 分，多练几次巩固知识。`;
+  if (score >= total * 0.8) {
+    resultClass = 'partial';
+    icon = '🌟';
+    title = '表现不错！';
+    desc = `本章已记录 ${score} 分${full ? '，恭喜摘取果实！' : '。'}`;
+  }
+  if (full) {
+    resultClass = 'full';
+    icon = '🏆';
+    title = '满分通过！';
+    desc = '本章知识点已完全掌握，可以摘取果实了！';
+    triggerCelebration();
+  }
+
+  body.innerHTML = `
+    <div class="result-card">
+      <div class="result-icon">${icon}</div>
+      <div class="result-title">${title}</div>
+      <div class="result-score ${resultClass}">${score} / ${total}</div>
+      <div class="result-desc">${desc}</div>
+      <div class="result-stats">
+        <div class="result-stat-item">
+          <div class="result-stat-num">${score}</div>
+          <div class="result-stat-label">答对</div>
+        </div>
+        <div class="result-stat-item">
+          <div class="result-stat-num err">${total - score}</div>
+          <div class="result-stat-label">答错</div>
+        </div>
+        <div class="result-stat-item">
+          <div class="result-stat-num">${full ? '★' : '-'}</div>
+          <div class="result-stat-label">${full ? '已摘取' : '未摘取'}</div>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="practice-btn secondary" onclick="closePractice()">关闭</button>
+        <button class="practice-btn primary" onclick="openPractice(currentFruit)">再来一组</button>
+      </div>
+    </div>
+  `;
+}
+
+function triggerCelebration() {
+  const colors = ['#ffb84a', '#ff6b7a', '#6fcf97', '#4dabf7', '#9775fa', '#ffd43b'];
+  const layer = document.createElement('div');
+  layer.className = 'celebration';
+  document.body.appendChild(layer);
+
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    layer.appendChild(piece);
+  }
+
+  setTimeout(() => layer.remove(), 4500);
+}
+
+function closePractice() {
+  if (practiceState && currentFruit) {
+    const r = getRecord(currentUser.id);
+    delete r.scoring[currentFruit.id];
+    saveRecords();
+    renderFruits();
+  }
+  document.getElementById('practice-overlay').classList.remove('show');
+  practiceState = null;
+  currentFruit = null;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ============================================================
+// 9. 管理员面板
+// ============================================================
+function openAdmin() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  document.getElementById('admin-overlay').classList.add('show');
+  renderAdminList();
+}
+
+function closeAdmin() {
+  document.getElementById('admin-overlay').classList.remove('show');
+}
+
+function renderAdminList() {
+  const body = document.getElementById('admin-body');
+  const entries = Object.entries(userRecords);
+
+  if (entries.length === 0) {
+    body.innerHTML = `
+      <div class="admin-empty">
+        <div class="admin-empty-icon">📋</div>
+        <div>暂无学生答题记录</div>
+      </div>
+    `;
+    return;
+  }
+
+  body.innerHTML = `
+    <div style="font-size:12px;color:#6c7a8a;margin-bottom:14px">
+      共 <strong>${entries.length}</strong> 位学生记录，可单独删除任一学生的记录。
+    </div>
+    ${entries.map(([id, r]) => {
+      const picked = Object.values(r.picked || {}).filter(Boolean).length;
+      const totalScore = Object.values(r.scores || {}).reduce((a, b) => a + b, 0);
+      const totalAttempts = Object.values(r.attempts || {}).reduce((a, b) => a + b, 0);
+      const isAdminSelf = id === ADMIN_ID;
+      return `
+        <div class="student-record">
+          <div class="student-record-info">
+            <div class="student-record-name">
+              ${escapeHtml(r.name || '(未填姓名)')}
+              ${isAdminSelf ? '<span class="admin-badge" style="margin-left:6px">管理员</span>' : ''}
+            </div>
+            <div class="student-record-id">学号：${id}</div>
+            <div class="student-record-stats">
+              <span><span class="v">${picked}</span>/8 已摘取</span>
+              <span><span class="v">${totalScore}</span> 总分</span>
+              <span><span class="v">${totalAttempts}</span> 练习次数</span>
+            </div>
+          </div>
+          <button class="record-del-btn" onclick="deleteStudentRecord('${id}')">删除</button>
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+function deleteStudentRecord(userId) {
+  if (userId === ADMIN_ID) {
+    showToast('管理员自身的记录不可删除', 'error');
+    return;
+  }
+  const r = userRecords[userId];
+  if (!r) return;
+  const name = r.name || '(未填姓名)';
+  if (!confirm(`确定要删除学生【${name} / ${userId}】的所有答题记录吗？\n此操作不可恢复！`)) return;
+  delete userRecords[userId];
+  saveRecords();
+  renderAdminList();
+  // 如果删除的是当前用户，重新渲染果实
+  if (currentUser && currentUser.id === userId) {
+    renderFruits();
+    updateStats();
+  }
+  showToast(`已删除 ${name} 的记录`, 'success');
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// ============================================================
+// 10. Toast 提示
+// ============================================================
+let toastTimer = null;
+function showToast(msg, type = 'info') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// 11. 初始化
+// ============================================================
+window.addEventListener('resize', () => {
+  resizeCanvas();
+});
+
+loadRecords();
+resizeCanvas();
+animateScene();
+initLogin();
+</script>
+
+</body>
+</html>
