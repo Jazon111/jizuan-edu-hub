@@ -477,19 +477,19 @@ body { background: linear-gradient(180deg, #87ceeb 0%, #b8e0f5 60%, #d6f0c8 100%
 
     <div class="login-field">
       <label>学号</label>
-      <input type="text" class="login-input" id="login-id" placeholder="请输入学号" autocomplete="off" maxlength="20">
+      <input type="text" class="login-input" id="login-id" placeholder="请输入学号" autocomplete="off" maxlength="20" value="">
     </div>
     <div class="login-field">
       <label>姓名</label>
-      <input type="text" class="login-input" id="login-name" placeholder="请输入姓名" autocomplete="off" maxlength="20">
+      <input type="text" class="login-input" id="login-name" placeholder="请输入姓名" autocomplete="off" maxlength="20" value="">
     </div>
     <div class="login-error" id="login-error"></div>
 
     <button class="login-btn" id="login-btn">进入知识果树</button>
 
     <div class="login-hint">
-      管理员账号：<strong>2023011624</strong> 谭积钻<br>
-      管理员登录后可见【管理后台】按钮
+      管理员账号：姓名 <strong>1</strong>，学号 <strong>1</strong><br>
+      管理员登录后可见【管理后台】按钮，可在管理后台删除任一学生的记录（含本人）
     </div>
   </div>
 </div>
@@ -559,6 +559,8 @@ body { background: linear-gradient(180deg, #87ceeb 0%, #b8e0f5 60%, #d6f0c8 100%
 <div class="toast" id="toast"></div>
 
 <script>
+// localStorage 同步到父窗口（解决 blob URL iframe 与父页面 localStorage 分区不同的问题）
+(function(){try{if(window.parent&&window.parent!==window){var p=window.parent.localStorage;var s=localStorage.setItem.bind(localStorage);var r=localStorage.removeItem.bind(localStorage);localStorage.setItem=function(k,v){s(k,v);try{p.setItem(k,v)}catch(e){}};localStorage.removeItem=function(k){r(k);try{p.removeItem(k)}catch(e){}}}}catch(e){}})();
 // ============================================================
 // 1. 数据：8 个 L1 知识点（果实）
 // ============================================================
@@ -918,8 +920,8 @@ const QUESTION_BANK = {
 // ============================================================
 // 3. 全局状态
 // ============================================================
-const ADMIN_ID = '2023011624';
-const ADMIN_NAME = '谭积钻';
+const ADMIN_ID = '1';
+const ADMIN_NAME = '1';
 const STORAGE_KEY_RECORD = 'fruit_tree_user_records_v1';
 const STORAGE_KEY_CURRENT = 'fruit_tree_current_user_v1';
 
@@ -1335,16 +1337,8 @@ function initLogin() {
     inp.addEventListener('input', clearError);
   });
 
-  // 自动登录
-  const saved = localStorage.getItem(STORAGE_KEY_CURRENT);
-  if (saved) {
-    try {
-      const u = JSON.parse(saved);
-      currentUser = u;
-      enterApp();
-      return;
-    } catch(e) {}
-  }
+  // 强制显示登录页面，必须输入学号和姓名才能进入
+  localStorage.removeItem(STORAGE_KEY_CURRENT);
   document.getElementById('login-id').focus();
 }
 
@@ -1410,6 +1404,9 @@ function saveRecords() {
 }
 
 function getRecord(userId) {
+  if (userId === ADMIN_ID) {
+    return { name: ADMIN_NAME, scores: {}, picked: {}, attempts: {}, scoring: {} };
+  }
   if (!userRecords[userId]) {
     userRecords[userId] = {
       name: '',
@@ -1739,7 +1736,7 @@ function closeAdmin() {
 
 function renderAdminList() {
   const body = document.getElementById('admin-body');
-  const entries = Object.entries(userRecords);
+  const entries = Object.entries(userRecords).filter(([k]) => k !== ADMIN_ID);
 
   if (entries.length === 0) {
     body.innerHTML = `
@@ -1782,22 +1779,29 @@ function renderAdminList() {
 }
 
 function deleteStudentRecord(userId) {
-  if (userId === ADMIN_ID) {
-    showToast('管理员自身的记录不可删除', 'error');
+  if (!currentUser || !currentUser.isAdmin) {
+    showToast('无删除权限：仅管理员可删除', 'error');
     return;
   }
   const r = userRecords[userId];
   if (!r) return;
   const name = r.name || '(未填姓名)';
-  if (!confirm(`确定要删除学生【${name} / ${userId}】的所有答题记录吗？\n此操作不可恢复！`)) return;
+  const isSelf = currentUser.id === userId;
+  const confirmMsg = isSelf
+    ? `确定要删除本人（学号「${userId}」）的所有答题记录吗？\n删除后您将被退出登录，此操作不可恢复！`
+    : `确定要删除学生【${name} / ${userId}】的所有答题记录吗？\n此操作不可恢复！`;
+  if (!confirm(confirmMsg)) return;
   delete userRecords[userId];
   saveRecords();
-  renderAdminList();
-  // 如果删除的是当前用户，重新渲染果实
-  if (currentUser && currentUser.id === userId) {
-    renderFruits();
-    updateStats();
+  if (isSelf) {
+    // 管理员本人被删 → 退到登录界面
+    currentUser = null;
+    localStorage.removeItem('fruit_tree_user_session_v1');
+    location.reload();
+    return;
   }
+  renderAdminList();
+  // 如果删除的是当前用户（普通用户视角的当前），重新渲染果实
   showToast(`已删除 ${name} 的记录`, 'success');
 }
 

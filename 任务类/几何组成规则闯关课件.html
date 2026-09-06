@@ -417,6 +417,11 @@
   .rank-table .acc-cell{color:var(--primary-dark);font-weight:700}
   .rank-table .time-cell{color:var(--text-soft)}
   .rank-empty{text-align:center;padding:40px;color:var(--text-mute);font-size:14px}
+  /* 管理员徽标 */
+  .admin-badge{display:inline-block;background:#dc2626;color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;font-weight:600}
+  /* 排行榜删除按钮（仅管理员可见） */
+  .del-btn{padding:4px 10px;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer}
+  .del-btn:hover{background:#fee2e2}
   .rank-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
   .stat-card{
     background:#fff;border-radius:12px;padding:18px 22px;
@@ -583,12 +588,12 @@
     </div>
     <div class="field">
       <label>学生姓名<span class="req">*</span></label>
-      <input id="login-name" type="text" placeholder="请输入真实姓名" maxlength="20" autocomplete="off">
+      <input id="login-name" type="text" placeholder="请输入真实姓名" maxlength="20" autocomplete="off" value="">
       <span class="err" id="err-name"></span>
     </div>
     <div class="field">
       <label>学号<span class="req">*</span></label>
-      <input id="login-sid" type="text" placeholder="请输入学号" maxlength="20" autocomplete="off">
+      <input id="login-sid" type="text" placeholder="请输入学号" maxlength="20" autocomplete="off" value="">
       <span class="err" id="err-sid"></span>
     </div>
     <button class="btn-start" id="btn-login">开始闯关</button>
@@ -611,6 +616,7 @@
         <div class="avatar" id="topbar-avatar">学</div>
         <span id="topbar-name">未登录</span>
       </div>
+      <button class="btn btn-ghost" onclick="doLogout()" style="background:#ef4444;color:#fff;padding:6px 14px;font-size:13px;border-radius:8px;font-weight:600">退出登录</button>
     </div>
   </header>
 
@@ -3085,6 +3091,8 @@ render();
 </div>
 
 <script>
+// localStorage 同步到父窗口（解决 blob URL iframe 与父页面 localStorage 分区不同的问题）
+(function(){try{if(window.parent&&window.parent!==window){var p=window.parent.localStorage;var s=localStorage.setItem.bind(localStorage);var r=localStorage.removeItem.bind(localStorage);localStorage.setItem=function(k,v){s(k,v);try{p.setItem(k,v)}catch(e){}};localStorage.removeItem=function(k){r(k);try{p.removeItem(k)}catch(e){}}}}catch(e){}})();
 /* ============= 数据 ============= */
 const QUESTIONS = {
   1:{ type:'single', answer:'C', analysis:'两点不共线链杆固定结点，是点-刚片不变体系的核心条件。1根链杆约束不足；2根共线链杆为瞬变；3根链杆存在多余约束，故选C。', review:'点-刚片规则：1点+1刚片+2根不共线链杆 → 几何不变无多余约束。共线 → 瞬变。' },
@@ -3098,6 +3106,40 @@ const QUESTIONS = {
 const STORAGE_KEY = 'courseware_geo_rules_students';
 const SESSION_KEY = 'coursework_geo_rules_session';
 const STAGE_COUNT = 5;
+
+/* 管理员账号：姓名 + 学号 都为 "1" */
+const ADMIN = { id: '1', name: '1' };
+function isAdmin(){
+  return state && state.student &&
+    state.student.name === ADMIN.name &&
+    String(state.student.studentId) === String(ADMIN.id);
+}
+
+// 删除某学生在 STORAGE_KEY 中的记录（仅管理员；管理员可删本人）
+function deleteStudentRecord(studentId){
+  if(!isAdmin()){ alert('无删除权限：仅管理员可删除'); return; }
+  var isSelf = state && state.student && String(state.student.studentId) === String(studentId);
+  var confirmMsg = isSelf
+    ? '确定要删除本人（学号「'+studentId+'」）的闯关记录吗？\n删除后您将被退出登录，此操作不可恢复。'
+    : '确定要删除学号「'+studentId+'」的闯关记录吗？\n此操作不可恢复。';
+  if(!confirm(confirmMsg)) return;
+  const before = getAllStudents().length;
+  const rest = getAllStudents().filter(r=>String(r.studentId)!==String(studentId));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+  if(state.student && String(state.student.studentId)===String(studentId)){
+    localStorage.removeItem(SESSION_KEY);
+  }
+  alert('已删除学号「'+studentId+'」的记录（共移除 '+(before-rest.length)+' 条）');
+  if(isSelf){
+    // 管理员本人被删 → 重置 state 并退到登录界面
+    state.student = null;
+    state.unlockedStage = 1;
+    state.currentStage = 1;
+    location.reload();
+    return;
+  }
+  renderRanking();
+}
 
 /* ============= 状态 ============= */
 let state = {
@@ -3122,7 +3164,9 @@ function clearMyRecord(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 function clearAllRecords(){ localStorage.removeItem(STORAGE_KEY); }
-function persistSession(){ localStorage.setItem(SESSION_KEY, JSON.stringify(state)); }
+function persistSession(){
+  localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+}
 function loadSession(){
   try{ const s = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
     if(s && s.student && s.student.name) return s;
@@ -3177,21 +3221,51 @@ function enterApp(){
   updateCompleteButtons();
 }
 
+function doLogout(){
+  if(!confirm('确定要退出登录吗？\n（不会删除答题记录和成绩数据）')) return;
+  persistSession();
+  state = { student:null, startTime:0, currentStage:0, unlockedStage:0, answers:{}, totalScore:0, finished:false };
+  localStorage.removeItem(SESSION_KEY);
+  $('app').classList.remove('active');
+  $('login-overlay').style.display='flex';
+  $('login-name').value='';
+  $('login-sid').value='';
+}
+
 /* ============= 关卡导航 ============= */
 function renderStageNav(){
   const pills = $('stage-nav').querySelectorAll('.stage-pill');
   pills.forEach(p=>{
     const sid = parseInt(p.dataset.stage);
     p.classList.remove('active','unlocked','locked','completed');
-    if(sid < state.unlockedStage) p.classList.add('completed');
-    else if(sid === state.unlockedStage) p.classList.add('unlocked');
-    else p.classList.add('locked');
+    if(isAdmin()){
+      // 管理员：所有关卡都可点（排名页 stage 4 仅 admin 可点）
+      p.classList.add(sid===state.currentStage?'active':'unlocked');
+      if(sid===state.unlockedStage && !p.classList.contains('active')) p.classList.add('unlocked');
+    } else {
+      if(sid < state.unlockedStage) p.classList.add('completed');
+      else if(sid === state.unlockedStage) p.classList.add('unlocked');
+      else p.classList.add('locked');
+    }
     if(sid === state.currentStage) p.classList.add('active');
     p.onclick = ()=> onStageClick(sid);
   });
+  // 管理员徽标：state 4 排名 pill 加角标
+  const rankPill = Array.from(pills).find(p=>parseInt(p.dataset.stage)===STAGE_COUNT-1);
+  if(rankPill){
+    const exist = rankPill.querySelector('.admin-badge');
+    if(isAdmin() && !exist){
+      const badge=document.createElement('span');
+      badge.className='admin-badge';
+      badge.title='管理员：始终可进入排行榜';
+      badge.textContent='管';
+      rankPill.appendChild(badge);
+    } else if(!isAdmin() && exist){ exist.remove(); }
+  }
 }
 function onStageClick(sid){
-  if(sid > state.unlockedStage) return;
+  // 管理员可进入任意关卡（含 stage 4 排名页）
+  if(sid > state.unlockedStage && !isAdmin()) return;
   state.currentStage = sid;
   persistSession();
   renderStageNav();
@@ -3342,7 +3416,7 @@ function initStageComplete(){
       correctCount: correctCount, accuracy: Math.round(correctCount/6*100),
       finished: true, finishedAt: endTime
     };
-    saveStudentRecord(record);
+    if(!isAdmin()) saveStudentRecord(record);
     persistSession();
     unlockNext();
   });
@@ -3350,7 +3424,7 @@ function initStageComplete(){
 
 /* ============= 排名展示 ============= */
 function renderRanking(){
-  const all = getAllStudents().filter(r=>r.finished);
+  const all = getAllStudents().filter(r=>r.finished && !(r.name===ADMIN.name && String(r.studentId)===String(ADMIN.id)));
   all.sort((a,b)=>{
     if(b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
     return a.durationSec - b.durationSec;
@@ -3376,14 +3450,20 @@ function renderRanking(){
     const rank = i+1;
     const rankCls = rank<=3 ? 'rank-'+rank : '';
     const isYou = state.student && r.name===state.student.name && r.studentId===state.student.studentId;
+    const isAdminRow = r.name===ADMIN.name && String(r.studentId)===String(ADMIN.id);
+    const adminCell = isAdmin()
+      ? `<td style="text-align:center"><button class="del-btn" onclick="deleteStudentRecord('${r.studentId}')">删除</button></td>`
+      : '';
+    const adminTag = isAdminRow ? ' <span class="admin-badge">管理员</span>' : '';
     return `
       <tr class="${isYou?'you':''}">
         <td class="rank-cell ${rankCls}">${rank<=3?['🥇','🥈','🥉'][rank-1]:rank}</td>
-        <td>${r.name}</td>
+        <td>${r.name}${adminTag}</td>
         <td>${r.studentId}</td>
         <td class="score-cell" style="text-align:center">${r.totalScore} / 60</td>
         <td class="acc-cell" style="text-align:center">${r.accuracy}%</td>
         <td class="time-cell" style="text-align:center">${fmtDuration(r.durationSec)}</td>
+        ${adminCell}
       </tr>
     `;
   }).join('');
@@ -4133,7 +4213,13 @@ function init(){
     localStorage.removeItem(SESSION_KEY);
     location.reload();
   });
-  // 启动时强制显示登录弹窗
+  // 启动时强制显示登录弹窗，必须输入学号和姓名才能进入
+  state = { student:null, startTime:0, currentStage:0, unlockedStage:0, answers:{}, totalScore:0, finished:false };
+  localStorage.removeItem(SESSION_KEY);
+  $('login-overlay').style.display='flex';
+  $('app').classList.remove('active');
+  $('login-name').value='';
+  $('login-sid').value='';
 }
 
 document.addEventListener('DOMContentLoaded', init);

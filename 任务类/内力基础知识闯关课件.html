@@ -135,6 +135,11 @@ section.locked-section{position:relative;filter:grayscale(.4);opacity:.85}
 /* ============ 排行榜 ============ */
 .rank-wrap{margin-top:14px}
 .rank-empty{text-align:center;padding:36px;color:var(--sub)}
+  /* 管理员徽标 */
+  .admin-badge{display:inline-block;background:#dc2626;color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;font-weight:600}
+  /* 排行榜删除按钮（仅管理员可见） */
+  .del-btn{padding:4px 10px;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer}
+  .del-btn:hover{background:#fee2e2}
 table.rank{width:100%;border-collapse:collapse;font-size:14px}
 table.rank th{background:#f1f5f9;color:#475569;text-align:left;padding:12px 14px;font-weight:700;border-bottom:2px solid var(--line)}
 table.rank td{padding:12px 14px;border-bottom:1px solid var(--line)}
@@ -188,9 +193,9 @@ table.rank .medal{font-size:18px}
     <h1>结构力学 · 内力图闯关</h1>
     <p>剪力图与弯矩图专项训练 · 请先完成身份认证，学习记录与分数将绑定个人信息</p>
     <label>姓名</label>
-    <input id="nameInput" placeholder="请输入姓名" autocomplete="name">
+    <input id="nameInput" placeholder="请输入姓名" autocomplete="off" value="">
     <label>学号</label>
-    <input id="idInput" placeholder="请输入学号" autocomplete="off">
+    <input id="idInput" placeholder="请输入学号" autocomplete="off" value="">
     <button id="loginBtn">进入课件</button>
     <div id="loginError"></div>
   </div>
@@ -206,6 +211,7 @@ table.rank .medal{font-size:18px}
       <span class="chip score" id="headerScore">得分 0</span>
       <span class="chip time" id="headerTime">用时 00:00</span>
       <button class="icon-btn" onclick="toggleFullscreen()">投屏模式</button>
+      <button class="icon-btn" onclick="doLogout()" style="background:#dc2626;color:#fff;font-weight:700">退出登录</button>
     </div>
   </header>
 
@@ -415,6 +421,8 @@ table.rank .medal{font-size:18px}
 </div>
 
 <script>
+// localStorage 同步到父窗口（解决 blob URL iframe 与父页面 localStorage 分区不同的问题）
+(function(){try{if(window.parent&&window.parent!==window){var p=window.parent.localStorage;var s=localStorage.setItem.bind(localStorage);var r=localStorage.removeItem.bind(localStorage);localStorage.setItem=function(k,v){s(k,v);try{p.setItem(k,v)}catch(e){}};localStorage.removeItem=function(k){r(k);try{p.removeItem(k)}catch(e){}}}}catch(e){}})();
 /* ================= 基础工具 ================= */
 const NS='http://www.w3.org/2000/svg';
 function E(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
@@ -740,6 +748,37 @@ function loadState(){try{var s=JSON.parse(localStorage.getItem(LS_SESSION));if(s
 function loadRanking(){try{return JSON.parse(localStorage.getItem(LS_RANK))||[];}catch(e){return[];}}
 function saveRanking(r){try{localStorage.setItem(LS_RANK,JSON.stringify(r));}catch(e){}}
 
+// 管理员账号：姓名 + 学号 都为 "1"
+const ADMIN = { id: '1', name: '1' };
+function isAdmin(){ return state && state.id === ADMIN.id && state.name === ADMIN.name; }
+
+// 删除某学生在 LS_RANK 中的记录（仅管理员；管理员可删本人）
+function deleteStudentRecord(id){
+  if(!isAdmin()){ alert('无删除权限：仅管理员可删除'); return; }
+  var isSelf = state && state.id === id;
+  var confirmMsg = isSelf
+    ? '确定要删除本人（学号「'+id+'」）的闯关记录吗？\n删除后您将被退出登录，此操作不可恢复。'
+    : '确定要删除学号「'+id+'」的闯关记录吗？\n此操作不可恢复，将从排行榜中移除该生所有数据。';
+  if(!confirm(confirmMsg)) return;
+  var rank=loadRanking();
+  var before=rank.length;
+  rank=rank.filter(function(r){return r.id!==id;});
+  saveRanking(rank);
+  // 同步清空 LS_SESSION（若是该用户本人）
+  if(state.id===id){localStorage.removeItem(LS_SESSION);}
+  alert('已删除学号「'+id+'」的记录（共移除 '+(before-rank.length)+' 条）');
+  if(isSelf){
+    // 管理员本人被删 → 重置状态并退回登录界面
+    state = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('idInput').value = '';
+    return;
+  }
+  buildRanking();renderSummary();
+}
+
 /* ================= 登录 ================= */
 function doLogin(){
   var name=document.getElementById('nameInput').value.trim();
@@ -761,7 +800,19 @@ function doLogin(){
   if(!state.finished)gotoLevel('intro');
 }
 
-/* ================= 计时 ================= */
+function doLogout(){
+  if(!confirm('确定要退出登录吗？\n（不会删除答题记录和成绩数据）')) return;
+  saveState();
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  state=null;
+  localStorage.removeItem(LS_SESSION);
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('nameInput').value='';
+  document.getElementById('idInput').value='';
+  document.getElementById('loginError').textContent='';
+}
+
 function fmt(t){t=Math.floor(t/1000);var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
 function startTimer(){if(timerInterval)return;timerInterval=setInterval(function(){if(state.finished)return;
   var el=Date.now()-state.start;document.getElementById('headerTime').textContent='用时 '+fmt(el);},1000);}
@@ -804,13 +855,25 @@ function finishCourse(){
 
 /* ================= 导航 ================= */
 function renderNav(){
-  var unlock2=levelComplete(1),unlock3=levelComplete(2);
+  var unlock2=levelComplete(1),unlock3=levelComplete(2),admin=isAdmin();
   document.querySelectorAll('.nav-btn').forEach(function(b){
     var t=b.dataset.target;
-    if(t==='level2'){b.classList.toggle('locked',!unlock2);}
-    if(t==='level3'){b.classList.toggle('locked',!unlock3);}
-    if(t==='summary'){b.classList.toggle('locked',!state.finished);}
+    if(t==='level2'){b.classList.toggle('locked',!unlock2&&!admin);}
+    if(t==='level3'){b.classList.toggle('locked',!unlock3&&!admin);}
+    if(t==='summary'){b.classList.toggle('locked',!state.finished&&!admin);}
   });
+  // 管理员在 summary 按钮加角标
+  var sumBtn=document.querySelector('.nav-btn[data-target="summary"]');
+  if(sumBtn){
+    var exist=sumBtn.querySelector('.admin-badge');
+    if(admin && !exist){
+      var badge=document.createElement('span');
+      badge.className='admin-badge';
+      badge.title='管理员：始终可进入排行榜';
+      badge.textContent='管';
+      sumBtn.appendChild(badge);
+    } else if(!admin && exist){ exist.remove(); }
+  }
   // 关卡标签
   document.getElementById('tag1').classList.toggle('done',levelComplete(1));
   document.getElementById('tag2').classList.toggle('done',levelComplete(2));
@@ -818,9 +881,9 @@ function renderNav(){
 }
 function gotoLevel(id){
   var unlock2=levelComplete(1),unlock3=levelComplete(2);
-  if(id==='level2'&&!unlock2)return;
-  if(id==='level3'&&!unlock3)return;
-  if(id==='summary'&&!state.finished)return;
+  if(id==='level2'&&!unlock2&&!isAdmin())return;
+  if(id==='level3'&&!unlock3&&!isAdmin())return;
+  if(id==='summary'&&!state.finished&&!isAdmin())return;
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.target===id);});
   var sec=document.getElementById(id);if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -883,6 +946,7 @@ function applyAnswer(idx){
 
 /* ================= 排名与错题 ================= */
 function buildRanking(){
+  if(isAdmin()) return;
   var rank=loadRanking();
   var correctCount=Object.keys(state.correct).length;
   var acc=state.finished?Math.round(correctCount/QUESTIONS.length*100):0;
@@ -894,21 +958,26 @@ function buildRanking(){
 }
 function renderSummary(){
   buildRanking();
-  var rank=loadRanking();
+  var rank=loadRanking().filter(function(r){return !(r.id===ADMIN.id && r.name===ADMIN.name);});
   var box=document.getElementById('rankTable');
+  var admin=isAdmin();
   if(rank.length===0){box.innerHTML='<div class="rank-empty">暂无排名数据</div>';}
   else{
-    var html='<table class="rank"><tr><th>名次</th><th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th></tr>';
+    var html='<table class="rank"><tr><th>名次</th><th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th>'+(admin?'<th>操作</th>':'')+'</tr>';
     rank.forEach(function(r,i){
       var me=r.id===state.id;
       var bar='<div class="rankbar"><span style="width:'+Math.round(r.score/50*100)+'%"></span></div>';
+      var delBtn = admin
+        ? '<td><button class="del-btn" onclick="deleteStudentRecord(\''+r.id+'\')">删除</button></td>'
+        : '';
       html+='<tr class="'+(i===0?'top1':'')+'">'
         +'<td><b>'+(i+1)+'</b></td>'
-        +'<td>'+r.name+(me?' <span style="font-size:11px;color:#1d4ed8">（我）</span>':'')+'</td>'
+        +'<td>'+r.name+(me?' <span style="font-size:11px;color:#1d4ed8">（我）</span>':'')+(admin && r.id===ADMIN.id && r.name===ADMIN.name?' <span class="admin-badge">管理员</span>':'')+'</td>'
         +'<td>'+r.id+'</td>'
         +'<td><b>'+r.score+'</b> / 50'+bar+'</td>'
         +'<td>'+r.acc+'%</td>'
         +'<td>'+fmt(r.time)+'</td>'
+        +delBtn
         +'</tr>';
     });
     box.innerHTML=html+'</table>';
@@ -936,8 +1005,7 @@ function toggleFullscreen(){
 function setupCanvases(){anim3.switchCase(1);}
 
 function init(){
-  var prev=loadState();
-  if(prev){state=prev;document.getElementById('nameInput').value=prev.name;document.getElementById('idInput').value=prev.id;}
+  // 始终显示登录页面，要求用户输入姓名和学号才能进入
   document.getElementById('loginBtn').addEventListener('click',doLogin);
   document.getElementById('idInput').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('click',function(){gotoLevel(b.dataset.target);});});

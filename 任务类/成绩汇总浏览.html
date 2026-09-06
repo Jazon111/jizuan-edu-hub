@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>闯关成绩汇总浏览</title>
+<!-- Excel 导出：SheetJS（xlsx），通过 CDN 加载，详见文件末尾"依赖说明" -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f1f5f9;
+    color: #1f2937;
+    min-height: 100vh;
+  }
+
+  /* 顶部栏 */
+  .topbar {
+    background: linear-gradient(90deg, #14213d 0%, #1d4ed8 100%);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  .topbar h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .topbar .sub { font-size: 12px; color: #bcd0f5; margin-top: 4px; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    border: none; border-radius: 8px; padding: 9px 18px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: #fff; color: #1d4ed8; }
+  .btn-primary:hover { background: #e8eefb; }
+  .btn-export { background: #16a34a; color: #fff; }
+  .btn-export:hover { background: #15803d; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-ghost { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.28); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.28); }
+
+  /* 主体 */
+  main { max-width: 1280px; margin: 0 auto; padding: 22px 28px 40px; }
+
+  /* 概览卡片 */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    border-left: 4px solid #1d4ed8;
+  }
+  .stat-card .val { font-size: 26px; font-weight: 700; color: #1d4ed8; }
+  .stat-card .lbl { font-size: 12.5px; color: #64748b; margin-top: 4px; }
+
+  /* 关卡卡片 */
+  .section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-head:hover { background: #f1f5f9; }
+  .section-head .ttl { display: flex; align-items: center; gap: 10px; }
+  .section-head .ttl h2 { font-size: 16px; font-weight: 700; color: #14213d; }
+  .section-head .ttl .badge {
+    background: #eef2ff; color: #1d4ed8; font-size: 11.5px;
+    padding: 2px 9px; border-radius: 10px; font-weight: 600;
+  }
+  .section-head .ttl .badge.empty { background: #fef2f2; color: #b91c1c; }
+  .section-head .arrow {
+    color: #94a3b8; font-size: 14px;
+    transition: transform .2s;
+  }
+  .section.collapsed .arrow { transform: rotate(-90deg); }
+  .section-body { padding: 0; }
+  .section.collapsed .section-body { display: none; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef2f7;
+    color: #334155;
+  }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr.you { background: #fff7ed; }
+  tbody tr.you:hover { background: #ffedd5; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center { text-align: center; }
+  .empty-row td { text-align: center; color: #94a3b8; padding: 30px 12px; font-size: 13px; }
+  .pill {
+    display: inline-block; padding: 2px 9px; border-radius: 10px;
+    font-size: 11.5px; font-weight: 600;
+  }
+  .pill.ok { background: #dcfce7; color: #15803d; }
+  .pill.ing { background: #fef9c3; color: #b45309; }
+  .pill.none { background: #f1f5f9; color: #64748b; }
+
+  /* 总览表 */
+  .overview-table { margin-bottom: 8px; }
+
+  /* 说明区 */
+  .notes {
+    background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 10px; padding: 14px 18px; font-size: 12.5px;
+    color: #78350f; line-height: 1.7;
+  }
+  .notes b { color: #92400e; }
+  .notes code {
+    background: #fef3c7; padding: 1px 6px; border-radius: 4px;
+    font-family: "Consolas", monospace; font-size: 11.5px;
+  }
+
+  .footer {
+    text-align: center; font-size: 12px; color: #94a3b8;
+    padding: 16px 0 30px;
+  }
+
+  /* 响应式 */
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>📊 闯关成绩汇总浏览</h1>
+    <div class="sub">实时读取各闯关任务本地存储的学生成绩 · 仅展示，不做任何写入修改</div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="loadAll()">🔄 刷新数据</button>
+    <button class="btn btn-export" onclick="exportAll()">⬇️ 一键导出 Excel</button>
+    <button class="btn btn-danger" onclick="clearAllScores()">🗑️ 清空全部成绩数据</button>
+  </div>
+</div>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="section" id="sec-overview">
+    <div class="section-head" onclick="toggleSection('sec-overview')">
+      <div class="ttl">
+        <h2>总览：所有关卡参与学生</h2>
+        <span class="badge" id="badge-overview">-</span>
+      </div>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <table class="overview-table">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>学号</th>
+            <th>已闯关数</th>
+            <th>完成关卡</th>
+            <th>累计总得分</th>
+            <th>平均正确率</th>
+          </tr>
+        </thead>
+        <tbody id="overview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="notes">
+    <b>📌 数据来源说明：</b><br>
+    本页面<b>只读取</b>各闯关课件中已存在的 <code>localStorage</code> 成绩数据，与各关卡本地存储<b>完全一致</b>，未做任何加工或修改。<br>
+    <b>📦 Excel 导出依赖：</b><code>SheetJS (xlsx) 0.18.5</code>，通过 <code>cdn.jsdelivr.net</code> CDN 加载。安装命令（如需本地部署）：
+    <code>npm install xlsx@0.18.5</code> · 国内镜像：<code>npm install xlsx@0.18.5 --registry=https://registry.npmmirror.com</code>
+  </div>
+
+  <div class="footer">
+    课程管理员：谭积钻（学号 2023011624）· 数据更新时间：<span id="updTime">-</span>
+  </div>
+</main>
+
+<script>
+/* =====================================================================
+ * 各闯关课件的 localStorage 键与数据结构
+ * （仅复用原课件的存储位置，禁止修改原课件）
+ * ===================================================================== */
+
+// 1) 伸臂梁求解内力图闯关课件：Object{[id]: {name,id,startAt,endAt,learnDone,answers}}
+const SRC_CANTILEVER = {
+  key: 'sm_cantilever_rank_v1',
+  name: '伸臂梁求解内力图闯关课件',
+  kind: 'objectMap'
+};
+
+// 2) 内力基础知识闯关课件：Array[{name,id,score,acc,time}]
+const SRC_INTERNAL = {
+  key: 'sm_ranking_v1',
+  name: '内力基础知识闯关课件',
+  kind: 'arraySimple'
+};
+
+// 3) 几何组成规则闯关课件：Array[{name,studentId,totalScore,accuracy,durationSec,finished}]
+const SRC_GEO = {
+  key: 'courseware_geo_rules_students',
+  name: '几何组成规则闯关课件',
+  kind: 'arrayFinished'
+};
+
+// 4) 弯矩叠加法闯关课件：Object{[id]: {name,id,startAt,endAt,learnDone,answers}}
+const SRC_SP = {
+  key: 'sm_sp_rank_v1',
+  name: '弯矩叠加法闯关课件',
+  kind: 'objectMap'
+};
+
+// 5) 结点支座闯关课件：Array[{name,studentId,totalScore,accuracy,durationSec,finished}]
+const SRC_JOINT = {
+  key: 'courseware_joints_supports_students',
+  name: '结点支座闯关课件',
+  kind: 'arrayFinished'
+};
+
+// 6) 知识果树（总复习）：Object{[userId]: {name,scores,picked,attempts}}
+const SRC_FRUIT = {
+  key: 'fruit_tree_user_records_v1',
+  name: '知识果树（总复习）',
+  kind: 'fruitTree'
+};
+
+const SOURCES = [SRC_CANTILEVER, SRC_INTERNAL, SRC_GEO, SRC_SP, SRC_JOINT, SRC_FRUIT];
+
+/* =====================================================================
+ * 工具函数
+ * ===================================================================== */
+
+function safeRead(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw != null) return JSON.parse(raw);
+  } catch (e) {}
+  try {
+    if (window.parent && window.parent !== window) {
+      const raw = window.parent.localStorage.getItem(key);
+      if (raw != null) return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return null;
+}
+
+function fmtDuration(sec) {
+  if (sec == null || isNaN(sec)) return '-';
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m + '分' + (s < 10 ? '0' : '') + s + '秒';
+}
+
+function fmtTime(ts) {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  const pad = (n) => (n < 10 ? '0' : '') + n;
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+    ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+}
+
+/* =====================================================================
+ * 各关卡数据解析（统一输出为标准化记录列表）
+ * 标准化字段：{ source, name, id, finished, score, accuracy, duration, extra }
+ * ===================================================================== */
+
+function parseSource(src) {
+  const raw = safeRead(src.key);
+  if (raw == null) return { rows: [], totalRaw: 0 };
+
+  if (src.kind === 'objectMap') {
+    // 伸臂梁 / 弯矩叠加法
+    const rows = [];
+    Object.keys(raw).forEach(id => {
+      const r = raw[id];
+      const answered = Object.keys(r.answers || {}).length;
+      const learnDone = Object.values(r.learnDone || {}).filter(Boolean).length;
+      rows.push({
+        source: src.name,
+        name: r.name || '(未填写)',
+        id: r.id || id,
+        finished: !!r.endAt,
+        score: null,         // 需原课件 QUESTIONS，无法本地换算
+        accuracy: null,
+        duration: r.endAt && r.startAt ? (r.endAt - r.startAt) / 1000 : null,
+        extra: { answered: answered, learnDone: learnDone, endAt: r.endAt || null }
+      });
+    });
+    return { rows, totalRaw: rows.length };
+  }
+
+  if (src.kind === 'arraySimple') {
+    // 内力基础知识
+    const rows = (raw || []).map(r => ({
+      source: src.name,
+      name: r.name || '(未填写)',
+      id: r.id || '(无)',
+      finished: true,
+      score: typeof r.score === 'number' ? r.score : null,
+      accuracy: typeof r.acc === 'number' ? r.acc : null,
+      duration: typeof r.time === 'number' ? r.time / 1000 : null,
+      extra: {}
+    }));
+    return { rows, totalRaw: rows.length };
+  }
+
+  if (src.kind === 'arrayFinished') {
+    // 几何组成规则 / 结点支座
+    const rows = (raw || []).map(r => ({
+      source: src.name,
+      name: r.name || '(未填写)',
+      id: r.studentId || '(无)',
+      finished: !!r.finished,
+      score: typeof r.totalScore === 'number' ? r.totalScore : null,
+      accuracy: typeof r.accuracy === 'number' ? r.accuracy : null,
+      duration: typeof r.durationSec === 'number' ? r.durationSec : null,
+      extra: { correctCount: r.correctCount, endTime: r.endTime || null }
+    }));
+    return { rows, totalRaw: rows.length };
+  }
+
+  if (src.kind === 'fruitTree') {
+    // 知识果树
+    const rows = [];
+    Object.keys(raw).forEach(userId => {
+      const r = raw[userId];
+      const totalScore = Object.values(r.scores || {}).reduce((a, b) => a + (b || 0), 0);
+      const picked = Object.values(r.picked || {}).filter(Boolean).length;
+      const attempts = Object.values(r.attempts || {}).reduce((a, b) => a + (b || 0), 0);
+      rows.push({
+        source: src.name,
+        name: r.name || '(未填写)',
+        id: userId,
+        finished: picked > 0,
+        score: totalScore,
+        accuracy: null,
+        duration: null,
+        extra: { picked: picked, attempts: attempts }
+      });
+    });
+    return { rows, totalRaw: rows.length };
+  }
+
+  return { rows: [], totalRaw: 0 };
+}
+
+/* =====================================================================
+ * 渲染
+ * ===================================================================== */
+
+let CACHE = {};   // 缓存：{ srcName: rows }
+let OVERVIEW = []; // 总览用：每个学生一条聚合行
+
+function loadAll() {
+  CACHE = {};
+  OVERVIEW = [];
+  const studentMap = new Map(); // key=name+id → aggregate
+
+  let totalStudents = 0;
+  let totalCompletedRuns = 0;
+  let totalAccuracySum = 0;
+  let totalAccuracyCount = 0;
+
+  SOURCES.forEach(src => {
+    const { rows } = parseSource(src);
+    CACHE[src.name] = rows;
+
+    rows.forEach(r => {
+        const k = (r.name || '') + '||' + (r.id || '');
+        if (!studentMap.has(k)) {
+          studentMap.set(k, {
+            name: r.name, id: r.id,
+            courseCount: 0, finishedCourses: [], totalScore: 0,
+            accSum: 0, accCount: 0
+          });
+        }
+        const agg = studentMap.get(k);
+        agg.courseCount++;
+        if (r.finished) {
+          agg.finishedCourses.push(src.name);
+          totalCompletedRuns++;
+        }
+        if (typeof r.score === 'number') agg.totalScore += r.score;
+        if (typeof r.accuracy === 'number') {
+          agg.accSum += r.accuracy;
+          agg.accCount++;
+          totalAccuracySum += r.accuracy;
+          totalAccuracyCount++;
+        }
+      });
+  });
+
+  OVERVIEW = Array.from(studentMap.values()).map(a => ({
+    ...a,
+    avgAccuracy: a.accCount ? Math.round(a.accSum / a.accCount) : null
+  }));
+  // 按累计总得分降序
+  OVERVIEW.sort((a, b) => b.totalScore - a.totalScore);
+
+  totalStudents = OVERVIEW.length;
+  const avgAcc = totalAccuracyCount ? Math.round(totalAccuracySum / totalAccuracyCount) : 0;
+
+  // 顶部统计
+  document.getElementById('stats').innerHTML =
+    '<div class="stat-card"><div class="val">' + totalStudents + '</div><div class="lbl">参与学生（按姓名+学号去重）</div></div>' +
+    '<div class="stat-card"><div class="val">' + totalCompletedRuns + '</div><div class="lbl">已完成闯关人次</div></div>' +
+    '<div class="stat-card"><div class="val">' + SOURCES.length + '</div><div class="lbl">闯关任务总数</div></div>' +
+    '<div class="stat-card"><div class="val">' + avgAcc + '%</div><div class="lbl">平均正确率（已记录正确率的关卡）</div></div>';
+
+  // 总览表
+  const overviewBody = document.getElementById('overview-body');
+  document.getElementById('badge-overview').textContent = OVERVIEW.length + ' 名学生';
+  document.getElementById('badge-overview').classList.remove('empty');
+  if (OVERVIEW.length === 0) {
+    overviewBody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无学生成绩记录，请先在各个闯关课件中完成作答</td></tr>';
+  } else {
+    overviewBody.innerHTML = OVERVIEW.map(a => {
+      const acc = a.avgAccuracy == null ? '-' : (a.avgAccuracy + '%');
+      const courseList = a.finishedCourses.length ? a.finishedCourses.join('、') : '（暂无完成）';
+      return '<tr>' +
+        '<td>' + esc(a.name) + '</td>' +
+        '<td>' + esc(a.id) + '</td>' +
+        '<td class="center">' + a.courseCount + '</td>' +
+        '<td>' + esc(courseList) + '</td>' +
+        '<td class="num">' + (a.totalScore || 0) + '</td>' +
+        '<td class="num">' + acc + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // 各关卡
+  const wrap = document.getElementById('sections');
+  wrap.innerHTML = '';
+  SOURCES.forEach((src, idx) => {
+    const rows = CACHE[src.name];
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.id = 'sec-' + idx;
+
+    const isEmpty = rows.length === 0;
+    let headHtml =
+      '<div class="section-head" onclick="toggleSection(\'sec-' + idx + '\')">' +
+        '<div class="ttl">' +
+          '<h2>' + esc(src.name) + '</h2>' +
+          '<span class="badge' + (isEmpty ? ' empty' : '') + '">' +
+            (isEmpty ? '暂无数据' : rows.length + ' 条记录') +
+          '</span>' +
+        '</div>' +
+        '<span class="arrow">▼</span>' +
+      '</div>';
+
+    let bodyHtml = '';
+    if (isEmpty) {
+      bodyHtml = '<div class="section-body"><table><tbody><tr class="empty-row"><td>本关卡暂无 localStorage 记录（key=<code>' +
+        esc(src.key) + '</code>）</td></tr></tbody></table></div>';
+    } else {
+      bodyHtml = renderSectionBody(src, rows);
+    }
+
+    sec.innerHTML = headHtml + bodyHtml;
+    wrap.appendChild(sec);
+  });
+
+  document.getElementById('updTime').textContent = fmtTime(Date.now());
+}
+
+function renderSectionBody(src, rows) {
+  // 不同关卡的列结构略有不同
+  if (src.kind === 'objectMap') {
+    return '<div class="section-body"><table><thead><tr>' +
+      '<th>姓名</th><th>学号</th><th>状态</th><th>已答题数</th><th>已完成学习关</th><th>完成时间</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(r => {
+        const pill = r.finished ? '<span class="pill ok">已完成</span>' :
+                     (r.extra.answered > 0 ? '<span class="pill ing">进行中</span>' : '<span class="pill none">未开始</span>');
+        return '<tr>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.id) + '</td>' +
+          '<td class="center">' + pill + '</td>' +
+          '<td class="num">' + r.extra.answered + '</td>' +
+          '<td class="num">' + r.extra.learnDone + ' / 3</td>' +
+          '<td>' + fmtTime(r.extra.endAt) + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  if (src.kind === 'arraySimple') {
+    return '<div class="section-body"><table><thead><tr>' +
+      '<th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(r => '<tr>' +
+        '<td>' + esc(r.name) + '</td>' +
+        '<td>' + esc(r.id) + '</td>' +
+        '<td class="num">' + (r.score == null ? '-' : r.score) + '</td>' +
+        '<td class="num">' + (r.accuracy == null ? '-' : r.accuracy + '%') + '</td>' +
+        '<td>' + fmtDuration(r.duration) + '</td>' +
+        '</tr>').join('') +
+      '</tbody></table></div>';
+  }
+
+  if (src.kind === 'arrayFinished') {
+    return '<div class="section-body"><table><thead><tr>' +
+      '<th>姓名</th><th>学号</th><th>状态</th><th>总分</th><th>正确率</th><th>完成用时</th><th>完成时间</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(r => {
+        const pill = r.finished ? '<span class="pill ok">已完成</span>' : '<span class="pill ing">进行中</span>';
+        return '<tr>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.id) + '</td>' +
+          '<td class="center">' + pill + '</td>' +
+          '<td class="num">' + (r.score == null ? '-' : (r.score + ' / 60')) + '</td>' +
+          '<td class="num">' + (r.accuracy == null ? '-' : r.accuracy + '%') + '</td>' +
+          '<td>' + fmtDuration(r.duration) + '</td>' +
+          '<td>' + fmtTime(r.extra.endTime) + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  if (src.kind === 'fruitTree') {
+    return '<div class="section-body"><table><thead><tr>' +
+      '<th>姓名</th><th>学号</th><th>累计得分</th><th>已采摘果实数</th><th>累计答题次数</th><th>状态</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(r => {
+        const pill = r.finished ? '<span class="pill ok">已开始</span>' : '<span class="pill none">未开始</span>';
+        return '<tr>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.id) + '</td>' +
+          '<td class="num">' + (r.score || 0) + '</td>' +
+          '<td class="num">' + r.extra.picked + '</td>' +
+          '<td class="num">' + r.extra.attempts + '</td>' +
+          '<td class="center">' + pill + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  return '<div class="section-body"></div>';
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('collapsed');
+}
+
+/* =====================================================================
+ * Excel 一键导出（使用 SheetJS）
+ * ===================================================================== */
+
+function exportAll() {
+  if (typeof XLSX === 'undefined') {
+    alert('Excel 导出库（SheetJS）尚未加载完成，请检查网络后重试。');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1：总览
+  const overviewAoA = [
+    ['姓名', '学号', '已闯关数', '完成关卡', '累计总得分', '平均正确率(%)']
+  ];
+  OVERVIEW.forEach(a => {
+    overviewAoA.push([
+      a.name, a.id, a.courseCount,
+      a.finishedCourses.join('、'),
+      a.totalScore || 0,
+      a.avgAccuracy == null ? '' : a.avgAccuracy
+    ]);
+  });
+  const wsOverview = XLSX.utils.aoa_to_sheet(overviewAoA);
+  wsOverview['!cols'] = [
+    { wch: 14 }, { wch: 16 }, { wch: 10 }, { wch: 40 }, { wch: 12 }, { wch: 14 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsOverview, '总览');
+
+  // Sheet 2..N：各关卡明细
+  SOURCES.forEach(src => {
+    const rows = CACHE[src.name] || [];
+    let aoa;
+    if (src.kind === 'objectMap') {
+      aoa = [['姓名', '学号', '状态', '已答题数', '已完成学习关', '完成时间']];
+      rows.forEach(r => aoa.push([
+        r.name, r.id,
+        r.finished ? '已完成' : (r.extra.answered > 0 ? '进行中' : '未开始'),
+        r.extra.answered, r.extra.learnDone + ' / 3',
+        fmtTime(r.extra.endAt)
+      ]));
+    } else if (src.kind === 'arraySimple') {
+      aoa = [['姓名', '学号', '总分', '正确率(%)', '完成用时']];
+      rows.forEach(r => aoa.push([
+        r.name, r.id,
+        r.score == null ? '' : r.score,
+        r.accuracy == null ? '' : r.accuracy,
+        fmtDuration(r.duration)
+      ]));
+    } else if (src.kind === 'arrayFinished') {
+      aoa = [['姓名', '学号', '状态', '总分(/60)', '正确率(%)', '完成用时', '完成时间']];
+      rows.forEach(r => aoa.push([
+        r.name, r.id,
+        r.finished ? '已完成' : '进行中',
+        r.score == null ? '' : r.score,
+        r.accuracy == null ? '' : r.accuracy,
+        fmtDuration(r.duration),
+        fmtTime(r.extra.endTime)
+      ]));
+    } else if (src.kind === 'fruitTree') {
+      aoa = [['姓名', '学号', '累计得分', '已采摘果实数', '累计答题次数']];
+      rows.forEach(r => aoa.push([
+        r.name, r.id, r.score || 0, r.extra.picked, r.extra.attempts
+      ]));
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = aoa[0].map(() => ({ wch: 14 }));
+    // 限制 sheet 名 31 字符
+    let sheetName = src.name.replace(/[\\\/\?\*\[\]:]/g, '_').slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const filename = '闯关成绩汇总_' +
+    new Date().getFullYear() +
+    String(new Date().getMonth() + 1).padStart(2, '0') +
+    String(new Date().getDate()).padStart(2, '0') + '_' +
+    String(new Date().getHours()).padStart(2, '0') +
+    String(new Date().getMinutes()).padStart(2, '0') + '.xlsx';
+
+  XLSX.writeFile(wb, filename);
+}
+
+/* =====================================================================
+ * 清空全部成绩数据（含各关成绩、身份、共享管理员）
+ * ===================================================================== */
+function clearAllScores() {
+  if (!confirm('确定要清空全部闯关成绩数据吗？\n此操作不可恢复，将删除所有学生的成绩记录和登录身份。\n\n涉及键值：\n' +
+    SOURCES.map(function(s){return '· '+s.key}).join('\n') + '\n· 各关身份/会话键\n· 共享管理员键')) {
+    return;
+  }
+  var allKeys = SOURCES.map(function(s){return s.key;}).concat([
+    'sm_cantilever_identity_v1',
+    'sm_sp_identity_v1',
+    'sm_session_v1',
+    'coursework_geo_rules_session',
+    'courseware_joints_supports_session',
+    'fruit_tree_current_user_v1',
+    'fruit_tree_user_session_v1',
+    'sm_shared_admin_v1'
+  ]);
+  allKeys.forEach(function(k){
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+  loadAll();
+  alert('已清空全部成绩数据，共清除 ' + allKeys.length + ' 个本地存储键。\n点击"刷新数据"可确认数据已同步清空。');
+}
+
+/* 启动加载 */
+window.addEventListener('DOMContentLoaded', loadAll);
+</script>
+
+</body>
+</html>

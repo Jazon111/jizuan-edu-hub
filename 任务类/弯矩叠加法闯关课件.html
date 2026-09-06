@@ -242,8 +242,8 @@
       <h2>弯矩叠加法 · 闯关课件</h2>
       <div class="sub2">请填写身份信息后开始学习，答题记录与分数将绑定到你的学号</div>
       <div class="login-err" id="login-err"></div>
-      <div class="field"><label>姓名</label><input id="inp-name" type="text" placeholder="请输入姓名"></div>
-      <div class="field"><label>学号</label><input id="inp-id" type="text" placeholder="请输入学号"></div>
+      <div class="field"><label>姓名</label><input id="inp-name" type="text" placeholder="请输入姓名" autocomplete="off" value=""></div>
+      <div class="field"><label>学号</label><input id="inp-id" type="text" placeholder="请输入学号" autocomplete="off" value=""></div>
       <button class="login-btn" id="login-btn">进入课件</button>
     </div>
   </div>
@@ -261,6 +261,8 @@
   <div class="toast" id="toast"></div>
 
 <script>
+// localStorage 同步到父窗口（解决 blob URL iframe 与父页面 localStorage 分区不同的问题）
+(function(){try{if(window.parent&&window.parent!==window){var p=window.parent.localStorage;var s=localStorage.setItem.bind(localStorage);var r=localStorage.removeItem.bind(localStorage);localStorage.setItem=function(k,v){s(k,v);try{p.setItem(k,v)}catch(e){}};localStorage.removeItem=function(k){r(k);try{p.removeItem(k)}catch(e){}}}}catch(e){}})();
 // ============================================================
 //  弯矩叠加法 · 闯关课件核心逻辑
 //  复用自「弯矩叠加法.html」的 Canvas 绘图引擎
@@ -919,16 +921,12 @@ let identity = null;    // { name, id }
 let rankMap = {};       // { [id]: record }
 let record = null;      // 当前学生的记录（rankMap[identity.id] 的引用）
 
-// 管理员账号：仅此账号拥有删除学生答题记录的权限
-const ADMIN = { id: '2023011624', name: '谭积钻' };
-function isAdmin() { return !!identity && String(identity.id) === ADMIN.id; }
+// 管理员账号：姓名 + 学号 都为 "1" 才算管理员
+const ADMIN = { id: '1', name: '1' };
+function isAdmin() { return !!identity && String(identity.id) === ADMIN.id && String(identity.name) === ADMIN.name; }
 
-function loadIdentity() {
-  try { identity = JSON.parse(localStorage.getItem(LS_ID)) || null; } catch (e) { identity = null; }
-}
-function saveIdentity() {
-  try { localStorage.setItem(LS_ID, JSON.stringify(identity)); } catch (e) {}
-}
+function loadIdentity() { try { identity = JSON.parse(localStorage.getItem(LS_ID)) || null; } catch (e) { identity = null; } }
+function saveIdentity() { try { localStorage.setItem(LS_ID, JSON.stringify(identity)); } catch (e) {} }
 function loadRank() {
   try { rankMap = JSON.parse(localStorage.getItem(LS_RANK)) || {}; } catch (e) { rankMap = {}; }
 }
@@ -956,6 +954,7 @@ function levelQuizDone(lv) {
 function levelComplete(lv) { return levelLearnDone(lv) && levelQuizDone(lv); }
 function isUnlocked(lv) {
   if (!identity) return false;
+  if (isAdmin()) return true;
   return lv === 1 || levelComplete(lv - 1);
 }
 function firstIncompleteLevel() {
@@ -1085,13 +1084,17 @@ function doLogin() {
   if (!name) { errEl.textContent = '请输入姓名'; return; }
   if (!id) { errEl.textContent = '请输入学号'; return; }
   errEl.textContent = '';
-  if (!rankMap[id]) { rankMap[id] = newRecord(name, id); saveRank(); }
-  else { rankMap[id].name = name; saveRank(); }
   identity = { name, id };
+  if (isAdmin()) {
+    record = newRecord(name, id);
+  } else {
+    if (!rankMap[id]) { rankMap[id] = newRecord(name, id); saveRank(); }
+    else { rankMap[id].name = name; saveRank(); }
+    record = rankMap[id];
+  }
   saveIdentity();
-  record = rankMap[id];
   postLogin();
-  toast('欢迎，' + name + '！逐级闯关，完成学习与习题后解锁下一关');
+  toast(isAdmin() ? '管理员 ' + name + ' 已登录，可在排行榜中删除学生成绩' : '欢迎，' + name + '！逐级闯关，完成学习与习题后解锁下一关');
 }
 function doLogout() {
   saveRank();
@@ -1099,6 +1102,8 @@ function doLogout() {
   saveIdentity();
   resetDemo();
   showLogin();
+  const inpN = document.getElementById('inp-name'); if (inpN) inpN.value = '';
+  const inpI = document.getElementById('inp-id');   if (inpI) inpI.value = '';
   renderStudentBar();
   renderNav();
 }
@@ -1111,7 +1116,7 @@ function fmtDuration(sec) {
 }
 function getFinishedRecords() {
   return Object.values(rankMap)
-    .filter(r => r.endAt && r.id !== ADMIN.id)
+    .filter(r => r.endAt && !(r.name === ADMIN.name && String(r.id) === String(ADMIN.id)))
     .map(r => {
       const st = computeStats(r);
       return {
@@ -1144,6 +1149,8 @@ function deleteStudent(id, btn) {
     resetDemo();
     hideLeaderboard();
     showLogin();
+    const inpN = document.getElementById('inp-name'); if (inpN) inpN.value = '';
+    const inpI = document.getElementById('inp-id');   if (inpI) inpI.value = '';
     renderStudentBar();
     renderNav();
     toast('已删除本人答题记录，请重新登录');
@@ -1180,7 +1187,7 @@ function showLeaderboard() {
   }
 
   // 进行中 / 未完成记录（同样支持管理员删除）
-  const unfinished = Object.values(rankMap).filter(r => !r.endAt && r.id !== ADMIN.id);
+  const unfinished = Object.values(rankMap).filter(r => !r.endAt);
   if (unfinished.length) {
     html += '<div class="unfinished-title">进行中 / 未完成记录（' + unfinished.length + ' 人）</div>' +
       '<table class="unfinished-table"><thead><tr><th>姓名</th><th>学号</th><th>已答题</th><th>当前得分</th>';
@@ -1334,19 +1341,16 @@ document.getElementById('rank-close').addEventListener('click', hideLeaderboard)
 document.getElementById('rank-mask').addEventListener('click', e => { if (e.target === e.currentTarget) hideLeaderboard(); });
 
 // ---------- 初始化 ----------
-loadIdentity();
 loadRank();
 resize();
-if (identity) {
-  record = rankMap[identity.id];
-  if (!record) { record = newRecord(identity.name, identity.id); rankMap[identity.id] = record; saveRank(); }
-  postLogin();
-} else {
-  record = null;
-  showLogin();
-  renderStudentBar();
-  renderNav();
-}
+// 始终显示登录页面，要求用户输入姓名和学号才能进入
+identity = null; record = null;
+localStorage.removeItem(LS_ID);
+showLogin();
+const inpN0 = document.getElementById('inp-name'); if (inpN0) inpN0.value = '';
+const inpI0 = document.getElementById('inp-id');   if (inpI0) inpI0.value = '';
+renderStudentBar();
+renderNav();
 </script>
 </body>
 </html>
