@@ -1747,5 +1747,149 @@ function init(){
 document.addEventListener('DOMContentLoaded', init);
 </script>
 
+<!-- 云端成绩提交（QuickForm）：完成闯关时上报最终总分/正确率/用时；页面右上角有上传状态徽标 -->
+<script>
+(function(){
+  var QF_URL="https://quickform.cn/api/6ivostlhav";
+  var VER='v3';   // 版本标记：页面右上角徽标出现即代表当前文件含云端收集功能
+  var CFG={course:"结点支座闯关课件",key:"courseware_joints_supports_students",kind:"arrayFinished"};
+  var REG_KEY='qf_submitted_v1', OUT_KEY='qf_outbox_v1';
+  var timer=null;
+  function rj(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+  function wj(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  function pad(n){return (n<10?'0':'')+n}
+  function hm(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
+  function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  function fmtTs(t){if(!t)return '';var d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+  /* ============ 可见状态徽标（右上角）：让"新文件/已连接/已上传/失败原因"一目了然 ============ */
+  var badge=null;
+  function ensureBadge(){
+    if(badge)return badge;
+    try{
+      badge=document.createElement('div'); badge.id='qf-badge';
+      badge.style.cssText='position:fixed;top:8px;right:8px;z-index:2147483001;padding:5px 10px;border-radius:14px;font:12px/1.4 sans-serif;color:#fff;background:rgba(100,116,139,.92);box-shadow:0 1px 6px rgba(0,0,0,.25);cursor:pointer;max-width:46%;text-align:right';
+      badge.textContent='☁ 云成绩'+VER+' 检测中…';
+      badge.onclick=function(){ var ob=rj(OUT_KEY,[]); alert('云端成绩收集 '+VER+'\n课件：'+CFG.course+'\n状态：'+badge._state+'\n待补传：'+ob.length+' 条\n\n若一直显示"未连接"，请检查手机网络（可用浏览器打开 quickform.cn 测试），完成闯关后成绩会在联网时自动补传。'); };
+      (document.body||document.documentElement).appendChild(badge);
+    }catch(e){}
+    return badge;
+  }
+  function setBadge(state,txt,ok){ try{ ensureBadge(); badge._state=state; badge.textContent=txt;
+    badge.style.background=ok?'rgba(22,163,74,.92)':(ok===false?'rgba(220,38,38,.92)':'rgba(100,116,139,.92)'); }catch(e){} }
+  function toast(msg,ok){
+    try{
+      var t=document.getElementById('qf-toast');
+      if(!t){ t=document.createElement('div'); t.id='qf-toast';
+        t.style.cssText='position:fixed;left:14px;bottom:14px;z-index:2147483000;padding:8px 14px;border-radius:8px;font-size:13px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:opacity .4s;pointer-events:none;font-family:sans-serif';
+        document.body.appendChild(t); }
+      t.style.background=ok?'rgba(22,163,74,.92)':'rgba(107,114,128,.92)';
+      t.textContent=msg; t.style.opacity='1';
+      clearTimeout(t._tm); t._tm=setTimeout(function(){ t.style.opacity='0'; },2600);
+    }catch(e){}
+  }
+  /* ============ 网络可达性自检（打开课件即检测，不依赖完成答题） ============ */
+  function ping(){
+    var done=false;
+    var to=setTimeout(function(){ if(!done){done=true;setBadge('未连接','☁ 云端未连接（点我）',false);} },8000);
+    try{
+      fetch(QF_URL+'/count',{method:'GET',cache:'no-store'}).then(function(r){
+        clearTimeout(to); if(done)return; done=true;
+        if(r.ok)setBadge('就绪','☁ 云成绩'+VER+' 已就绪',true);
+        else setBadge('未连接','☁ 云端异常'+r.status, false);
+      }).catch(function(e){ clearTimeout(to); if(!done){done=true;setBadge('未连接','☁ 未连接（点我）',false);} });
+    }catch(e){ clearTimeout(to); setBadge('未连接','☁ 不支持fetch',false); }
+  }
+  function statsOf(r){
+    if(r&&r.finalScore!=null&&r.correctRate!=null) return {score:r.finalScore,correctRate:r.correctRate,correct:r.correct,total:r.total};
+    try{ if(typeof computeStats==='function'){ var st=computeStats(r); if(st)return st; } }catch(e){}
+    return null;
+  }
+  function payload(name,sid,score,acc,dur,fin,detail){
+    return {course:CFG.course,name:name||'',studentId:(sid==null?'':String(sid)),
+      score:(score==null||score==='')?'':score,accuracy:(acc==null||acc==='')?'':acc,
+      durationSec:(dur==null||dur==='')?'':Math.round(dur),status:'已完成',
+      finishedAt:fmtTs(fin),detail:detail||''};
+  }
+  function collect(){
+    var raw=rj(CFG.key,null); if(raw==null)return [];
+    var out=[];
+    if(CFG.kind==='objectMap'){
+      for(var id in raw){ var r=raw[id]||{}; if(!r.endAt)continue;
+        var st=statsOf(r);
+        var dur=(r.durationSec!=null)?r.durationSec:((r.endAt&&r.startAt)?(r.endAt-r.startAt)/1000:null);
+        out.push({rk:String(r.id||id),
+          p:payload(r.name,r.id, st?st.score:null, st?st.correctRate:null, dur, r.endAt, st?('答对'+st.correct+'/'+st.total):''),
+          fh:JSON.stringify([r.endAt, st?st.score:null])});
+      }
+    } else if(CFG.kind==='arraySimple'){
+      (raw||[]).forEach(function(r){ if(!r.finishAt)return;
+        out.push({rk:(r.name||'')+'|'+(r.id||''),
+        p:payload(r.name,r.id,r.score,r.acc,(typeof r.time==='number')?r.time/1000:null,r.finishAt||null,(r.acc!=null?('正确率'+r.acc+'%'):'')),
+        fh:JSON.stringify([r.score,r.acc,r.time,r.finishAt])}); });
+    } else if(CFG.kind==='arrayFinished'){
+      (raw||[]).forEach(function(r){ if(!r.finished)return;
+        out.push({rk:(r.studentId||'')+'|'+(r.name||''),
+        p:payload(r.name,r.studentId,r.totalScore,r.accuracy,r.durationSec, r.endTime||null, (r.correctCount!=null?('答对'+r.correctCount+'/6'):'')),
+        fh:JSON.stringify([r.totalScore,r.accuracy,r.durationSec,r.endTime])}); });
+    } else if(CFG.kind==='fruitTree'){
+      for(var uid in raw){ var fr=raw[uid]||{}; var sc=0,pk=0,at=0,k2;
+        for(k2 in (fr.scores||{}))sc+=(fr.scores[k2]||0);
+        for(k2 in (fr.picked||{}))if(fr.picked[k2])pk++;
+        for(k2 in (fr.attempts||{}))at+=(fr.attempts[k2]||0);
+        if(pk<=0)continue;
+        out.push({rk:String(uid),
+          p:payload(fr.name,uid,sc,null,null,null,'摘果'+pk+'/8·练习'+at+'次·'+today()+'快照'),
+          fh:today()}); }
+    }
+    return out;
+  }
+  function queueOutbox(p){ var ob=rj(OUT_KEY,[]); ob.push({p:p,t:Date.now()}); wj(OUT_KEY,ob.slice(-50)); }
+  function postFetch(p){ return fetch(QF_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),keepalive:true}); }
+  function beacon(p){
+    /* 关闭页面兜底：不用 navigator.sendBeacon（跨域带凭证与 ACAO:* 冲突，且 text/plain 服务端不解析），
+       改用 keepalive fetch：页面关闭后请求仍继续，凭证默认 same-origin 与通配 CORS 兼容 */
+    try{ postFetch(p); return true; }catch(e){ return false; }
+  }
+  function submit(p){ postFetch(p).then(function(r){ if(!r.ok)throw new Error('HTTP'+r.status);
+      setBadge('已上传','☁ 成绩已上传 '+hm(),true); toast('☁️ 最终成绩已上传：'+CFG.course,true); })
+    .catch(function(e){ setBadge('待补传','☁ 将自动补传（点我）',false); toast('⏳ 网络不佳，成绩已暂存，联网后自动补传',false); queueOutbox(p); }); }
+  function flushOutbox(){ var ob=rj(OUT_KEY,[]); if(!ob.length)return;
+    var rest=[]; (function next(i){ if(i>=ob.length){wj(OUT_KEY,rest);if(!rest.length)setBadge('就绪','☁ 云成绩'+VER+' 已就绪',true);return;}
+      postFetch(ob[i].p).then(function(){ next(i+1); }).catch(function(){ rest.push(ob[i]); next(i+1); });
+    })(0);
+  }
+  function sync(){
+    try{
+      var reg=rj(REG_KEY,{}); var c=reg[CFG.course]||(reg[CFG.course]={}); var changed=false; var pending=[];
+      collect().forEach(function(r){ if(c[r.rk]===r.fh)return; pending.push(r); c[r.rk]=r.fh; changed=true; });
+      if(changed){ wj(REG_KEY,reg); pending.forEach(function(r){ submit(r.p); }); }
+    }catch(e){}
+  }
+  /* 页面关闭/切后台：未确认的最终成绩用 keepalive fetch 兜底（手机 WebView 关闭页面时请求仍能发出） */
+  function syncBeacon(){
+    try{
+      var reg=rj(REG_KEY,{}); var c=reg[CFG.course]||(reg[CFG.course]={}); var changed=false;
+      collect().forEach(function(r){ if(c[r.rk]===r.fh)return;
+        c[r.rk]=r.fh; changed=true;   // 乐观标记；keepalive 请求失败时入发件箱，下次打开补传
+        try{ beacon(r.p).catch(function(){ queueOutbox(r.p); }); }catch(e){ queueOutbox(r.p); } });
+      if(changed)wj(REG_KEY,reg);
+      rj(OUT_KEY,[]).forEach(function(it){ try{ beacon(it.p); }catch(e){} });  // 尽力补传，不清空（下次联网由 flushOutbox 确认后清空）
+    }catch(e){}
+  }
+  function schedule(){ if(timer)return; timer=setTimeout(function(){ timer=null; sync(); },500); }
+  try{
+    var _set=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){ try{ _set.call(this,k,v); }catch(e){} if(k===CFG.key)schedule(); };
+  }catch(e){}
+  try{ ensureBadge(); ping(); }catch(e){}
+  flushOutbox();
+  sync();
+  setInterval(sync,15000);
+  window.addEventListener('online',function(){ flushOutbox(); sync(); });
+  window.addEventListener('pagehide',syncBeacon);
+  window.addEventListener('beforeunload',syncBeacon);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden')syncBeacon(); else sync(); });
+})();
+</script>
 </body>
 </html>

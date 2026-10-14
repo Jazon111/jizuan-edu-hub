@@ -1,0 +1,3148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta http-equiv="Content-Security-Policy" content="img-src 'self' data: blob: https://*.fbcontent.cn https://*.aliyuncs.com https://storage.googleapis.com; media-src 'self' data: blob: https://*.fbcontent.cn https://*.aliyuncs.com https://storage.googleapis.com;">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>悬臂梁求解内力图 · 闯关互动课件</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; background: #f2f4f7; color: #1f2933; min-height: 100vh; }
+
+  /* 顶栏 */
+  .topbar { background: linear-gradient(90deg, #14213d, #1d4ed8); color: #fff; padding: 18px 32px; }
+  .topbar h1 { font-size: 21px; font-weight: 700; letter-spacing: 1px; }
+  .topbar .sub { font-size: 12px; color: #bcd0f5; margin-top: 5px; letter-spacing: 2px; }
+
+  /* 关卡标签 */
+  .tabs { display: flex; gap: 8px; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; flex-wrap: wrap; }
+  .tab { padding: 15px 22px; cursor: pointer; font-size: 15px; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent; background: none; border-top: none; border-left: none; border-right: none; transition: all .15s; position: relative; }
+  .tab:hover { color: #1d4ed8; }
+  .tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+  .tab .k { display: block; font-size: 11px; font-weight: 400; color: #94a3b8; }
+  .tab .lock { display: none; margin-left: 7px; font-size: 10px; color: #94a3b8; background: #eef2f7; padding: 1px 8px; border-radius: 9px; vertical-align: middle; }
+  .tab.locked { opacity: .45; cursor: not-allowed; }
+  .tab.locked:hover { color: #64748b; }
+  .tab.locked .lock { display: inline-block; }
+  .tab .done { display: none; margin-left: 7px; font-size: 10px; color: #16a34a; background: #f0fdf4; padding: 1px 8px; border-radius: 9px; vertical-align: middle; }
+  .tab.complete .done { display: inline-block; }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 18px 24px 32px; }
+
+  .lv-head { margin-bottom: 14px; }
+  .lv-head h2 { font-size: 19px; color: #14213d; }
+  .lv-head .desc { font-size: 13.5px; color: #475569; margin-top: 7px; line-height: 1.9; background: #fff; border-left: 4px solid #1d4ed8; padding: 12px 16px; border-radius: 8px; }
+
+  .demo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+  .canvas-box { position: relative; width: 100%; height: 540px; background: radial-gradient(circle at 50% 50%, #1b2433 0%, #0a0e16 75%); border-radius: 12px; overflow: hidden; }
+  canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+  .side { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+  .side .panel { width: 100%; }
+
+  .cards { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 0; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #1d4ed8; border-radius: 10px; padding: 14px; }
+
+  /* ===== 画布覆盖层 UI ===== */
+  .ov-bottom {
+    position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    z-index: 5; pointer-events: none; width: min(560px, 60%);
+  }
+  .ov-bottom .learn-status { margin-top: 0; padding: 3px 12px; font-size: 11px; width: auto; display: inline-block; }
+  .ov-bottom .step-caption {
+    min-height: 0; margin-top: 0;
+    background: rgba(20,33,61,.9); border: 1px solid rgba(88,166,255,.45);
+    color: #dbeafe; font-size: 14px; font-weight: 700; letter-spacing: 1px;
+    padding: 6px 22px; border-radius: 18px; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  .ov-bottom .steps { margin-top: 0; }
+
+  .ov-ctrl {
+    position: absolute; right: 12px; bottom: 12px;
+    display: flex; gap: 8px; z-index: 6;
+  }
+  .ov-ctrl .btn { flex: none; width: auto; padding: 9px 16px; font-size: 12.5px; }
+  @media (max-width: 700px) {
+    .ov-ctrl .btn { padding: 8px 10px; font-size: 11.5px; }
+    .ov-bottom { width: 50%; }
+    .ov-bottom .step-caption { font-size: 12px; padding: 5px 12px; white-space: normal; text-align: center; }
+  }
+
+  /* ===== 步骤讲解文本框（白底黑字，悬浮侧边） ===== */
+  .step-bubble {
+    position: absolute; top: 62px; left: 14px; z-index: 6;
+    width: max-content; max-width: min(360px, 50%);
+    background: #ffffff; color: #1f2937;
+    border: 1px solid #93b4f8; border-left: 4px solid #1d4ed8;
+    border-radius: 12px; padding: 11px 15px;
+    box-shadow: 0 10px 28px rgba(2, 12, 30, .35);
+    pointer-events: none;
+    opacity: 0; transform: translateY(-8px) scale(.98);
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .step-bubble.show { opacity: 1; transform: translateY(0) scale(1); }
+  .step-bubble .sb-title { font-size: 13px; font-weight: 800; color: #1d4ed8; margin-bottom: 6px; letter-spacing: .3px; }
+  .step-bubble .sb-line {
+    font-family: "Consolas", "Microsoft YaHei", monospace;
+    font-size: 12.5px; line-height: 1.85; color: #1f2937; white-space: normal; word-break: break-all;
+  }
+  .step-bubble .sb-line.ok { color: #15803d; font-weight: 700; }
+  @media (max-width: 700px) {
+    .step-bubble { top: 58px; left: 8px; max-width: 48%; padding: 8px 10px; }
+    .step-bubble .sb-title { font-size: 11.5px; margin-bottom: 4px; }
+    .step-bubble .sb-line { font-size: 10.5px; line-height: 1.7; white-space: normal; }
+  }
+
+  /* ===== 闯关习题弹窗（左图右题） ===== */
+  .quiz-mask {
+    position: fixed; inset: 0; background: rgba(10, 14, 22, .72);
+    z-index: 140; display: none; align-items: center; justify-content: center; padding: 22px;
+  }
+  .quiz-mask.show { display: flex; }
+  .quiz-modal {
+    position: relative; background: #fff; width: 920px; max-width: 96vw;
+    max-height: 88vh; border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+    display: grid; grid-template-columns: 360px 1fr; overflow: hidden;
+  }
+  .qm-close {
+    position: absolute; top: 10px; right: 12px; z-index: 2;
+    width: 32px; height: 32px; border: none; border-radius: 50%;
+    background: #f1f5f9; color: #475569; font-size: 20px; line-height: 1;
+    cursor: pointer; transition: all .15s;
+  }
+  .qm-close:hover { background: #e2e8f0; color: #1f2937; }
+  .qm-left {
+    background: linear-gradient(160deg, #0f172a, #1e293b);
+    padding: 24px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  }
+  .qm-pic-title { color: #93c5fd; font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .qm-left img {
+    width: 100%; border-radius: 10px; border: 1px solid rgba(148, 163, 184, .35);
+    background: #0d1117; box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  }
+  .qm-pic-tip { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.6; }
+  .qm-right { padding: 26px 28px; overflow-y: auto; }
+  .qm-right h3 { font-size: 17px; color: #14213d; margin-bottom: 16px; padding-right: 30px; }
+  .qm-right .q-item { margin-bottom: 18px; padding-bottom: 18px; }
+  .qm-right .q-item:last-child { margin-bottom: 0; }
+  .qm-next { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+  .qm-next-hint { color: #64748b; font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+  .qm-next-btn { width: 100%; min-height: 44px; }
+  .qm-next-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .qm-next-btn.done { background: #16a34a; }
+  @media (max-width: 760px) {
+    .quiz-modal { grid-template-columns: 1fr; max-height: 92vh; overflow-y: auto; }
+    .qm-left { padding: 18px 16px; }
+    .qm-left img { max-height: 240px; object-fit: contain; }
+    .qm-right { padding: 20px 18px; }
+  }
+
+  .panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; }
+  .panel h3 { font-size: 13px; color: #1d4ed8; margin-bottom: 11px; padding-left: 8px; border-left: 3px solid #1d4ed8; }
+
+  .info-line { font-size: 12px; color: #475569; line-height: 1.8; }
+  .info-line b { color: #14213d; }
+  .info-line .hl-y { color: #b45309; font-weight: 700; }
+  .info-line .hl-r { color: #dc2626; font-weight: 700; }
+  .info-line .hl-p { color: #7c3aed; font-weight: 700; }
+  .info-line .hl-g { color: #15803d; font-weight: 700; }
+
+  .btns { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 10px 0; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .15s; }
+  .btn-play { background: #1d4ed8; color: #fff; }
+  .btn-play:hover { background: #1e40af; }
+  .btn-step { background: #e8eefb; color: #1d4ed8; }
+  .btn-step:hover { background: #dbe7fa; }
+  .btn-reset { background: #f1f5f9; color: #64748b; }
+  .btn-reset:hover { background: #e2e8f0; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .steps { display: flex; gap: 6px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; transition: all .2s; }
+  .dot.on { background: #1d4ed8; box-shadow: 0 0 0 3px #dbeafe; }
+  .step-caption { text-align: center; font-size: 12px; color: #64748b; margin-top: 7px; min-height: 16px; }
+
+  .result { font-size: 12.5px; line-height: 1.9; color: #334155; max-height: 260px; overflow-y: auto; }
+  .result b { color: #14213d; }
+  .result .formula { background: #f1f5f9; padding: 6px 10px; border-radius: 6px; font-family: "Consolas", monospace; font-size: 11.5px; color: #0f766e; margin: 5px 0; line-height: 1.7; }
+  .result .note { color: #b45309; font-size: 12px; margin-top: 4px; }
+  .result table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+  .result table th, .result table td { padding: 4px 6px; text-align: center; border: 1px solid #e2e8f0; }
+  .result table th { background: #f1f5f9; color: #475569; }
+  .result table td.cur { background: #fef9c3; font-weight: 700; color: #854d0e; }
+  .result table td.neg { color: #dc2626; }
+  .result table td.pos { color: #15803d; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #1d4ed8; border-radius: 10px; padding: 15px; }
+  .card .t { font-size: 13px; font-weight: 700; color: #1d4ed8; margin-bottom: 7px; }
+  .card .c { font-size: 12.5px; color: #475569; line-height: 1.85; }
+
+  .quiz { margin-top: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+  .quiz h3 { font-size: 16px; color: #14213d; margin-bottom: 16px; padding-left: 10px; border-left: 4px solid #1d4ed8; }
+  .q-item { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px dashed #e2e8f0; }
+  .q-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-stem { font-size: 14.5px; font-weight: 600; margin-bottom: 12px; line-height: 1.7; }
+  .q-stem .tag { display: inline-block; background: #eef2ff; color: #1d4ed8; font-size: 11px; padding: 2px 9px; border-radius: 10px; margin-right: 8px; font-weight: 700; }
+  .opt { display: block; padding: 10px 13px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 7px; cursor: pointer; font-size: 13.5px; transition: all .12s; }
+  .opt:hover { border-color: #1d4ed8; background: #f8faff; }
+  .opt.sel { border-color: #1d4ed8; background: #eef2ff; }
+  .opt.right { border-color: #16a34a; background: #f0fdf4; }
+  .opt.wrong { border-color: #dc2626; background: #fef2f2; }
+  .check { margin-top: 10px; }
+  .check .btn { width: auto; padding: 8px 24px; flex: none; }
+  .feedback { margin-top: 11px; font-size: 13px; padding: 11px 13px; border-radius: 8px; display: none; line-height: 1.8; }
+  .feedback.ok { background: #f0fdf4; color: #15803d; display: block; }
+  .feedback.bad { background: #fef2f2; color: #b91c1c; display: block; }
+  .feedback .exp { color: #475569; margin-top: 4px; }
+  .hint { color: #dc2626; font-size: 12px; margin-left: 10px; }
+
+  .next-box { margin-top: 20px; text-align: center; }
+  .next-btn { display: inline-block; padding: 12px 38px; background: #16a34a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .15s; box-shadow: 0 3px 10px rgba(22,163,74,.28); }
+  .next-btn:hover { background: #15803d; transform: translateY(-1px); }
+  .next-btn-wait { background: #d97706; box-shadow: 0 3px 10px rgba(217,119,6,.28); }
+  .next-btn-wait:hover { background: #b45309; }
+  .next-hint { font-size: 12.5px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 16px; line-height: 1.7; }
+
+  footer { text-align: center; font-size: 12px; color: #94a3b8; padding: 16px 0 30px; }
+
+  .userbar { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .user-chip { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); padding: 5px 13px; border-radius: 20px; font-size: 12.5px; color: #e6edf3; }
+  .user-chip b { color: #fff; }
+  .admin-badge { background: #f59e0b; color: #1f2937; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }
+  .tb-btn { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.32); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; transition: all .15s; }
+  .tb-btn:hover { background: rgba(255,255,255,.26); }
+
+  .learn-status { font-size: 12px; text-align: center; margin-top: 9px; padding: 7px; border-radius: 7px; line-height: 1.6; }
+  .learn-status.no { background: #fef2f2; color: #b91c1c; }
+  .learn-status.yes { background: #f0fdf4; color: #15803d; }
+
+  .login-mask { position: fixed; inset: 0; background: rgba(10,14,22,.85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-box { background: #fff; width: 400px; max-width: 94vw; border-radius: 16px; padding: 36px 32px; box-shadow: 0 22px 60px rgba(0,0,0,.55); }
+  .login-box h2 { font-size: 20px; color: #14213d; text-align: center; }
+  .login-box .sub2 { font-size: 12.5px; color: #64748b; text-align: center; margin: 9px 0 22px; line-height: 1.7; }
+  .login-box .field { margin-bottom: 16px; }
+  .login-box .field label { display: block; font-size: 13px; color: #334155; margin-bottom: 7px; font-weight: 600; }
+  .login-box .field input { width: 100%; padding: 11px 13px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+  .login-box .field input:focus { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px #dbeafe; }
+  .login-btn { width: 100%; padding: 12px 0; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .login-btn:hover { background: #1e40af; }
+  .login-err { color: #dc2626; font-size: 12.5px; text-align: center; min-height: 18px; margin-bottom: 2px; }
+
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #14213d; color: #fff; padding: 11px 22px; border-radius: 8px; font-size: 13.5px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .3s; box-shadow: 0 8px 30px rgba(0,0,0,.35); max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; }
+
+  .rank-mask { position: fixed; inset: 0; background: rgba(10,14,22,.85); z-index: 150; display: none; align-items: flex-start; justify-content: center; overflow: auto; padding: 40px 16px; }
+  .rank-mask.show { display: flex; }
+  .rank-box { background: #fff; width: 780px; max-width: 96vw; border-radius: 16px; padding: 30px 28px; overflow: auto; }
+  .rank-box h2 { font-size: 20px; color: #14213d; text-align: center; }
+  .rank-box .rsub { text-align: center; font-size: 12.5px; color: #64748b; margin: 8px 0 20px; }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+  .rank-table th, .rank-table td { padding: 10px 10px; text-align: center; border-bottom: 1px solid #eef2f7; }
+  .rank-table th { background: #14213d; color: #fff; font-weight: 600; }
+  .rank-table tr:nth-child(even) td { background: #f8fafc; }
+  .rank-table tr.me td { background: #eef2ff !important; font-weight: 700; }
+  .rank-table td.top1 { color: #d97706; font-weight: 800; }
+  .rank-table td.op { width: 90px; }
+  .del-btn { padding: 5px 13px; border: 1px solid #dc2626; color: #dc2626; background: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all .12s; white-space: nowrap; }
+  .del-btn:hover { background: #fef2f2; }
+  .del-btn.armed { background: #dc2626; color: #fff; border-color: #dc2626; font-weight: 700; }
+  .unfinished-title { margin-top: 26px; font-size: 14px; font-weight: 700; color: #475569; padding-left: 10px; border-left: 4px solid #64748b; }
+  .unfinished-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  .unfinished-table th, .unfinished-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #eef2f7; }
+  .unfinished-table th { background: #475569; color: #fff; font-weight: 600; }
+  .rank-empty { text-align: center; color: #94a3b8; padding: 30px 0; font-size: 13.5px; }
+  .wrong-title { margin-top: 26px; font-size: 15px; font-weight: 700; color: #14213d; padding-left: 10px; border-left: 4px solid #dc2626; }
+  .wrong-item { margin-top: 12px; padding: 13px 15px; background: #fef2f2; border-radius: 8px; font-size: 13px; line-height: 1.8; }
+  .wrong-item .wname { color: #b91c1c; font-weight: 700; }
+  .wrong-item .wstem { color: #334155; margin: 5px 0; }
+  .wrong-item .wans { color: #64748b; }
+  .wrong-item .wans b.c { color: #15803d; }
+  .wrong-item .wans b.w { color: #dc2626; }
+  .rank-close { display: block; margin: 24px auto 0; padding: 10px 34px; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .rank-close:hover { background: #1e40af; }
+
+  /* ===== 云端状态 / 教师 / 部署指南 ===== */
+  .cloud-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: #e6edf3; }
+  .cloud-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; flex: none; }
+  .cloud-dot.online { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .cloud-dot.connecting { background: #f59e0b; }
+  .cloud-dot.offline { background: #ef4444; }
+
+  .teacher-mask, .deploy-mask { position: fixed; inset: 0; background: rgba(10,14,22,.85); z-index: 180; display: none; align-items: center; justify-content: center; padding: 20px; overflow: auto; }
+  .teacher-mask.show, .deploy-mask.show { display: flex; }
+  .teacher-cancel { width: 100%; margin-top: 10px; padding: 10px 0; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .teacher-cancel:hover { background: #e2e8f0; }
+
+  .deploy-box { background: #fff; width: 860px; max-width: 96vw; max-height: 90vh; overflow-y: auto; border-radius: 16px; padding: 30px 32px; }
+  .deploy-box h2 { font-size: 19px; color: #14213d; text-align: center; margin-bottom: 6px; }
+  .deploy-body { font-size: 13px; color: #334155; line-height: 1.9; }
+  .deploy-body h3 { font-size: 14.5px; color: #1d4ed8; margin: 18px 0 8px; padding-left: 9px; border-left: 4px solid #1d4ed8; }
+  .deploy-body ol, .deploy-body ul { margin: 6px 0 6px 22px; }
+  .deploy-body li { margin: 5px 0; }
+  .deploy-body code { background: #eef2ff; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-family: "Consolas", monospace; font-size: 12px; }
+  .deploy-body pre { background: #0d1117; color: #7ee787; padding: 14px 16px; border-radius: 8px; font-family: "Consolas", monospace; font-size: 12px; line-height: 1.7; overflow-x: auto; margin: 8px 0; white-space: pre; }
+  .deploy-body .warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+
+  .teacher-entry { display: block; margin: 14px auto 0; background: none; border: none; color: #94a3b8; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+  .teacher-entry:hover { color: #64748b; }
+  .teacher-bar { margin-top: 18px; border-top: 1px dashed #cbd5e1; padding-top: 16px; text-align: center; }
+  .teacher-bar .tb-title { font-size: 13px; font-weight: 700; color: #b45309; margin-bottom: 10px; }
+  .clear-btn { padding: 10px 26px; background: #fff; color: #dc2626; border: 1.5px solid #dc2626; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: all .15s; }
+  .clear-btn:hover { background: #fef2f2; }
+  .clear-btn.armed { background: #dc2626; color: #fff; animation: blink .8s infinite; }
+  @keyframes blink { 50% { opacity: .65; } }
+  .teacher-logout { margin-left: 10px; padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .teacher-logout:hover { background: #e2e8f0; }
+  .deploy-entry { display: block; margin: 8px auto 0; background: none; border: none; color: #cbd5e1; font-size: 11px; cursor: pointer; text-decoration: underline; }
+  .deploy-entry:hover { color: #94a3b8; }
+
+  @media (max-width: 900px) {
+    .demo { grid-template-columns: 1fr; }
+    .canvas-box { height: 500px; }
+    .side { width: 100%; }
+    .cards { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    main { padding: 10px 12px 24px; }
+    .lv-head .desc { display: none; }
+    .demo { gap: 12px; }
+    .canvas-box { height: 440px; }
+    .side { width: 100%; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+<script type="application/json" id="fx-resource-config" data-fx-resource-runtime="2">{"chatId":"1932C4B450F01A33BD5171FEE542DDFE","env":"online","onlineUrl":"https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/document/vJkrdqwymYhfFUtg6afQnD.html"}</script><script async src="https://www.feixianglaoshi.com/resource-runtime/v2.js" data-fx-resource-runtime="2"></script></head>
+<body>
+  <header class="topbar">
+    <h1>悬臂梁求解内力图 · 闯关互动课件</h1>
+    <div class="sub">OVERHANGING BEAM &nbsp;·&nbsp; 支座反力 → 控制截面内力 → 叠加法绘弯矩图</div>
+    <div class="userbar">
+      <span class="user-chip" id="user-chip">未登录</span>
+      <span class="user-chip" id="progress-chip" style="display:none"></span>
+      <span class="cloud-chip" id="cloud-chip"><span class="cloud-dot" id="cloud-dot"></span><span id="cloud-txt">单机模式</span></span>
+      <button class="tb-btn" id="btn-rank" style="display:none">查看排行榜</button>
+      <button class="tb-btn" id="btn-full" style="display:none">投屏</button>
+      <button class="tb-btn" id="btn-logout" style="display:none">退出</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-level="1">第一关<span class="k">求支座反力</span><span class="done">已完成</span><span class="lock">未解锁</span></button>
+    <button class="tab locked" data-level="2">第二关<span class="k">求控制截面内力</span><span class="done">已完成</span><span class="lock">未解锁</span></button>
+    <button class="tab locked" data-level="3">第三关<span class="k">叠加法绘制弯矩图</span><span class="done">已完成</span><span class="lock">未解锁</span></button>
+  </nav>
+
+  <main>
+    <section class="lv-head">
+      <h2 id="lv-title"></h2>
+      <div class="desc" id="lv-desc"></div>
+    </section>
+
+    <section class="demo">
+      <div class="canvas-box">
+        <canvas id="scene"></canvas>
+
+        <!-- 步骤讲解文本框（白底黑字，悬浮在结构图形左上方，不遮挡梁） -->
+        <div class="step-bubble" id="step-bubble"></div>
+
+        <!-- 底部居中：讲解字幕 + 进度圆点 + 学习状态 -->
+        <div class="ov-bottom">
+          <div class="learn-status no" id="learn-status">本关学习：未完成（完整播放动画后视为完成）</div>
+          <div class="steps" id="step-dots"></div>
+          <div class="step-caption" id="step-caption"></div>
+        </div>
+
+        <!-- 右下角：播放控制 -->
+        <div class="ov-ctrl">
+          <button class="btn btn-play" id="btn-play">▶ 播放动画</button>
+          <button class="btn btn-step" id="btn-step">单步</button>
+          <button class="btn btn-reset" id="btn-reset">重置</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="panel">
+          <h3>演算过程</h3>
+          <div class="result" id="result-box"></div>
+        </div>
+        <section class="cards" id="cards-box"></section>
+      </div>
+    </section>
+  </main>
+
+  <footer>悬臂梁求解内力图 · 闯关互动课件 &nbsp;|&nbsp; 逐级解锁 · 完成「学习动画 + 习题」后进入下一关</footer>
+
+  <div class="login-mask" id="login-mask">
+    <div class="login-box">
+      <h2>悬臂梁求解内力图 · 闯关课件</h2>
+      <div class="sub2">请填写身份信息后开始学习，答题记录与分数将绑定到你的学号</div>
+      <div class="login-err" id="login-err"></div>
+      <div class="field"><label>姓名</label><input id="inp-name" type="text" placeholder="请输入姓名" autocomplete="off" value=""></div>
+      <div class="field"><label>学号</label><input id="inp-id" type="text" placeholder="请输入学号" autocomplete="off" value=""></div>
+      <button class="login-btn" id="login-btn">进入课件</button>
+      <button class="deploy-entry" id="btn-deploy-guide">云端排行榜 · 教师部署指南（Firebase）</button>
+    </div>
+  </div>
+
+  <!-- 闯关习题弹窗（动画播放结束自动弹出：左图右题，可关闭） -->
+  <div class="quiz-mask" id="quiz-mask">
+    <div class="quiz-modal">
+      <button class="qm-close" id="qm-close" title="关闭">×</button>
+      <div class="qm-left">
+        <div class="qm-pic-title">梁结构与荷载原图</div>
+        <img id="qm-shot" alt="梁结构动画原图">
+        <div class="qm-pic-tip">请根据左图完成右侧 2 道计算题</div>
+      </div>
+      <div class="qm-right">
+        <h3>闯关习题（2 题）</h3>
+        <div id="qm-quiz"></div>
+        <div class="qm-next" id="qm-next">
+          <div class="qm-next-hint" id="qm-next-hint">请完成本关全部题目后继续</div>
+          <button class="btn btn-play qm-next-btn" id="qm-next-btn" disabled>答完题后进入下一关</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rank-mask" id="rank-mask">
+    <div class="rank-box">
+      <h2>班级得分排行榜</h2>
+      <div class="rsub" id="rank-sub">加载中…</div>
+      <div id="rank-body"></div>
+      <div id="rank-actions" style="text-align:center;">
+        <button class="rank-close" id="rank-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- 教师登录弹窗（学生不可见清空/删除功能） -->
+  <div class="teacher-mask" id="teacher-mask">
+    <div class="login-box">
+      <h2>教师身份验证</h2>
+      <div class="sub2">仅限授课教师登录。验证通过后可删除单条记录或一键清空全部成绩。</div>
+      <div class="login-err" id="teacher-err"></div>
+      <div class="field"><label>教师邮箱</label><input id="inp-temail" type="email" placeholder="teacher@your-school.com" autocomplete="off"></div>
+      <div class="field"><label>密码</label><input id="inp-tpwd" type="password" placeholder="请输入密码" autocomplete="off"></div>
+      <button class="login-btn" id="teacher-login-btn">验证并开启教师权限</button>
+      <button class="teacher-cancel" id="teacher-cancel">取消</button>
+    </div>
+  </div>
+
+  <!-- 云端部署指南弹窗 -->
+  <div class="deploy-mask" id="deploy-mask">
+    <div class="deploy-box">
+      <h2>云端排行榜 · 部署指南（Firebase Firestore + GitHub Pages）</h2>
+      <div class="deploy-body" id="deploy-body"></div>
+      <button class="rank-close" id="deploy-close">我知道了</button>
+    </div>
+  </div>
+
+<!-- Firebase 兼容版 SDK（全局 firebase 对象，无需打包工具，双击/托管均可运行） -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ============================================================
+//  悬臂梁求解内力图 · 闯关课件核心逻辑
+//  复用自「悬臂梁求解内力图闯关课件.html」的 Canvas 绘图引擎，
+//  套用「闯关课件」通用框架（身份登录 + 逐级解锁 + 排行榜 + 管理员删除）
+// ============================================================
+
+// ---------- 题目数据（已按逆时针力偶核对，全程自洽） ----------
+const NODES = { A:0, C:1, D:5, E:6, F:7, B:8, G:9 };
+const L_AG = 9;
+const LOADS = { q:4, P_E:20, M_F:12, P_G:20 };
+const FyA = 14, FyB = 42;
+
+// 将可见公式中的下划线变量转换为下标显示
+function formatSubscriptHTML(value) {
+  return String(value).replace(/([^\\s_]+)_([A-Za-z0-9]+)/g, '$1<sub>$2</sub>');
+}
+
+function drawCanvasFormula(text, x, y, align) {
+  const parts = String(text).split(/([^\\s_]+)_([A-Za-z0-9]+)/g);
+  const baseFont = ctx.font;
+  const match = baseFont.match(/(\\d+(?:\\.\\d+)?)px/);
+  const baseSize = match ? parseFloat(match[1]) : 12;
+  const subFont = baseFont.replace(/\\d+(?:\\.\\d+)?px/, Math.max(8, baseSize * .72) + 'px');
+  const items = [];
+  let total = 0;
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    const isSub = i % 4 === 2;
+    ctx.font = isSub ? subFont : baseFont;
+    const width = ctx.measureText(parts[i]).width;
+    items.push({ text: parts[i], isSub, width });
+    total += width;
+  }
+  let cursor = align === 'center' ? x - total / 2 : (align === 'right' ? x - total : x);
+  items.forEach(item => {
+    ctx.font = item.isSub ? subFont : baseFont;
+    ctx.fillText(item.text, cursor + item.width / 2, y + (item.isSub ? 4 : 0));
+    cursor += item.width;
+  });
+  ctx.font = baseFont;
+}
+
+// 弯矩函数（正 = 下侧受拉；逆时针力偶使弯矩自左向右减小 12）
+function momentAt(x) {
+  if (x <= 0) return 0;
+  if (x <= 1) return FyA * x;
+  if (x <= 5) return FyA * x - LOADS.q * (x - 1) * (x - 1) / 2;
+  if (x <= 6) { return momentAt(5) + (FyA - LOADS.q * 4) * (x - 5); }
+  if (x <= 7) { return momentAt(6) + (FyA - LOADS.q * 4 - LOADS.P_E) * (x - 6); }
+  if (x <= 8) { return momentAt(7) - LOADS.M_F + (FyA - LOADS.q * 4 - LOADS.P_E) * (x - 7); }
+  if (x <= 9) { return -LOADS.P_G * (9 - x); }
+  return 0;
+}
+
+// 控制截面（第二关）
+const SECTIONS = [
+  { id:'A右', x:0, M:0,   eq:'M_A右 = 0（铰支座无外加力偶）' },
+  { id:'C',   x:1, M:14,  eq:'M_C = F_yA×1 = 14×1 = 14 kN·m' },
+  { id:'D',   x:5, M:38,  eq:'M_D = 14×5 − 4×4×2 = 70 − 32 = 38 kN·m' },
+  { id:'E',   x:6, M:36,  eq:'M_E = 38 + (14−16)×1 = 36 kN·m' },
+  { id:'F左', x:7, M:14,  eq:'M_F左 = 36 + (14−16−20)×1 = 14 kN·m' },
+  { id:'F右', x:7, M:2,   eq:'M_F右 = 14 − 12 = 2 kN·m（力偶突变 12）' },
+  { id:'B左', x:8, M:-20, eq:'M_B左 = 2 + (14−16−20)×1 = 2 − 22 = −20 kN·m' },
+  { id:'G',   x:9, M:0,   eq:'M_G = 0（自由端）' },
+];
+
+// 区段（第三关）
+const SEGMENTS = [
+  { name:'AC段',   x0:0, x1:1, type:'line', desc:'段内无荷载 → 弯矩图为直线，直接连 0 → 14', res:'M_C = 14 kN·m' },
+  { name:'CD段',   x0:1, x1:5, type:'udl',  desc:'将该段视为两端铰支的虚拟简支梁：① 两端弯矩 M_C=14、M_D=38 连成基线（虚线）；② 叠加均布荷载简支梁弯矩，跨中叠加值 ql²/8 = 4×4²/8 = 8', res:'M_跨中 = 26 + 8 = 34 kN·m' },
+  { name:'DE段',   x0:5, x1:6, type:'line', desc:'段内无荷载 → 直线 38 → 36', res:'M_E = 36 kN·m' },
+  { name:'EF左段', x0:6, x1:7, type:'line', desc:'段内无荷载 → 直线 36 → 14（E点集中力处出现折角）', res:'M_F左 = 14 kN·m' },
+  { name:'F点突变', x0:7, x1:7, type:'jump', desc:'集中力偶 12kN·m↺ → 弯矩突变 14 → 2（突变量 12）', res:'M_F右 = 14 − 12 = 2 kN·m' },
+  { name:'F右B段', x0:7, x1:8, type:'line', desc:'段内无荷载 → 直线 2 → −20', res:'M_B左 = −20 kN·m' },
+  { name:'BG段',   x0:8, x1:9, type:'line', desc:'段内无荷载 → 直线 −20 → 0', res:'M_G = 0 kN·m（自由端）' },
+];
+
+// ---------- 关卡元信息 ----------
+const LEVEL_META = {
+  1: {
+    title: '第一关 · 求支座反力',
+    canvasTitle: '伸臂梁 · 整体平衡求支座反力',
+    formula: 'ΣM_B = 0 → F_yA　ΣF_y = 0 → F_yB　ΣM_A = 0 校核',
+    desc: '伸臂梁 A 端铰支、B 端滚动支座（距 A 为 8m），外伸臂 B→G 长 1m。取整个梁为隔离体，解除支座约束代之以反力 F_yA、F_yB；对 B 点取矩求 F_yA，由竖向平衡求 F_yB，再对 A 点取矩校核。',
+    cards: {
+      key: '整体隔离体 + 平衡方程（两个求反力、一个校核）',
+      cond: '分布荷载先求合力再取矩；力偶对任一点取矩均等于其本身',
+      result: 'F_yA = 14 kN ↑，F_yB = 42 kN ↑，ΣM_A = 0 校核通过',
+    },
+  },
+  2: {
+    title: '第二关 · 求控制截面内力（截面法）',
+    canvasTitle: '伸臂梁 · 截面法求控制截面弯矩',
+    formula: '控制截面：A右 C D E F左 F右 B左 G　逐个截开取左隔离体列 ΣM=0',
+    desc: '在控制截面处假想截开，选取左侧隔离体（保留左侧全部实际荷载与反力），对截面形心列 ΣM=0 求弯矩。集中力偶处需区分左、右截面（弯矩突变）。',
+    cards: {
+      key: '截面法：截开 → 取左侧隔离体 → 列 ΣM=0 → 求解弯矩',
+      cond: '集中力偶处弯矩突变，须区分左、右截面（F左=14、F右=2）',
+      result: 'M：A右0、C14、D38、E36、F左14、F右2、B左−20、G0',
+    },
+  },
+  3: {
+    title: '第三关 · 叠加法绘制弯矩图',
+    canvasTitle: '伸臂梁 · 区段叠加法绘制弯矩图',
+    formula: '相邻控制截面间：两端弯矩连线作基线 + 段内荷载的简支梁弯矩',
+    desc: '依次取相邻控制截面，将梁段虚拟视为两端铰支简支梁：先用两端弯矩连成基线（直线），再依据段内实际荷载叠加对应的简支梁弯矩图形。无荷载段直接用基线；均布段叠加抛物线 ql²/8；集中力偶只造成端点突变。',
+    cards: {
+      key: '区段叠加：两端弯矩连线作基线 + 段内荷载的简支梁弯矩',
+      cond: '无荷载段用基线直线；均布段叠加抛物线 ql²/8；力偶只造成端点突变',
+      result: 'M_max ≈ 38.5 kN·m（x≈4.5m 剪力零点）',
+    },
+  },
+};
+
+const STEP_CAPTIONS = {
+  1: ['', '第1步 · 取整根梁为隔离体，解除支座约束', '第2步 · 对 B 点取矩 ΣM_B=0，求 F_yA', '第3步 · 竖向力平衡 ΣF_y=0，求 F_yB', '第4步 · 对 A 点取矩校核 ΣM_A=0', '第5步 · 反力求解完成 ✓ 闯关成功'],
+  2: ['', '截面 A右（x=0）', '截面 C（x=1）', '截面 D（x=5）', '截面 E（x=6）', '截面 F左（x=7）', '截面 F右（x=7）', '截面 B左（x=8）', '截面 G（x=9）'],
+  3: ['', 'AC段 · 直线 0→14', 'CD段 · 抛物线叠加', 'DE段 · 直线 38→36', 'EF左段 · 直线 36→14', 'F点 · 力偶突变', 'F右B段 · 直线 2→−20', 'BG段 · 直线 −20→0'],
+};
+
+// 第1关：讲师讲解配置（字幕在底部胶囊中显示，公式弹卡画在画布上）
+const L1_STEPS = {
+  1: {
+    say: '取整根梁为隔离体',
+    formulas: ['解除 A、B 支座约束，代之以未知竖向反力', 'F_yA = ? ↑（A 铰支座）　F_yB = ? ↑（B 滚动支座）', '无水平荷载 → A 端水平反力为 0']
+  },
+  2: {
+    say: '对 B 点取矩，求 F_yA',
+    formulas: ['ΣM_B = 0（规定顺时针为正）', '−F_yA·8 + 16·5 + 20·2 + 12 − 20·1 = 0', '8F_yA = 112　→　F_yA = 14 kN ↑']
+  },
+  3: {
+    say: '竖向合力等于 0',
+    formulas: ['ΣF_y = 0（向上为正）', 'F_yA + F_yB − 16 − 20 − 20 = 0', 'F_yB = 56 − 14 = 42 kN ↑']
+  },
+  4: {
+    say: '对 A 点取矩校核',
+    formulas: ['校核 ΣM_A = 0', '42·8 + 12 = 16·3 + 20·6 + 20·9', '348 = 348 ✓　反力结果正确']
+  },
+  5: {
+    say: '反力求解完成，闯关成功！',
+    formulas: ['支座竖向反力：', 'F_yA = 14 kN ↑　　F_yB = 42 kN ↑', '反力与全部荷载平衡，可进入控制截面内力计算']
+  }
+};
+
+// ---------- Canvas ----------
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, beamY = 0, beamX0 = 0, SCALE = 50, mScale = 3;
+let currentLevel = 1;
+let step = 0;               // 0=未开始
+let playing = false;
+
+function maxStep(lv) { return lv === 1 ? 5 : (lv === 2 ? 8 : 7); }
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.max(1, Math.floor(rect.width));
+  H = Math.max(1, Math.floor(rect.height));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  SCALE = Math.min(64, Math.max(38, (W - 170) / L_AG));
+  beamY = H * 0.54;
+  beamX0 = (W - L_AG * SCALE) / 2;
+  mScale = Math.min(7, Math.max(2, (beamY - 130) / 40));
+  // 视口变化后讲师目标点按新比例重定位（瞬间就位，不产生走动）
+  if (currentLevel === 1) syncTeacher(step, performance.now() - TEACHER_MOVE_MS - 10);
+  render();
+}
+window.addEventListener('resize', resize);
+
+function toSx(xm) { return beamX0 + xm * SCALE; }
+
+function arrow(x, y, dx, dy, len, color, label, lw, labelColor) {
+  const ex = x + dx * len, ey = y + dy * len;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw || 2.5;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  const ang = Math.atan2(dy, dx), ah = 8;
+  ctx.beginPath(); ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - ah * Math.cos(ang - 0.4), ey - ah * Math.sin(ang - 0.4));
+  ctx.lineTo(ex - ah * Math.cos(ang + 0.4), ey - ah * Math.sin(ang + 0.4));
+  ctx.closePath(); ctx.fill();
+  if (label) {
+    ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = labelColor || color;
+    ctx.fillText(label, ex + dx * 18, ey + dy * 18 + 3);
+  }
+}
+
+function drawGrid() {
+  // 低对比度科技网格：服务于空间层次，不与梁、荷载和内力图竞争
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(73, 130, 181, .13)';
+  ctx.beginPath();
+  const gx = 42, gy = 42;
+  for (let x = beamX0 % gx; x < W; x += gx) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = 0; y < H; y += gy) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(91, 182, 224, .07)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = beamX0 % (gx * 4); x < W; x += gx * 4) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = 0; y < H; y += gy * 4) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTechBackdrop(now) {
+  const grad = ctx.createRadialGradient(W * .48, H * .42, 20, W * .48, H * .42, Math.max(W, H) * .78);
+  grad.addColorStop(0, '#13263a');
+  grad.addColorStop(.52, '#0b1726');
+  grad.addColorStop(1, '#070d17');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 克制的蓝青光晕，置于背景层，主体结构仍保持最高对比度
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const pulse = (Math.sin(now / 1700) + 1) / 2;
+  const glow = ctx.createRadialGradient(W * .22, H * .28, 0, W * .22, H * .28, W * .36);
+  glow.addColorStop(0, 'rgba(37, 150, 190, ' + (.10 + pulse * .025) + ')');
+  glow.addColorStop(1, 'rgba(37, 150, 190, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  const glow2 = ctx.createRadialGradient(W * .82, H * .66, 0, W * .82, H * .66, W * .28);
+  glow2.addColorStop(0, 'rgba(70, 100, 220, .07)');
+  glow2.addColorStop(1, 'rgba(70, 100, 220, 0)');
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  drawGrid();
+  // 微弱扫描线与节点粒子，避免形成抢眼装饰
+  ctx.save();
+  ctx.globalAlpha = .18;
+  ctx.strokeStyle = '#4db6d8';
+  ctx.lineWidth = 1;
+  const scanY = (now / 32) % (H + 80) - 40;
+  ctx.beginPath(); ctx.moveTo(0, scanY); ctx.lineTo(W, scanY); ctx.stroke();
+  const dots = [[.08,.18],[.16,.76],[.86,.20],[.92,.78],[.54,.12],[.68,.88]];
+  dots.forEach((d, i) => {
+    const tw = .35 + .3 * ((Math.sin(now / 500 + i) + 1) / 2);
+    ctx.globalAlpha = tw;
+    ctx.fillStyle = '#65d7ef';
+    ctx.beginPath(); ctx.arc(W * d[0], H * d[1], 1.4, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawBeam() {
+  const sx0 = toSx(0), sx1 = toSx(L_AG), bh = 18;
+  const top = beamY - bh / 2, bottom = beamY + bh / 2;
+  ctx.save();
+  // 梁体：用清晰的矩形截面、双线轮廓和中性轴表达杆件
+  const grd = ctx.createLinearGradient(0, top, 0, bottom);
+  grd.addColorStop(0, '#dbe4ee');
+  grd.addColorStop(0.45, '#aebdcd');
+  grd.addColorStop(1, '#7f91a5');
+  ctx.fillStyle = grd;
+  ctx.fillRect(sx0, top, sx1 - sx0, bh);
+  ctx.strokeStyle = '#e8f0f7';
+  ctx.lineWidth = 1.6;
+  ctx.strokeRect(sx0, top, sx1 - sx0, bh);
+  ctx.strokeStyle = '#536579';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(sx0 + 2, top + 2, sx1 - sx0 - 4, bh - 4);
+  // 中性轴
+  ctx.setLineDash([7, 5]);
+  ctx.strokeStyle = '#425466';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(sx0, beamY); ctx.lineTo(sx1, beamY); ctx.stroke();
+  ctx.setLineDash([]);
+  // 节点标记与字母
+  ctx.font = 'bold 11px "Segoe UI"';
+  ctx.textAlign = 'center';
+  for (const k in NODES) {
+    const x = toSx(NODES[k]);
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath(); ctx.arc(x, top - 6, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d7e2ee';
+    ctx.fillText(k, x, top - 14);
+  }
+  ctx.restore();
+}
+
+function drawSupport(x, type) {
+  const sx = toSx(x), sy = beamY + 9;
+  ctx.save();
+  ctx.lineJoin = 'round';
+  // 支座连接点
+  ctx.fillStyle = '#26384a';
+  ctx.beginPath(); ctx.arc(sx, sy - 1, 4, 0, Math.PI * 2); ctx.fill();
+  // 标准铰支座/滚动支座三角形
+  ctx.fillStyle = '#c9d6e3';
+  ctx.strokeStyle = '#eef5fb';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy + 2); ctx.lineTo(sx - 17, sy + 25); ctx.lineTo(sx + 17, sy + 25); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  if (type === 'roller') {
+    ctx.fillStyle = '#aab9c8';
+    ctx.strokeStyle = '#eef5fb';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(sx - 8, sy + 30, 5, 0, Math.PI * 2); ctx.arc(sx + 8, sy + 30, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    drawGroundHatch(sx - 24, sy + 38, sx + 24, sy + 38);
+  } else {
+    drawGroundHatch(sx - 24, sy + 28, sx + 24, sy + 28);
+  }
+  ctx.restore();
+}
+
+function drawGroundHatch(x0, y, x1, y2) {
+  ctx.save();
+  ctx.strokeStyle = '#8ea1b4'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y2); ctx.stroke();
+  for (let x = x0 + 4; x <= x1; x += 8) {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 8, y + 8); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawDims() {
+  const dy = beamY + 56;
+  function d(sx0, sx1, label) {
+    ctx.save(); ctx.strokeStyle = '#90a4b8'; ctx.fillStyle = '#b9c7d6'; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(sx0, dy - 5); ctx.lineTo(sx0, dy + 5); ctx.moveTo(sx1, dy - 5); ctx.lineTo(sx1, dy + 5); ctx.stroke();
+    ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(sx0, dy); ctx.lineTo(sx1, dy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = '10px "Consolas", monospace'; ctx.textAlign = 'center';
+    ctx.fillText(label, (sx0 + sx1) / 2, dy - 7); ctx.restore();
+  }
+  d(toSx(0), toSx(1), '1 m'); d(toSx(1), toSx(5), '4 m');
+  d(toSx(5), toSx(6), '1 m'); d(toSx(6), toSx(7), '1 m'); d(toSx(7), toSx(8), '1 m'); d(toSx(8), toSx(9), '1 m');
+}
+
+function easeOutCubic(t) {
+  t = Math.max(0, Math.min(1, t));
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function loadEntryProgress() {
+  // 初始静态展示保持完整；切换步骤时荷载从上方缓缓落到梁面
+  if (typeof step === 'number' && step === 0) return 1;
+  const entered = (typeof stepEnterAt === 'number' && stepEnterAt > 0) ? stepEnterAt : performance.now() - 700;
+  return easeOutCubic((performance.now() - entered) / 650);
+}
+
+function drawPL(x, val, progress) {
+  const sx = toSx(x);
+  const contactY = beamY - 10; // 梁顶面，箭头尖端与梁体接触
+  const startTop = beamY - 116;
+  const finalTop = beamY - 88;
+  const p = (progress === undefined) ? 1 : progress;
+  const topY = startTop + (finalTop - startTop) * p;
+  const len = Math.max(20, contactY - topY);
+  ctx.save();
+  ctx.strokeStyle = '#ff7b72'; ctx.fillStyle = '#ff7b72'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(sx, topY); ctx.lineTo(sx, contactY); ctx.stroke();
+  const ah = 10;
+  ctx.beginPath(); ctx.moveTo(sx, contactY + 1); ctx.lineTo(sx - ah * .58, contactY - ah); ctx.lineTo(sx + ah * .58, contactY - ah); ctx.closePath(); ctx.fill();
+  ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+  ctx.fillText('P = ' + val + ' kN', sx, topY - 8);
+  ctx.restore();
+}
+
+function drawCoupleAt(x, progress) {
+  const sx = toSx(x), contactY = beamY - 10;
+  const finalCy = beamY - 44, startCy = beamY - 84;
+  const p = (progress === undefined) ? 1 : progress;
+  const settle = easeOutCubic(p);
+  const cy = startCy + (finalCy - startCy) * settle, r = 18;
+  ctx.save();
+  ctx.strokeStyle = '#c4a0ff'; ctx.fillStyle = '#c4a0ff'; ctx.lineWidth = 2.5;
+  const sa = Math.PI * 0.22, ea = Math.PI * 1.78;
+  ctx.beginPath(); ctx.arc(sx, cy, r, sa, ea, false); ctx.stroke();
+  const ax = sx + r * Math.cos(ea), ay = cy + r * Math.sin(ea);
+  const tang = ea + Math.PI / 2, ah = 8;
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - ah * Math.cos(tang - .45), ay - ah * Math.sin(tang - .45)); ctx.lineTo(ax - ah * Math.cos(tang + .45), ay - ah * Math.sin(tang + .45)); ctx.closePath(); ctx.fill();
+  // 环形力偶中心通过最短虚线连接至梁顶，明确作用位置且不悬空
+  ctx.strokeStyle = 'rgba(196,160,255,.72)'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(sx, cy + r); ctx.lineTo(sx, contactY); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#c4a0ff';
+  ctx.beginPath(); ctx.arc(sx, contactY, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+  ctx.fillText('M = 12 kN·m ↺', sx, cy - r - 7);
+  ctx.restore();
+}
+
+function drawLoads(alpha) {
+  ctx.save(); ctx.globalAlpha = (alpha === undefined) ? 1 : alpha;
+  const p = loadEntryProgress();
+  // 均布荷载：箭头尖端始终落在梁顶面，切换步骤时整体缓动下落
+  const s0 = toSx(1), s1 = toSx(5);
+  const contactY = beamY - 10;
+  const startY = beamY - 116;
+  const finalY = beamY - 86;
+  const y0 = startY + (finalY - startY) * p;
+  const cnt = Math.max(8, Math.floor((s1 - s0) / 15)), sp = (s1 - s0) / cnt;
+  ctx.strokeStyle = '#ffd166'; ctx.fillStyle = '#ffd166'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(s0, y0); ctx.lineTo(s1, y0); ctx.stroke();
+  for (let i = 0; i <= cnt; i++) {
+    const x = s0 + i * sp;
+    const tipY = contactY;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, tipY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, tipY + 1); ctx.lineTo(x - 5, tipY - 9); ctx.lineTo(x + 5, tipY - 9); ctx.closePath(); ctx.fill();
+  }
+  ctx.font = 'bold 12px "Consolas", monospace'; ctx.textAlign = 'center';
+  ctx.fillText('q = 4 kN/m', (s0 + s1) / 2, y0 - 11);
+  ctx.font = '10px "Consolas", monospace'; ctx.fillStyle = '#d5dee8';
+  ctx.fillText('受荷区 4 m', (s0 + s1) / 2, y0 - 25);
+  drawPL(6, 20, p); drawPL(9, 20, p);
+  drawCoupleAt(7, p);
+  ctx.restore();
+}
+
+function drawReaction(x, val, label, mode, alpha) {
+  ctx.save(); ctx.globalAlpha = (alpha === undefined) ? 1 : alpha;
+  const sx = toSx(x), baseY = beamY + 66;
+  if (mode === 'ghost') {
+    ctx.strokeStyle = 'rgba(74, 222, 128, .72)'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(sx, baseY); ctx.lineTo(sx, beamY + 12); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(134,239,172,.9)'; ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+    drawCanvasFormula(label + ' = ?', sx, baseY + 18, 'center');
+  } else {
+    const len = 26 + Math.abs(val) * .8;
+    ctx.strokeStyle = '#52d273'; ctx.fillStyle = '#52d273'; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(sx, baseY); ctx.lineTo(sx, baseY - len); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, baseY - len - 1); ctx.lineTo(sx - 6, baseY - len + 9); ctx.lineTo(sx + 6, baseY - len + 9); ctx.closePath(); ctx.fill();
+    ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+    drawCanvasFormula(label + ' = ' + val + ' kN ↑', sx, baseY + 18, 'center');
+  }
+  ctx.restore();
+}
+
+function drawReactions(alpha) {
+  drawReaction(0, FyA, 'F_yA', 'solid', alpha);
+  drawReaction(8, FyB, 'F_yB', 'solid', alpha);
+}
+
+// ============================================================
+//  第1关专属：卡通土木讲师 + 分步讲解视觉（隔离体/力矩臂/公式卡）
+// ============================================================
+function groundLineY() { return H - 100; }
+
+// ---------- 卡通讲师状态机 ----------
+const teacher = { x: 0, fromX: 0, tx: 0, face: 1, mode: 'idle', t0: 0, target: null };
+const TEACHER_MOVE_MS = 750;
+
+function teacherPoseForStep(s) {
+  const A = { x: toSx(0), y: beamY + 8 };
+  const B = { x: toSx(8), y: beamY + 8 };
+  const clampX = x => Math.max(64, Math.min(W - 46, x));
+  if (s <= 0) return { x: clampX(toSx(-0.25)), face: 1, mode: 'wave', target: null };
+  if (s === 1) return { x: clampX(toSx(0) + 18), face: 1, mode: 'pointAB', target: A, rings: [A, B] };
+  if (s === 2) return { x: clampX(toSx(8) + 108), face: -1, mode: 'point', target: B, rings: [B] };
+  if (s === 3) return { x: clampX(toSx(3.4)), face: 1, mode: 'armup', target: null };
+  if (s === 4) return { x: clampX(toSx(0) - 72), face: 1, mode: 'point', target: A, rings: [A] };
+  return { x: clampX(toSx(1.7)), face: 1, mode: 'cheer', target: null };
+}
+function syncTeacher(s, now) {
+  const p = teacherPoseForStep(s);
+  teacher.fromX = teacherCurX(now);  // 从当前已绘制位置平滑走到新目标
+  teacher.x = p.x;
+  teacher.tx = p.x; teacher.face = p.face; teacher.mode = p.mode;
+  teacher.target = p.target || null; teacher.rings = p.rings || null;
+  teacher.pxAB = p.mode === 'pointAB' ? teacherCurX(now) : p.x;  // 第1步行走位置（从当前位置起步）
+  teacher.pABT = undefined;
+  teacher.t0 = now;
+}
+function teacherCurX(now) {
+  const k = Math.min(1, (now - teacher.t0) / TEACHER_MOVE_MS);
+  const e = k < 1 ? 1 - Math.pow(1 - k, 3) : 1;       // easeOutCubic
+  return teacher.fromX + (teacher.tx - teacher.fromX) * e;
+}
+
+// ---------- 卡通讲师绘制（可爱扁平风：黄色安全帽 + 白衬衫） ----------
+function rrPath(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// 张开的小手（欢呼 / 招手 / 抬手时用，替代食指指向）
+function drawOpenHand(hx, hy, a) {
+  ctx.save();
+  ctx.strokeStyle = '#f6c89b'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i++) {
+    const aa = a + i * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(hx + Math.cos(aa) * 3, hy + Math.sin(aa) * 3);
+    ctx.lineTo(hx + Math.cos(aa) * 8.6, hy + Math.sin(aa) * 8.6);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+const teacherImage = new Image();
+teacherImage.crossOrigin = 'anonymous';
+teacherImage.src = 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/run-script/job_922bd4ff71fd4fec9f38fdad158d5a93/upload/329d6f6538ef451ba025968ff0e62733.png';
+teacherImage.onload = () => render();
+
+function drawTeacherImage(now) {
+  const cx = teacherCurX(now);
+  const gy = groundLineY();
+  const moving = (now - teacher.t0) < TEACHER_MOVE_MS;
+  const bob = moving ? -Math.abs(Math.sin((now - teacher.t0) / 75)) * 2.5 : Math.sin(now / 620) * 1.1;
+  const face = teacher.face || 1;
+  const img = teacherImage;
+  if (img.complete && img.naturalWidth > 0) {
+    // 保留步骤位置同步；图片讲师统一朝向梁体，教鞭始终指向讲解区域
+    const maxH = Math.min(170, H * .30);
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const ih = maxH;
+    const iw = ih * ratio;
+    const left = face > 0 ? cx - iw * .48 : cx - iw * .52;
+    const top = gy - ih + bob;
+    ctx.save();
+    ctx.globalAlpha = .98;
+    ctx.shadowColor = 'rgba(0,0,0,.28)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+    ctx.drawImage(img, left, top, iw, ih);
+    ctx.restore();
+
+    // 讲师动作的轻量提示线，仍沿用原有目标光环与步骤目标
+    if (teacher.target) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(92, 212, 238, .42)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      const handX = face > 0 ? left + iw * .16 : left + iw * .84;
+      const handY = top + ih * .43;
+      ctx.moveTo(handX, handY); ctx.lineTo(teacher.target.x, teacher.target.y);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
+  if (teacher.rings) teacher.rings.forEach((t, i) => drawTargetRing(t.x, t.y, now, i));
+  else if (teacher.target) drawTargetRing(teacher.target.x, teacher.target.y, now, 0);
+}
+
+/* legacy_canvas_teacher_block_disabled
+
+  let cx = teacherCurX(now);
+  const gy = groundLineY();
+  let moving = (now - teacher.t0) < TEACHER_MOVE_MS;
+  let walk = moving ? Math.sin((now - teacher.t0) / 75) : 0;
+
+  // 第1步：步内先指 A，1.25 秒后走到 B 侧再指 B
+  let sFace = teacher.face;
+  if (teacher.mode === 'pointAB') {
+    const ph = now - stepEnterAt;
+    const pA = { x: toSx(0), y: beamY + 8 }, pB = { x: toSx(8), y: beamY + 8 };
+    const xA = toSx(0) + 18, xB = toSx(8) - 100;
+    const first = ph < 1250;
+    const goal = first ? xA : xB;
+    if (teacher.pABT === undefined) teacher.pABT = now;
+    const dt = Math.min(60, Math.max(0, now - teacher.pABT));
+    teacher.pABT = now;
+    const dx = goal - teacher.pxAB;
+    teacher.pxAB += Math.sign(dx) * Math.min(Math.abs(dx), 0.5 * dt);  // 0.5px/ms
+    cx = teacher.pxAB; sFace = first ? 1 : -1;
+    moving = Math.abs(goal - teacher.pxAB) > 4;
+    walk = moving ? Math.sin(now / 75) : 0;
+    teacher.face = sFace;
+    teacher.target = first ? pA : pB;
+    teacher.rings = [pA, pB];
+  }
+
+  const bob = moving ? -Math.abs(Math.sin((now - teacher.t0) / 75)) * 2.5 : Math.sin(now / 620) * 1.1;
+  const blink = ((now % 4200) < 150);
+  const waveA = moving ? 0 : Math.sin(now / 260) * 0.28;   // 招手/欢呼摆动
+
+  // ---- 世界坐标指向：先算指尖朝向 ----
+  const face = sFace;
+  let handWorld = null;
+  const toLocal = (p) => ({ x: face * (p.x - cx), y: p.y - gy });
+
+  ctx.save();
+  ctx.translate(cx, gy + bob);
+
+  const SK = '#f6c89b', SK_D = '#e0a872', INK = '#263142';
+  const SHIRT = '#ffffff', SHIRT_S = '#e2e8f0', PANT = '#1e3a8a', SHOE = '#334155';
+  const HAT = '#fbbf24', HAT_D = '#d97706', TIE = '#2563eb';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // ===== 地面阴影 =====
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  // ===== 腿（走路摆动） =====
+  ctx.strokeStyle = PANT; ctx.lineWidth = 7.5;
+  const hipY = -34;
+  ctx.beginPath(); ctx.moveTo(-3, hipY); ctx.lineTo(-4 - walk * 7, -8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3, hipY); ctx.lineTo(4 + walk * 7, -8); ctx.stroke();
+  // 鞋
+  ctx.fillStyle = SHOE;
+  rrPath(-13 - walk * 7, -9, 13, 6.5, 3); ctx.fill();
+  rrPath(2 + walk * 7, -9, 13, 6.5, 3); ctx.fill();
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(-13 - walk * 7, -4.2, 13, 1.6);
+  ctx.fillRect(2 + walk * 7, -4.2, 13, 1.6);
+
+  // ===== 后臂（自然摆动；欢呼时双手举起） =====
+  const shB = { x: -5, y: -60 };
+  let ebB, hbB;
+  if (teacher.mode === 'cheer') {
+    const a = -2.65 - waveA * 0.4;
+    ebB = { x: shB.x + Math.cos(a) * 14, y: shB.y + Math.sin(a) * 14 };
+    hbB = { x: ebB.x + Math.cos(a) * 12, y: ebB.y + Math.sin(a) * 12 };
+  } else {
+    const swB = moving ? -walk * 0.5 : Math.sin(now / 620) * 0.12;
+    ebB = { x: shB.x + Math.sin(0.5 + swB) * 14 - 4, y: shB.y + Math.cos(0.5 + swB) * 14 + 4 };
+    hbB = { x: ebB.x + Math.sin(0.35 + swB) * 12 - 2, y: ebB.y + Math.cos(0.35 + swB) * 12 + 2 };
+  }
+  ctx.strokeStyle = SHIRT_S; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(shB.x, shB.y); ctx.lineTo(ebB.x, ebB.y); ctx.lineTo(hbB.x, hbB.y); ctx.stroke();
+  ctx.fillStyle = SK; ctx.beginPath(); ctx.arc(hbB.x, hbB.y, 4.2, 0, Math.PI * 2); ctx.fill();
+  if (teacher.mode === 'cheer') drawOpenHand(hbB.x, hbB.y, -2.65 - waveA * 0.4);
+
+  // ===== 躯干（白衬衫） =====
+  ctx.fillStyle = SHIRT; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-11, -64); ctx.quadraticCurveTo(0, -70, 12, -64);
+  ctx.lineTo(8, -34); ctx.lineTo(-8, -34); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // 衣领 + 领带
+  ctx.fillStyle = SHIRT_S;
+  ctx.beginPath(); ctx.moveTo(-7, -64); ctx.lineTo(0, -56); ctx.lineTo(-1, -64); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(7, -64); ctx.lineTo(0, -56); ctx.lineTo(1, -64); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = TIE;
+  ctx.beginPath(); ctx.moveTo(-2.4, -57); ctx.lineTo(2.4, -57); ctx.lineTo(1.6, -42); ctx.lineTo(0, -38); ctx.lineTo(-1.6, -42); ctx.closePath(); ctx.fill();
+  // 纽扣
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath(); ctx.arc(0, -48, 1.1, 0, Math.PI * 2); ctx.arc(0, -42, 1.1, 0, Math.PI * 2); ctx.fill();
+
+  // ===== 前臂：指物 / 竖直抬手 / 欢呼 / 招手 =====
+  const shF = { x: 6, y: -61 };
+  let ef = null, hf = null, fingerDir = 0;
+
+  if ((teacher.mode === 'point' || teacher.mode === 'pointAB') && teacher.target) {
+    const tl = toLocal(teacher.target);
+    const a = Math.atan2(tl.y - shF.y, tl.x - shF.x);
+    ef = { x: shF.x + Math.cos(a) * 18, y: shF.y + Math.sin(a) * 18 };
+    hf = { x: ef.x + Math.cos(a) * 17, y: ef.y + Math.sin(a) * 17 };
+    fingerDir = a;
+  } else if (teacher.mode === 'armup') {
+    // 竖直抬手：掌心向上做"平衡"手势
+    ef = { x: shF.x + 3, y: shF.y - 20 };
+    hf = { x: ef.x + 2, y: ef.y - 17 };
+    fingerDir = -Math.PI / 2;
+  } else if (teacher.mode === 'cheer') {
+    const a = -2.0 - waveA * 0.4;
+    ef = { x: shF.x + Math.cos(a) * 18, y: shF.y + Math.sin(a) * 18 };
+    hf = { x: ef.x + Math.cos(a) * 16, y: ef.y + Math.sin(a) * 16 };
+    fingerDir = a;
+  } else {
+    // wave：举起招手
+    const a = -2.15 + waveA;
+    ef = { x: shF.x + Math.cos(a) * 17, y: shF.y + Math.sin(a) * 17 };
+    hf = { x: ef.x + Math.cos(a) * 15, y: ef.y + Math.sin(a) * 15 };
+    fingerDir = a;
+  }
+
+  // 袖子
+  ctx.strokeStyle = SHIRT; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(shF.x, shF.y); ctx.lineTo(ef.x, ef.y); ctx.stroke();
+  ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(shF.x, shF.y); ctx.lineTo(ef.x, ef.y); ctx.stroke();
+  // 前臂（皮肤）
+  ctx.strokeStyle = SK; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(ef.x, ef.y); ctx.lineTo(hf.x, hf.y); ctx.stroke();
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(ef.x, ef.y); ctx.lineTo(hf.x, hf.y); ctx.stroke();
+
+  // 手：欢呼/招手/抬手用张开手掌，指物时伸出食指
+  ctx.fillStyle = SK; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(hf.x, hf.y, 4.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  if (teacher.mode === 'point' || teacher.mode === 'pointAB') {
+    const tipL = { x: hf.x + Math.cos(fingerDir) * 11, y: hf.y + Math.sin(fingerDir) * 11 };
+    ctx.strokeStyle = SK; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(hf.x, hf.y); ctx.lineTo(tipL.x, tipL.y); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(hf.x, hf.y); ctx.lineTo(tipL.x, tipL.y); ctx.stroke();
+    handWorld = { x: cx + face * tipL.x, y: gy + bob + tipL.y };
+  } else {
+    drawOpenHand(hf.x, hf.y, fingerDir);
+    const tipL = { x: hf.x + Math.cos(fingerDir) * 8.6, y: hf.y + Math.sin(fingerDir) * 8.6 };
+    handWorld = { x: cx + face * tipL.x, y: gy + bob + tipL.y };
+  }
+
+  // ===== 头 =====
+  const hc = { x: 4, y: -82 };
+  // 脖子
+  ctx.fillStyle = SK_D; ctx.fillRect(1, -72, 7, 7);
+  // 脸
+  ctx.fillStyle = SK; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(hc.x, hc.y, 14.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // 耳朵
+  ctx.fillStyle = SK;
+  ctx.beginPath(); ctx.arc(hc.x - 13.5, hc.y + 1, 3.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // 腮红
+  ctx.fillStyle = 'rgba(245,158,158,.55)';
+  ctx.beginPath(); ctx.arc(hc.x + 8, hc.y + 5, 2.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hc.x - 6, hc.y + 5.5, 2.2, 0, Math.PI * 2); ctx.fill();
+  // 眼睛（眨眼）
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  if (blink) {
+    ctx.beginPath(); ctx.moveTo(hc.x + 3, hc.y - 1); ctx.lineTo(hc.x + 8, hc.y - 1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hc.x - 5, hc.y - 1); ctx.lineTo(hc.x - 1, hc.y - 1); ctx.stroke();
+  } else {
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(hc.x + 5.5, hc.y - 1.5, 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hc.x - 3, hc.y - 1.5, 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(hc.x + 6.1, hc.y - 2.1, .6, 0, Math.PI * 2); ctx.fill();
+  }
+  // 微笑
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(hc.x + 2, hc.y + 4.5, 4.2, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+
+  // ===== 安全帽 =====
+  ctx.fillStyle = HAT; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(hc.x, hc.y - 2, 15, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // 帽檐
+  ctx.fillStyle = HAT_D;
+  rrPath(hc.x - 19, hc.y - 5, 38, 6.5, 3); ctx.fill();
+  ctx.strokeStyle = INK; ctx.stroke();
+  // 帽脊
+  ctx.strokeStyle = HAT_D; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(hc.x - 11, hc.y - 10.5); ctx.quadraticCurveTo(hc.x, hc.y - 21, hc.x + 11, hc.y - 10.5); ctx.stroke();
+  // 高光
+  ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(hc.x - 9, hc.y - 13); ctx.lineTo(hc.x - 5, hc.y - 16); ctx.stroke();
+
+  ctx.restore();
+
+  // ===== 指物引导线 + 目标脉动光环（世界坐标，画在人物上层） =====
+  if (teacher.target && handWorld) {
+    const t = teacher.target;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(34,211,238,.55)'; ctx.lineWidth = 1.4; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(handWorld.x, handWorld.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  if (teacher.rings) teacher.rings.forEach((t, i) => drawTargetRing(t.x, t.y, now, i));
+  else if (teacher.target) drawTargetRing(teacher.target.x, teacher.target.y, now, 0);
+}
+
+*/
+
+function drawTargetRing(x, y, now, seed) {
+  const p = (Math.sin(now / 280 + seed * 1.7) + 1) / 2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(34,211,238,' + (0.55 + p * 0.4) + ')';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.arc(x, y, 11 + p * 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(34,211,238,.28)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(x, y, 17 + p * 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#22d3ee';
+  ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- 地面 ----------
+function drawGround() {
+  const gy = groundLineY();
+  ctx.save();
+  ctx.strokeStyle = 'rgba(139,148,158,.5)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(26, gy); ctx.lineTo(W - 26, gy); ctx.stroke();
+  ctx.strokeStyle = 'rgba(139,148,158,.3)'; ctx.lineWidth = 1.4;
+  for (let x = 40; x < W - 30; x += 26) {
+    ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x - 8, gy + 8); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- 解除支座标记（红叉） ----------
+function drawReleasedMark(x) {
+  const sx = toSx(x), sy = beamY + 17;
+  ctx.save();
+  ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(sx, sy, 12.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(sx - 6, sy - 6); ctx.lineTo(sx + 6, sy + 6);
+  ctx.moveTo(sx + 6, sy - 6); ctx.lineTo(sx - 6, sy + 6);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- 均布荷载合力（第2/4步） ----------
+function drawResultant16() {
+  const sx = toSx(3);
+  // 合力范围括号 C→D
+  ctx.save();
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.4; ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(toSx(1), beamY - 70); ctx.lineTo(toSx(5), beamY - 70); ctx.stroke();
+  ctx.setLineDash([]);
+  [toSx(1), toSx(5)].forEach(x => { ctx.beginPath(); ctx.moveTo(x, beamY - 75); ctx.lineTo(x, beamY - 65); ctx.stroke(); });
+  ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 10.5px "Consolas", monospace'; ctx.textAlign = 'center';
+  ctx.fillText('q×4 = 16 kN（合力作用于中点 x=3）', sx, beamY - 78);
+  ctx.restore();
+  arrow(sx, beamY - 62, 0, 1, 34, '#22d3ee', '16 kN ↓', 2.8, '#22d3ee');
+}
+
+// ---------- 矩心标记 ----------
+function drawPivot(x, label) {
+  const sx = toSx(x);
+  ctx.save();
+  ctx.fillStyle = 'rgba(217,119,6,.18)';
+  ctx.beginPath(); ctx.arc(sx, beamY, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.arc(sx, beamY, 12, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath(); ctx.arc(sx, beamY, 3.2, 0, Math.PI * 2); ctx.fill();
+  ctx.font = 'bold 12px "Segoe UI"'; ctx.textAlign = 'center';
+  ctx.fillText('矩心 ' + label, sx, beamY - 30);
+  ctx.restore();
+}
+
+// ---------- 各荷载对矩心的力臂高亮（尺寸线画在梁下方，避开右上题目卡） ----------
+function drawMomentArms(pivotX, items) {
+  const yArm = beamY + 80;
+  const px = toSx(pivotX);
+  ctx.save();
+  items.forEach(it => {
+    const x = toSx(it.x);
+    const col = it.color || '#fbbf24';
+    if (it.curved) {
+      // 力偶无力臂：从梁底引线，说明放在尺寸线下方（避免与距离标签重叠）
+      ctx.strokeStyle = '#a371f7'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, beamY + 8); ctx.lineTo(x, yArm + 4); ctx.stroke();
+      ctx.setLineDash([]);
+      const txt = '力偶 ' + it.curved + ' kN·m：无力臂，直接计入';
+      ctx.font = 'bold 10.5px "Consolas", monospace';
+      const tw = ctx.measureText(txt).width;
+      ctx.fillStyle = 'rgba(13,17,23,.9)';
+      rrPath(x - tw / 2 - 6, yArm + 6, tw + 12, 17, 5); ctx.fill();
+      ctx.strokeStyle = '#a371f7'; ctx.lineWidth = 1; rrPath(x - tw / 2 - 6, yArm + 6, tw + 12, 17, 5); ctx.stroke();
+      ctx.fillStyle = '#d8b4fe'; ctx.textAlign = 'center';
+      ctx.fillText(txt, x, yArm + 18);
+      return;
+    }
+    // 竖向引导虚线（合力箭头位置自身已有图形，跳过避免重叠）
+    if (!it.noGuide) {
+      ctx.strokeStyle = col; ctx.globalAlpha = .55; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(x, beamY + 58); ctx.lineTo(x, yArm); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, beamY + 54); ctx.lineTo(px, yArm); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+    // 水平力臂双向箭头
+    const dir = x >= px ? 1 : -1;
+    ctx.strokeStyle = col; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, yArm); ctx.lineTo(x, yArm); ctx.stroke();
+    ctx.fillStyle = col;
+    [[px, -dir], [x, dir]].forEach(([ex, d]) => {
+      ctx.beginPath(); ctx.moveTo(ex, yArm);
+      ctx.lineTo(ex + d * 8, yArm - 4); ctx.lineTo(ex + d * 8, yArm + 4);
+      ctx.closePath(); ctx.fill();
+    });
+    // 距离标签（贴近荷载端错位排列，避免相邻标签重叠）
+    ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+    const tw = ctx.measureText(it.label).width;
+    const mx = x - dir * 20;
+    ctx.fillStyle = 'rgba(13,17,23,.9)';
+    rrPath(mx - tw / 2 - 5, yArm - 22, tw + 10, 16, 5); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.fillText(it.label, mx, yArm - 10);
+  });
+  ctx.restore();
+}
+
+// ---------- 竖向力平衡：各竖力流线 ----------
+function drawVerticalFlow() {
+  const xs = [0, 3, 6, 9];
+  const cols = ['#3fb950', '#22d3ee', '#f85149', '#f85149'];
+  ctx.save();
+  xs.forEach((xm, i) => {
+    const x = toSx(xm);
+    ctx.strokeStyle = cols[i]; ctx.globalAlpha = .22; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(x, beamY - 64); ctx.lineTo(x, beamY + 46); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+  // ΣFy 提示小标（靠右，避开左下角讲师）
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 12px "Segoe UI"'; ctx.textAlign = 'center';
+  ctx.fillText('↑ 向上为正：反力取正　|　荷载向下取负 ↓', W * 0.66, beamY + 95);
+  ctx.restore();
+}
+
+// ---------- 绿色打勾 ----------
+function drawCheckBadge(x, y, now) {
+  const p = Math.min(1, (now - stepEnterAt) / 400);
+  if (p <= 0) return;
+  const e = 1 - Math.pow(1 - p, 3), r = 11 * e;
+  ctx.save();
+  ctx.shadowColor = '#22c55e'; ctx.shadowBlur = 12;
+  ctx.fillStyle = '#22c55e';
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * .45, y + r * .05);
+  ctx.lineTo(x - r * .1, y + r * .38);
+  ctx.lineTo(x + r * .5, y - r * .32);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSparkles(now) {
+  const pts = [
+    [toSx(0), beamY + 24], [toSx(8), beamY + 24],
+    [toSx(0) - 14, beamY + 44], [toSx(8) + 14, beamY + 44]
+  ];
+  ctx.save();
+  pts.forEach((p, i) => {
+    const tw = (Math.sin(now / 240 + i * 2) + 1) / 2;
+    ctx.save();
+    ctx.globalAlpha = .35 + tw * .6;
+    ctx.fillStyle = '#4ade80';
+    ctx.translate(p[0], p[1]); ctx.rotate(now / 700 + i);
+    ctx.fillRect(-1.4, -5, 2.8, 10); ctx.fillRect(-5, -1.4, 10, 2.8);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// ---------- 第1关完整场景（步骤讲解文字由 DOM 气泡 #step-bubble 呈现） ----------
+function renderL1Full(now) {
+  drawGround();
+
+  if (step < 1) {
+    // 初始：原结构静态展示 + 讲师招手
+    drawBeam();
+    drawSupport(0, 'pin');
+    drawSupport(8, 'roller');
+    drawDims();
+    drawLoads(0.9);
+    drawTeacherImage(now);
+    return;
+  }
+
+  // 梁体（始终显示）
+  drawBeam();
+  drawDims();
+
+  if (step === 1) {
+    drawLoads(1);
+    drawSupport(0, 'pin'); drawSupport(8, 'roller');
+    drawReaction(0, null, 'F_yA', 'ghost');
+    drawReaction(8, null, 'F_yB', 'ghost');
+  } else if (step === 2) {
+    drawLoads(0.45);
+    drawSupport(0, 'pin'); drawSupport(8, 'roller');
+    drawResultant16();
+    drawReaction(0, FyA, 'F_yA', 'solid');
+    drawReaction(8, null, 'F_yB', 'ghost');
+    drawPivot(8, 'B');
+    drawMomentArms(8, [
+      { x: 0, label: '8m', color: '#58a6ff' },
+      { x: 3, label: '5m', noGuide: true },
+      { x: 6, label: '2m' },
+      { x: 7, curved: 12 },
+      { x: 9, label: '1m' }
+    ]);
+  } else if (step === 3) {
+    drawLoads(1);
+    drawSupport(0, 'pin'); drawSupport(8, 'roller');
+    drawVerticalFlow();
+    drawReaction(0, FyA, 'F_yA', 'solid');
+    drawReaction(8, FyB, 'F_yB', 'solid');
+  } else if (step === 4) {
+    drawLoads(0.45);
+    drawSupport(0, 'pin'); drawSupport(8, 'roller');
+    drawResultant16();
+    drawReaction(0, FyA, 'F_yA', 'solid');
+    drawReaction(8, FyB, 'F_yB', 'solid');
+    drawPivot(0, 'A');
+    drawMomentArms(0, [
+      { x: 8, label: '8m', color: '#58a6ff' },
+      { x: 3, label: '3m', noGuide: true },
+      { x: 6, label: '6m' },
+      { x: 7, curved: 12 },
+      { x: 9, label: '9m' }
+    ]);
+  } else {
+    drawLoads(0.85);
+    drawSupport(0, 'pin'); drawSupport(8, 'roller');
+    drawReaction(0, FyA, 'F_yA', 'solid');
+    drawReaction(8, FyB, 'F_yB', 'solid');
+    drawCheckBadge(toSx(0), beamY + 40, now);
+    drawCheckBadge(toSx(8), beamY + 40, now);
+    drawSparkles(now);
+  }
+
+  drawTeacherImage(now);
+}
+
+// 弯矩图（正 → 下侧受拉 画下方）
+function drawMomentDiagram(maxX) {
+  if (maxX <= 0) return;
+  const N = 320, pts = [];
+  for (let i = 0; i <= N; i++) {
+    const x = (i / N) * maxX;
+    pts.push({ x, M: momentAt(x) });
+  }
+  ctx.beginPath();
+  ctx.moveTo(toSx(pts[0].x), beamY);
+  for (const p of pts) ctx.lineTo(toSx(p.x), beamY + p.M * mScale);
+  ctx.lineTo(toSx(pts[pts.length - 1].x), beamY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(63,185,80,0.13)'; ctx.fill();
+  ctx.beginPath();
+  pts.forEach((p, i) => { const sx = toSx(p.x), sy = beamY + p.M * mScale; if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy); });
+  ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 2.6; ctx.stroke();
+  // 标注关键点
+  const labels = [
+    { x: 1, M: 14 }, { x: 5, M: 38 }, { x: 6, M: 36 }, { x: 7, M: 14, tag: 'F左' },
+    { x: 7, M: 2, tag: 'F右', afterJump: true }, { x: 8, M: -20 },
+  ];
+  ctx.font = 'bold 10.5px "Consolas", monospace'; ctx.textAlign = 'center';
+  labels.forEach(l => {
+    if (l.x > maxX + 1e-6) return;
+    if (l.afterJump && maxX <= 7) return;
+    const sx = toSx(l.x) + (l.afterJump ? 10 : 0);
+    const sy = beamY + l.M * mScale;
+    ctx.fillStyle = l.M >= 0 ? '#3fb950' : '#f85149';
+    ctx.fillText((l.tag ? l.tag + '=' : '') + l.M, sx, sy + (l.M >= 0 ? 14 : -8));
+  });
+  if (maxX >= 4.5) {
+    const sx = toSx(4.5), sy = beamY + 38.5 * mScale;
+    ctx.fillStyle = '#ffd700'; ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'center';
+    ctx.fillText('M_max≈38.5', sx, sy + 16);
+  }
+  // CD 段叠加法痕迹：基线虚线 + 跨中叠加值（该段完成后在各步中一直保留）
+  if (maxX >= 5) {
+    const bx0 = toSx(1), bx1 = toSx(5);
+    const by0 = beamY + 14 * mScale, by1 = beamY + 38 * mScale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(34,211,238,.85)'; ctx.lineWidth = 1.4; ctx.setLineDash([7, 5]);
+    ctx.beginPath(); ctx.moveTo(bx0, by0); ctx.lineTo(bx1, by1); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+    const mx = toSx(3);
+    const myMid = ((by0 + by1) / 2 + (beamY + 34 * mScale)) / 2;   // 基线与曲线正中间
+    ctx.fillStyle = 'rgba(34,211,238,.95)'; ctx.font = 'bold 10.5px "Consolas", monospace'; ctx.textAlign = 'left';
+    ctx.fillText('ql²/8 = 8', mx + 12, myMid + 4);
+  }
+}
+
+// 第二关：截面切割线 + 弯矩值
+function drawSectionCut(sec, isCurrent) {
+  const sx = toSx(sec.x);
+  ctx.save();
+  ctx.globalAlpha = isCurrent ? 1 : 0.5;
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = isCurrent ? 2.6 : 1.4;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(sx, beamY - 68); ctx.lineTo(sx, beamY + 48); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffd700'; ctx.font = 'bold 11px "Segoe UI"'; ctx.textAlign = 'center';
+  ctx.fillText('截面 ' + sec.id, sx, beamY - 74);
+  const color = sec.M >= 0 ? '#3fb950' : '#f85149';
+  ctx.fillStyle = color; ctx.font = 'bold 11px "Consolas", monospace';
+  ctx.fillText('M = ' + sec.M + ' kN·m', sx, beamY + (sec.M >= 0 ? 62 : -56));
+  if (isCurrent) {
+    ctx.strokeStyle = 'rgba(255,215,0,0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(sx, beamY + 48); ctx.lineTo(sx, beamY - 68); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTitle() {
+  const t = LEVEL_META[currentLevel].canvasTitle;
+  const f = LEVEL_META[currentLevel].formula;
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 15px "Segoe UI"'; ctx.textAlign = 'center';
+  ctx.fillText(t, W / 2, 26);
+  ctx.fillStyle = '#8b949e'; ctx.font = '12px "Consolas", monospace';
+  drawCanvasFormula(f, W / 2, 46, 'center');
+}
+
+// ---------- 主渲染 ----------
+function render() {
+  const now = performance.now();
+  ctx.clearRect(0, 0, W, H);
+  drawTechBackdrop(now);
+  drawTitle();
+  // 第1关：初始态也要画结构与待机讲师
+  if (currentLevel === 1) { renderL1Full(now); return; }
+  if (step < 1) return;
+  // 基础：梁 + 支座 + 尺寸（各关通用）
+  drawBeam();
+  drawSupport(0, 'pin');
+  drawSupport(8, 'roller');
+  drawDims();
+
+  if (currentLevel === 2) renderL2();
+  else renderL3();
+}
+
+function renderL2() {
+  drawLoads(0.32);
+  drawReactions(0.32);
+  const idx = Math.max(0, step - 1);
+  for (let i = 0; i <= idx && i < SECTIONS.length; i++) {
+    drawSectionCut(SECTIONS[i], i === idx);
+  }
+}
+
+function renderL3() {
+  drawLoads(0.3);
+  drawReactions(0.3);
+  const idx = Math.max(0, step - 1);
+  if (idx < SEGMENTS.length) {
+    const seg = SEGMENTS[idx];
+    if (seg.type === 'udl') {
+      // 均布段：叠加法分相动画（基线 → 叠加简支梁弯矩）
+      drawSuperposeCD(performance.now());
+      return;
+    }
+    let maxX = seg.x1;
+    if (seg.type === 'jump') maxX = 7;
+    drawMomentDiagram(maxX);
+    if (seg.type === 'jump') {
+      // 力偶突变：从 F左(14) 垂直跳到 F右(2)
+      const sx = toSx(7), sy1 = beamY + 14 * mScale, sy2 = beamY + 2 * mScale;
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(sx, sy1); ctx.lineTo(sx, sy2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd700'; ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'left';
+      ctx.fillText('ΔM = 12 kN·m', sx + 8, (sy1 + sy2) / 2 + 4);
+    }
+  }
+}
+
+// 第三关 CD 段：区段叠加法分相动画（时间驱动，stepEnterAt 起算）
+// ① C、D 处画虚拟铰 → 该段视为两端铰支简支梁；两端弯矩 M_C→M_D 连成虚线基线
+// ② 在基线上叠加均布荷载简支梁弯矩（跨中叠加值 ql²/8 = 8），最终得到真实弯矩曲线
+function drawSuperposeCD(now) {
+  const rawT = Math.max(0, now - stepEnterAt);
+  const syncAnimMs = Math.max(3000, getStepDurationMs(3, 2) - 260);
+  const t = rawT * (3000 / syncAnimMs);
+  const x0 = toSx(1), x1 = toSx(5), span = x1 - x0;
+  const yC = beamY + 14 * mScale, yD = beamY + 38 * mScale;
+  const ease = p => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
+  const yBase = sx => yC + (yD - yC) * (sx - x0) / span;          // 基线高度
+  const yOff = sx => { const u = (sx - x0) / span; return 32 * u * (1 - u) * mScale; }; // 简支梁叠加量（峰值 8·mScale）
+
+  // 前一段 AC（0→14）绿色直线，保持图形连续
+  ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.moveTo(toSx(0), beamY); ctx.lineTo(x0, yC); ctx.stroke();
+
+  // 虚拟铰：C、D 处虚线小圆
+  ctx.save(); ctx.globalAlpha = Math.min(1, t / 300);
+  [x0, x1].forEach(cx => {
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(cx, beamY, 6, 0, Math.PI * 2); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#22d3ee'; ctx.font = '9.5px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('C、D 处虚拟铰 → 该段视为两端铰支简支梁', (x0 + x1) / 2, beamY + 20);
+  ctx.restore();
+
+  // ① 基线：两端弯矩连线（虚线，从 C 向 D 画出）
+  const p1 = ease(t / 800);
+  const ex = x0 + span * p1, ey = yC + (yD - yC) * p1;
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.8; ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.moveTo(x0, yC); ctx.lineTo(ex, ey); ctx.stroke(); ctx.setLineDash([]);
+  if (p1 > 0.9) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, (p1 - 0.9) / 0.1);
+    ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 10.5px "Consolas", monospace';
+    ctx.textAlign = 'right'; ctx.fillText('M_C = 14', x0 - 8, yC + 4);
+    ctx.textAlign = 'left'; ctx.fillText('M_D = 38', x1 + 10, yD - 6);
+    ctx.restore();
+  }
+
+  // ② 叠加简支梁弯矩：抛物线幅值由 0 生长到 ql²/8
+  const p2 = ease((t - 1200) / 1400);
+  if (p2 > 0) {
+    // 基线与叠加曲线之间的着色（叠加部分）
+    ctx.beginPath();
+    ctx.moveTo(x0, yC);
+    for (let i = 0; i <= 60; i++) { const sx = x0 + span * i / 60; ctx.lineTo(sx, yBase(sx) + yOff(sx) * p2); }
+    for (let i = 60; i >= 0; i--) { const sx = x0 + span * i / 60; ctx.lineTo(sx, yBase(sx)); }
+    ctx.closePath(); ctx.fillStyle = 'rgba(34,211,238,.12)'; ctx.fill();
+    // 叠加后的总弯矩曲线（绿色，与其余区段一致）
+    ctx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const sx = x0 + span * i / 80, sy = yBase(sx) + yOff(sx) * p2;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 2.6; ctx.stroke();
+    // 竖向叠加指示箭头（基线 → 曲线）
+    ctx.save(); ctx.globalAlpha = p2;
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.2;
+    [0.3, 0.5, 0.7].forEach(u => {
+      const sx = x0 + span * u, by = yBase(sx), cy = by + yOff(sx) * p2;
+      ctx.beginPath(); ctx.moveTo(sx, by); ctx.lineTo(sx, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx - 3.5, cy - 5); ctx.lineTo(sx, cy); ctx.lineTo(sx + 3.5, cy - 5); ctx.stroke();
+    });
+    ctx.restore();
+    // 跨中叠加值标注
+    if (p2 > 0.55) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, (p2 - 0.55) / 0.45);
+      ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 10.5px "Consolas", monospace'; ctx.textAlign = 'left';
+      ctx.fillText('ql²/8 = 8', toSx(3) + 12, yBase(toSx(3)) + yOff(toSx(3)) * p2 / 2 + 4);
+      ctx.restore();
+    }
+  }
+
+  // ③ 结果：跨中弯矩 26 + 8 = 34 kN·m（标注放跨中点左侧，避开 M_D 与叠加值标注）
+  if (t > 2650) {
+    const mx = toSx(3), my = yBase(mx) + yOff(mx);
+    ctx.fillStyle = '#3fb950';
+    ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = 'bold 11px "Consolas", monospace'; ctx.textAlign = 'right';
+    ctx.fillText('M_跨中 = 26 + 8 = 34 kN·m', mx - 10, my + 12);
+  }
+}
+
+// ---------- 动画控制（持续 rAF：讲师待机/走动/步骤气泡均由时间驱动） ----------
+let stepEnterAt = 0;   // 进入当前步骤的时间戳（驱动打勾等入场动画）
+let playT0 = 0;        // 当前步骤播放起点
+let rafStarted = false;
+
+// 步骤文本框时序：显示 3 秒 → 淡出 → 切步；末步停留后自动弹闯关习题窗
+const BUBBLE_HOLD_MS = 3000;
+const STEP_GAP_MS = 3300;
+const QUIZ_POPUP_DELAY = 1700;
+let bubbleHideTimer = null;
+let quizPopupTimer = null;
+let pendingQuizAfterAudio = false;
+let audioEndedForStep = false;
+
+function clearPopTimers() {
+  if (bubbleHideTimer) { clearTimeout(bubbleHideTimer); bubbleHideTimer = null; }
+  if (quizPopupTimer) { clearTimeout(quizPopupTimer); quizPopupTimer = null; }
+}
+
+function hideBubbleAfterAudio() {
+  audioEndedForStep = true;
+  hideStepBubble();
+  if (window.__audioState) window.__audioState.ended = true;
+  if (pendingQuizAfterAudio) {
+    pendingQuizAfterAudio = false;
+    quizPopupTimer = setTimeout(openQuizModal, 180);
+  }
+}
+
+// 步骤讲解气泡：每步展示「计算过程 + 结果」（结果行绿色加粗）
+function showStepBubble(s) {
+  const el = document.getElementById('step-bubble');
+  if (!el) return;
+  if (s < 1) { el.className = 'step-bubble'; el.innerHTML = ''; return; }
+  // 结果行判定：含 ✓ 或以向上箭头结尾（反力），绿色强调
+  const isRes = f => f.indexOf('✓') >= 0 || /↑\s*$/.test(f);
+  let html = '';
+  if (currentLevel === 1 && L1_STEPS[s]) {
+    const info = L1_STEPS[s];
+     html = '<div class="sb-title">第' + s + '步 · ' + formatSubscriptHTML(info.say) + '</div>'
+      + info.formulas.map((f, i, arr) => {
+        const isOk = isRes(f) || (s === 5 && i === arr.length - 1);
+        return '<div class="sb-line' + (isOk ? ' ok' : '') + '">' + formatSubscriptHTML(f) + '</div>';
+      }).join('');
+  } else if (currentLevel === 2 && SECTIONS[s - 1]) {
+    // 第2关：截面法计算过程（取左隔离体列 ΣM=0）+ 弯矩结果
+    const sec = SECTIONS[s - 1];
+    html = '<div class="sb-title">第' + s + '步 · 截面 ' + sec.id + '（x = ' + sec.x + 'm）</div>'
+      + '<div class="sb-line">截开取左侧隔离体，对截面形心列 ΣM = 0：</div>'
+       + '<div class="sb-line">' + formatSubscriptHTML(sec.eq) + '</div>'
+       + '<div class="sb-line ok">计算结果：' + formatSubscriptHTML('M_' + sec.id + ' = ' + sec.M + ' kN·m') + '</div>';
+  } else if (currentLevel === 3 && SEGMENTS[s - 1]) {
+    // 第3关：区段叠加过程 + 区段控制弯矩结果
+    const seg = SEGMENTS[s - 1];
+    html = '<div class="sb-title">第' + s + '步 · ' + seg.name + '（区段叠加）</div>'
+       + '<div class="sb-line">' + formatSubscriptHTML(seg.desc) + '</div>'
+       + (seg.res ? '<div class="sb-line ok">计算结果：' + formatSubscriptHTML(seg.res) + '</div>' : '');
+  } else {
+    html = '<div class="sb-title">' + formatSubscriptHTML(((STEP_CAPTIONS[currentLevel] || [])[s] || '')) + '</div>';
+  }
+  el.innerHTML = html;
+  el.className = 'step-bubble show';
+}
+function hideStepBubble() {
+  const el = document.getElementById('step-bubble');
+  if (el) el.classList.remove('show');
+}
+
+function updateUI() {
+  const container = document.getElementById('step-dots');
+  const max = maxStep(currentLevel);
+  container.innerHTML = '';
+  for (let i = 1; i <= max; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot' + (i <= step ? ' on' : '');
+    container.appendChild(d);
+  }
+  // 第1关字幕优先取讲师短句
+  let cap = (STEP_CAPTIONS[currentLevel] || [])[step] || '';
+  if (currentLevel === 1 && step >= 1 && L1_STEPS[step]) cap = '第' + step + '步 · ' + L1_STEPS[step].say;
+  document.getElementById('step-caption').textContent = cap;
+  document.getElementById('btn-play').disabled = playing;
+}
+
+function stopPlay() {
+  playing = false;
+  clearPopTimers();
+  stopStepAudio();
+}
+
+// 三关步骤配音：按关卡与步骤分别绑定，避免不同关卡共用错误音频
+const STEP_AUDIO_URLS = {
+  1: {
+    1: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/7micLHEeaJeKt8M98xW4mf.mp3',
+    2: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/vr7GonT8qhkEqMh35kvEV7.mp3',
+    3: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/QKFxu8gxtxWVTVytSLi6Mg.mp3',
+    4: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/biqTziorLAJWcTddTaPPR3.mp3',
+    5: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/fjtj6GuZtQnEu2VEEsyoZF.mp3'
+  },
+  2: {
+    1: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/d2LZE5d5gTY4pq7KEhhN2T.mp3',
+    2: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/ZboFAujp7apcp5ad4T6UmU.mp3',
+    3: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/r58s63WnaEpyUTd9kWKJCR.mp3',
+    4: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/n2GDDfnmSPPDBVKwNKeC6X.mp3',
+    5: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/NNUJ4sS3SDubEqxr46hKqW.mp3',
+    6: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/4hPZTbz66xknUYwfTHnac6.mp3',
+    7: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/GEN7ziggYFXJXxV6uyJaMW.mp3',
+    8: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/Sn86zkKv2YcbLUJiatxP7P.mp3'
+  },
+  3: {
+    1: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/PJAhXLU7U635FyXbUhpgNf.mp3',
+    2: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/cnXNg48zrrJBvBc6FRW2dD.mp3',
+    3: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/jLg9XYHRYvebhgDwH7cdnV.mp3',
+    4: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/UbWDo36nhLUELLZ64cVHdG.mp3',
+    5: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/vb5RBzVgVXNaSHCE9uC2PW.mp3',
+    6: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/NMAwacmX7Ra2WFPNJWGhUY.mp3',
+    7: 'https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/audio/iCuFoqpKSwyj2MJEkVAVUa.mp3'
+  }
+};
+const STEP_AUDIO_DURATIONS = {};
+const STEP_AUDIO_PRELOADS = {};
+let stepAudio = null;
+function audioKey(level, s) { return level + ':' + s; }
+function preloadStepAudioDurations() {
+  Object.keys(STEP_AUDIO_URLS).forEach(level => {
+    Object.keys(STEP_AUDIO_URLS[level]).forEach(s => {
+      const key = audioKey(level, s);
+      if (STEP_AUDIO_PRELOADS[key]) return;
+      const a = new Audio(STEP_AUDIO_URLS[level][s]);
+      a.preload = 'metadata';
+      a.addEventListener('loadedmetadata', () => {
+        if (Number.isFinite(a.duration)) STEP_AUDIO_DURATIONS[key] = a.duration * 1000;
+      });
+      STEP_AUDIO_PRELOADS[key] = a;
+    });
+  });
+}
+function getStepDurationMs(level, s) {
+  const base = STEP_GAP_MS;
+  const audioMs = STEP_AUDIO_DURATIONS[audioKey(level, s)] || 0;
+  const animationMin = (level === 3 && s === 2) ? 3400 : base;
+  return Math.max(animationMin, audioMs + 320);
+}
+function currentStepAudioUrl() {
+  return (STEP_AUDIO_URLS[currentLevel] || {})[step] || '';
+}
+function playStepAudio(s) {
+  if (stepAudio) { stepAudio.pause(); stepAudio.currentTime = 0; }
+  const url = (STEP_AUDIO_URLS[currentLevel] || {})[s] || '';
+  audioEndedForStep = false;
+  window.__audioState = { level: currentLevel, step: s, url, created: false, playing: false, ended: false, duration: 0, stepMs: getStepDurationMs(currentLevel, s) };
+  if (!url) {
+    // 没有配音时，按原有步骤时长回退隐藏文本
+    bubbleHideTimer = setTimeout(hideBubbleAfterAudio, BUBBLE_HOLD_MS);
+    return;
+  }
+  stepAudio = new Audio(url);
+  stepAudio.preload = 'auto';
+  stepAudio.volume = 0.9;
+  window.__stepAudio = stepAudio;
+  window.__audioState.created = true;
+  stepAudio.addEventListener('loadedmetadata', () => {
+    const duration = Number.isFinite(stepAudio.duration) ? stepAudio.duration * 1000 : 0;
+    STEP_AUDIO_DURATIONS[audioKey(currentLevel, s)] = duration;
+    if (window.__audioState) {
+      window.__audioState.duration = duration;
+      window.__audioState.stepMs = getStepDurationMs(currentLevel, s);
+    }
+  });
+  stepAudio.addEventListener('play', () => { if (window.__audioState) window.__audioState.playing = true; });
+  stepAudio.addEventListener('ended', () => {
+    if (window.__stepAudio !== stepAudio) return;
+    if (window.__audioState) window.__audioState.playing = false;
+    hideBubbleAfterAudio();
+  });
+  stepAudio.play().then(() => {
+    if (window.__audioState) window.__audioState.playing = true;
+  }).catch(() => {
+    if (window.__audioState) window.__audioState.playing = false;
+  });
+}
+
+function stopStepAudio() {
+  if (stepAudio) { stepAudio.pause(); stepAudio.currentTime = 0; }
+  audioEndedForStep = false;
+  pendingQuizAfterAudio = false;
+  if (window.__audioState) window.__audioState.playing = false;
+}
+
+// 预加载各关卡配音时长，自动播放时可按真实音频长度同步步进
+preloadStepAudioDurations();
+
+function onEnterStep() {
+  stepEnterAt = performance.now();
+  audioEndedForStep = false;
+  if (currentLevel === 1) syncTeacher(step, stepEnterAt);
+  clearPopTimers();
+  showStepBubble(step);
+  playStepAudio(step);
+  updateUI();
+  updateResultUI();
+}
+
+function goStep(s) {
+  stopPlay();
+  step = Math.max(0, Math.min(maxStep(currentLevel), s));
+  onEnterStep();
+  if (step >= maxStep(currentLevel)) markLearnDone(currentLevel);
+}
+
+function resetDemo() { goStep(0); }
+
+function play() {
+  if (playing || !identity) return;
+  clearPopTimers();
+  closeQuizModal();
+  playing = true;
+  // 已在末步则从头播放；否则从第1步开始
+  if (step >= maxStep(currentLevel)) step = 0;
+  step = 1;
+  playT0 = performance.now();
+  onEnterStep();
+  ensureRAF();
+}
+
+// 自动推进
+function advanceStep() {
+  const total = maxStep(currentLevel);
+  const nextStep = step + 1;
+  const reachesFinal = nextStep >= total;
+  pendingQuizAfterAudio = reachesFinal && playing;
+  step = nextStep;
+  onEnterStep();
+  if (reachesFinal) {
+    playing = false;
+    updateUI();
+    markLearnDone(currentLevel);
+    // 有配音时由 ended 事件触发弹窗；无配音时使用回退计时
+    if (!currentStepAudioUrl()) {
+      pendingQuizAfterAudio = false;
+      quizPopupTimer = setTimeout(openQuizModal, QUIZ_POPUP_DELAY);
+    }
+  }
+}
+
+// 每步停留时长：文本框显示 3 秒 + 淡出切换
+function perStepMs() {
+  return getStepDurationMs(currentLevel, step);
+}
+
+function ensureRAF() {
+  if (rafStarted) return;
+  rafStarted = true;
+  function loop(now) {
+    try {
+      render();
+      if (playing && now - playT0 >= perStepMs()) {
+        playT0 = now;
+        advanceStep();
+      }
+    } catch (err) { console.error('动画帧渲染异常：', err); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+// ---------- 演算过程面板 ----------
+function updateResultUI() {
+  const box = document.getElementById('result-box');
+  if (currentLevel === 1) {
+    let html = '';
+    if (step === 0) html = '<b>点击「播放动画」或「单步」开始演示。</b>';
+    else if (step === 1) html = '<b>第1步 · 整体隔离体</b>：解除 A、B 支座约束，代之以未知反力 F_yA↑、F_yB↑（虚线）。'
+      + '<div class="formula">铰支座 A 无水平荷载 → 水平反力为 0</div>';
+    else if (step === 2) html = '<b>第2步 · ΣM_B = 0</b>（规定顺时针为正）：'
+      + '<div class="formula">−F_yA×8 + 16×5 + 20×2 + 12 − 20×1 = 0</div>'
+      + '<div class="formula">8F_yA = 112 → F_yA = 14 kN ↑</div>';
+    else if (step === 3) html = '<b>第3步 · ΣF_y = 0</b>（向上为正）：'
+      + '<div class="formula">F_yA + F_yB − 16 − 20 − 20 = 0</div>'
+      + '<div class="formula">F_yB = 56 − 14 = 42 kN ↑</div>';
+    else if (step === 4) html = '<b>第4步 · 校核 ΣM_A = 0</b>：'
+      + '<div class="formula">42×8 + 12 = 16×3 + 20×6 + 20×9</div>'
+      + '<div class="formula">348 = 348 ✓ 结果正确</div>';
+    else html = '<b>第5步 · 反力结果</b>：'
+      + '<div class="formula">F_yA = 14 kN ↑　F_yB = 42 kN ↑</div>'
+      + '<div class="formula">反力与全部荷载平衡 ✓ 闯关成功，可进入控制截面内力计算</div>';
+     box.innerHTML = formatSubscriptHTML(html);
+   } else if (currentLevel === 2) {
+    let html = '<b>控制截面弯矩汇总</b><table><tr><th>截面</th><th>x(m)</th><th>M(kN·m)</th></tr>';
+    SECTIONS.forEach((s, i) => {
+      const cls = (i === step - 1) ? 'cur' : (s.M >= 0 ? 'pos' : 'neg');
+      html += '<tr><td>' + s.id + '</td><td>' + s.x + '</td><td class="' + cls + '">' + s.M + '</td></tr>';
+    });
+    html += '</table>';
+    if (step >= 1) {
+      const s = SECTIONS[step - 1];
+      html += '<div class="formula">' + s.eq + '</div>';
+      html += '<p class="note">取左侧隔离体，对截面形心列 ΣM=0。</p>';
+    }
+     box.innerHTML = formatSubscriptHTML(html);
+   } else {
+     let html = '<b>区段叠加过程</b>';
+    SEGMENTS.forEach((seg, i) => {
+      const cur = (i === step - 1);
+      html += '<div style="' + (cur ? 'color:#854d0e;font-weight:700;' : '') + '">' + (i + 1) + '. ' + seg.name + '</div>';
+    });
+    if (step >= 1) {
+      html += '<div class="formula">' + SEGMENTS[step - 1].desc + '</div>';
+    }
+     html += '<p class="note">M_max ≈ 38.5 kN·m（x≈4.5m，剪力为零处）</p>';
+     box.innerHTML = formatSubscriptHTML(html);
+  }
+}
+
+// ---------- 习题 ----------
+const QUESTIONS = {
+  1: [
+    { type: '计算题', stem: '对 B 点取矩 ΣM_B = 0，求得 A 支座竖向反力 F_yA = ？',
+      options: ['10 kN', '14 kN', '20 kN', '42 kN'],
+      answer: 1,
+      exp: '−F_yA×8 + 16×5 + 20×2 + 12 − 20×1 = 0 → 8F_yA = 112 → F_yA = 14 kN ↑' },
+    { type: '计算题', stem: '由竖向平衡 ΣF_y = 0，求得 B 支座竖向反力 F_yB = ？',
+      options: ['14 kN', '28 kN', '42 kN', '48 kN'],
+      answer: 2,
+      exp: 'F_yA + F_yB = 16 + 20 + 20 = 56 → F_yB = 56 − 14 = 42 kN ↑' },
+  ],
+  2: [
+    { type: '计算题', stem: '截面 D（x = 5m，均布荷载末端）的弯矩 M_D = ？',
+      options: ['26 kN·m', '34 kN·m', '38 kN·m', '42 kN·m'],
+      answer: 2,
+      exp: 'M_D = F_yA×5 − q×4×2 = 14×5 − 4×4×2 = 70 − 32 = 38 kN·m' },
+    { type: '计算题', stem: '截面 B左（x = 8m，滚动支座处）的弯矩 M_B左 = ？',
+      options: ['0 kN·m', '−14 kN·m', '−20 kN·m', '2 kN·m'],
+      answer: 2,
+      exp: 'M_B左 = M_F右 + (14−16−20)×1 = 2 − 22 = −20 kN·m。注意：滚动支座处弯矩可不为 0，仅铰支座(无外加力偶)处弯矩为 0。' },
+  ],
+  3: [
+    { type: '计算题', stem: 'CD 段（q = 4 kN/m，跨度 4m）区段叠加时，简支梁均布荷载跨中叠加值 ql²/8 = ？',
+      options: ['4 kN·m', '6 kN·m', '8 kN·m', '12 kN·m'],
+      answer: 2,
+      exp: 'ql²/8 = 4×4²/8 = 8 kN·m → CD 段跨中弯矩 = 基线(14+38)/2 + 8 = 26 + 8 = 34 kN·m' },
+    { type: '单选题', stem: 'F 点集中力偶（12 kN·m↺）处弯矩发生突变，越过力偶后 M_F右 = ？',
+      options: ['14 kN·m', '2 kN·m', '−2 kN·m', '26 kN·m'],
+      answer: 1,
+      exp: '集中力偶处弯矩突变，突变值 = 力偶矩 12。本题力偶为逆时针 ↺，自左向右弯矩减小 12：M_F右 = 14 − 12 = 2 kN·m' },
+  ],
+};
+
+// ============================================================
+//  身份登录 + 学情记录（绑定学号）+ 闯关解锁 + 排行榜
+// ============================================================
+const LS_ID = 'sm_cantilever_identity_v1';
+const LS_RANK = 'sm_cantilever_rank_v1';
+const POINTS_PER_Q = 10;
+const TOTAL_LEVELS = 3;
+
+// ============================================================
+//  ★★★ 云端配置（部署时替换为你自己的 Firebase 配置）★★★
+//  获取位置：Firebase 控制台 → 项目设置 → 常规 → 您的应用 → SDK 设置和配置
+//  保持下方占位值时，课件自动运行在「单机模式」（localStorage，仅本机可见）
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// 教师账号邮箱：必须与 Firestore 安全规则中的邮箱完全一致（大小写不敏感）
+const TEACHER_EMAIL = "teacher@your-school.com";
+const STUDENT_COLLECTION = 'students';
+const FULL_SCORE = POINTS_PER_Q * 6;   // 3 关 × 2 题 × 10 分 = 60
+
+// 占位配置检测：未替换 apiKey 即为单机模式
+const IS_CLOUD = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+
+let identity = null;
+let rankMap = {};        // 本地镜像：{ 学号: record }，云端模式下与 Firestore 同步
+let record = null;
+
+let firebaseApp = null, db = null, auth = null;
+let cloudReady = false;          // Firestore 已连接且数据已首拉
+let teacherMode = false;         // 教师已通过邮箱密码验证
+let _saveTimer = null;
+const _dirtyIds = new Set();
+
+// 管理员（仅单机模式保留的旧后门：学号/姓名均为 "1"）
+const ADMIN = { id: '1', name: '1' };
+function isAdmin() { return !IS_CLOUD && !!identity && String(identity.id) === ADMIN.id && String(identity.name) === ADMIN.name; }
+// 是否拥有教师权限（云端=邮箱认证；单机=旧管理员）——控制删除/清空按钮显示
+function isTeacher() { return IS_CLOUD ? teacherMode : isAdmin(); }
+
+function loadIdentity() { try { identity = JSON.parse(localStorage.getItem(LS_ID)) || null; } catch (e) { identity = null; } }
+function saveIdentity() { try { localStorage.setItem(LS_ID, JSON.stringify(identity)); } catch (e) {} }
+function loadRank() { try { rankMap = JSON.parse(localStorage.getItem(LS_RANK)) || {}; } catch (e) { rankMap = {}; } }
+
+// ---------- 云端初始化 ----------
+function setCloudStatus(state, txt) {
+  const dot = document.getElementById('cloud-dot');
+  const label = document.getElementById('cloud-txt');
+  if (!dot || !label) return;
+  dot.className = 'cloud-dot ' + state;
+  label.textContent = txt;
+}
+
+async function initCloud() {
+  if (!IS_CLOUD) { setCloudStatus('', '单机模式'); return false; }
+  setCloudStatus('connecting', '云端连接中…');
+  try {
+    firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebaseApp.firestore();
+    auth = firebaseApp.auth();
+    // 学生使用匿名登录：零UI摩擦，且安全规则可要求 request.auth != null
+    await auth.signInAnonymously();
+    await fetchAllStudents();
+    cloudReady = true;
+    setCloudStatus('online', '云端共享中');
+    return true;
+  } catch (e) {
+    console.warn('[Firebase] 初始化失败，回退单机模式：', e);
+    cloudReady = false;
+    setCloudStatus('offline', '云端不可用·单机');
+    loadRank();
+    return false;
+  }
+}
+
+// 拉取全班全部记录到本地镜像（班级规模小，一次 get 足够）
+async function fetchAllStudents() {
+  const snap = await db.collection(STUDENT_COLLECTION).get();
+  const next = {};
+  snap.forEach(doc => { next[doc.id] = normalizeRecord(doc.data(), doc.id); });
+  rankMap = next;
+}
+
+function normalizeRecord(d, fallbackId) {
+  d = d || {};
+  return {
+    name: d.name || '',
+    id: String(d.id != null ? d.id : (fallbackId || '')),
+    startAt: d.startAt || null,
+    endAt: d.endAt || null,
+    learnDone: d.learnDone || {},
+    answers: d.answers || {}
+  };
+}
+
+// ---------- 成绩写入 ----------
+// 统一保存入口：本地镜像立即落 localStorage（离线可用），云端模式防抖合并写
+function saveRank() {
+  try { localStorage.setItem(LS_RANK, JSON.stringify(rankMap)); } catch (e) {}
+  if (!cloudReady) return;
+  if (record && record.id) _dirtyIds.add(String(record.id));
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(flushCloudSaves, 500);
+}
+
+async function flushCloudSaves() {
+  if (!cloudReady) return;
+  const ids = Array.from(_dirtyIds); _dirtyIds.clear();
+  for (const id of ids) {
+    const rec = rankMap[id];
+    if (rec) {
+      try { await persistRecord(rec); }
+      catch (e) {
+        console.warn('[Firebase] 成绩保存失败：', id, e);
+        toast('云端保存失败，请检查网络后重新作答提交');
+        _dirtyIds.add(id);   // 留待下次重试
+      }
+    }
+  }
+}
+
+// 关键：文档ID = 学号。set(merge) 保证同一学号重复提交只更新、不新增
+function buildCloudPayload(rec) {
+  const st = computeStats(rec);
+  return {
+    id: String(rec.id),
+    name: String(rec.name || ''),
+    score: st.score,
+    correct: st.correct,
+    total: st.total,
+    correctRate: st.correctRate,
+    durationSec: (rec.endAt && rec.startAt) ? Math.max(0, Math.round((rec.endAt - rec.startAt) / 1000)) : 0,
+    finished: !!rec.endAt,
+    startAt: rec.startAt || null,
+    endAt: rec.endAt || null,
+    learnDone: rec.learnDone || {},
+    answers: rec.answers || {}
+  };
+}
+async function persistRecord(rec) {
+  const payload = buildCloudPayload(rec);
+  payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+  // merge:true → 同一学号只覆盖字段，绝不产生重复记录
+  await db.collection(STUDENT_COLLECTION).doc(String(rec.id)).set(payload, { merge: true });
+}
+async function getStudentRecord(id) {
+  const doc = await db.collection(STUDENT_COLLECTION).doc(String(id)).get();
+  return doc.exists ? normalizeRecord(doc.data(), id) : null;
+}
+async function deleteStudentCloud(id) {
+  await db.collection(STUDENT_COLLECTION).doc(String(id)).delete();
+}
+
+function newRecord(name, id) { return { name, id, startAt: Date.now(), endAt: null, learnDone: {}, answers: {} }; }
+function allQuestions() {
+  const arr = [];
+  for (let lv = 1; lv <= TOTAL_LEVELS; lv++) {
+    QUESTIONS[lv].forEach((q, qi) => arr.push({ level: lv, qi, gid: 'lv' + lv + 'q' + qi, q }));
+  }
+  return arr;
+}
+
+function levelLearnDone(lv) { return !!(record && record.learnDone[lv]); }
+function levelQuizDone(lv) {
+  if (!record) return false;
+  return QUESTIONS[lv].every((q, qi) => record.answers['lv' + lv + 'q' + qi] !== undefined);
+}
+function levelComplete(lv) { return levelLearnDone(lv) && levelQuizDone(lv); }
+function isUnlocked(lv) { if (!identity) return false; return lv === 1 || levelComplete(lv - 1); }
+function firstIncompleteLevel() {
+  for (let lv = 1; lv <= TOTAL_LEVELS; lv++) if (!levelComplete(lv)) return lv;
+  return TOTAL_LEVELS;
+}
+
+function markLearnDone(lv) {
+  if (!record) return;
+  if (!record.learnDone[lv]) {
+    record.learnDone[lv] = true;
+    saveRank();
+    renderNav(); updateLearnStatus(); checkFinish();
+  }
+}
+
+function computeStats(rec) {
+  const all = allQuestions();
+  let correct = 0, answered = 0;
+  const wrongList = [];
+  all.forEach(item => {
+    const pick = rec.answers[item.gid];
+    if (pick === undefined) return;
+    answered++;
+    if (pick === item.q.answer) correct++;
+    else wrongList.push({ level: item.level, qi: item.qi, type: item.q.type, stem: item.q.stem, options: item.q.options, pick, answer: item.q.answer });
+  });
+  const total = all.length;
+  return { correct, answered, total, score: correct * POINTS_PER_Q, correctRate: total ? Math.round(correct / total * 100) : 0, wrongList };
+}
+
+function checkFinish() {
+  if (!record) return;
+  const done = [1, 2, 3].every(lv => levelComplete(lv));
+  if (done && !record.endAt) {
+    record.endAt = Date.now();
+    // 完成时统一计算并固化最终总分/正确率/总用时（每题 10 分），供成绩汇总直接读取
+    const st = computeStats(record);
+    record.finalScore = st.score;
+    record.correct = st.correct;
+    record.total = st.total;
+    record.correctRate = st.correctRate;
+    record.durationSec = Math.max(0, Math.round((record.endAt - (record.startAt || record.endAt)) / 1000));
+    saveRank();
+    showLeaderboard();
+  }
+}
+
+// ---------- 导航 / 状态 ----------
+function renderNav() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    const lv = parseInt(tab.dataset.level);
+    tab.classList.toggle('locked', !isUnlocked(lv));
+    tab.classList.toggle('complete', levelComplete(lv));
+  });
+  updateProgress();
+}
+function updateLearnStatus() {
+  const el = document.getElementById('learn-status');
+  if (!el) return;
+  if (levelLearnDone(currentLevel)) {
+    el.className = 'learn-status yes';
+    el.textContent = '本关学习：已完成 ✔（可进入习题，完成后解锁下一关）';
+  } else {
+    el.className = 'learn-status no';
+    el.textContent = '本关学习：未完成（完整播放动画后视为完成）';
+  }
+  updateNextLevelButton();
+}
+function updateNextLevelButton() {
+  const box = document.getElementById('next-level-box');
+  if (!box) return;
+  if (!identity || !record) { box.innerHTML = ''; return; }
+  const learnOk = levelLearnDone(currentLevel);
+  const quizOk = levelQuizDone(currentLevel);
+  if (!quizOk) { box.innerHTML = ''; return; }
+  if (learnOk) {
+    if (currentLevel < TOTAL_LEVELS) {
+      box.innerHTML = '<button class="next-btn" id="btn-next">本关完成，进入第' + (currentLevel + 1) + '关 →</button>';
+      document.getElementById('btn-next').addEventListener('click', () => setLevel(currentLevel + 1));
+    } else {
+      box.innerHTML = '<button class="next-btn" id="btn-next">全部完成，查看排行榜 →</button>';
+      document.getElementById('btn-next').addEventListener('click', showLeaderboard);
+    }
+  } else {
+    box.innerHTML = '<button class="next-btn next-btn-wait" id="btn-next">本关习题已完成，点击补完「动画学习」→</button>';
+    document.getElementById('btn-next').addEventListener('click', () => {
+      toast('请先完整播放本关「演示动画」');
+      document.querySelector('.demo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+}
+function updateProgress() {
+  const el = document.getElementById('progress-chip');
+  if (!el) return;
+  if (!identity || !record) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const st = computeStats(record);
+  const unlockedCount = [1, 2, 3].filter(lv => isUnlocked(lv)).length;
+  el.textContent = '进度 ' + st.answered + '/' + st.total + ' 题 · 得分 ' + st.score + '/' + (POINTS_PER_Q * st.total) + ' · 解锁 ' + unlockedCount + '/3 关';
+}
+
+// ---------- 登录 ----------
+function showLogin() { document.getElementById('login-mask').style.display = 'flex'; }
+function hideLogin() { document.getElementById('login-mask').style.display = 'none'; }
+function renderStudentBar() {
+  const chip = document.getElementById('user-chip');
+  const btnRank = document.getElementById('btn-rank');
+  const btnFull = document.getElementById('btn-full');
+  const btnLogout = document.getElementById('btn-logout');
+  if (identity) {
+    chip.innerHTML = '姓名 <b>' + esc(identity.name) + '</b> · 学号 <b>' + esc(identity.id) + '</b>' +
+      (isTeacher() ? ' <span class="admin-badge">教师</span>' : '');
+    btnRank.style.display = ''; btnFull.style.display = ''; btnLogout.style.display = '';
+  } else {
+    chip.textContent = '未登录';
+    btnRank.style.display = 'none'; btnFull.style.display = 'none'; btnLogout.style.display = 'none';
+  }
+  updateProgress();
+}
+function postLogin() {
+  hideLogin();
+  renderStudentBar();
+  renderNav();
+  // 管理员可见答题 UI，并通过顶栏 "查看排行榜" 按钮一键回排行榜
+  setLevel(firstIncompleteLevel());
+  updateLearnStatus();
+  if (record && record.endAt) showLeaderboard();
+}
+let _loginBusy = false;
+async function doLogin() {
+  if (_loginBusy) return;
+  const name = document.getElementById('inp-name').value.trim();
+  const id = document.getElementById('inp-id').value.trim();
+  const errEl = document.getElementById('login-err');
+  if (!name) { errEl.textContent = '请输入姓名'; return; }
+  if (!id) { errEl.textContent = '请输入学号'; return; }
+  errEl.textContent = '';
+  _loginBusy = true;
+
+  try {
+    if (cloudReady) {
+      // 云端模式：以学号为文档ID读取；有记录则跨设备续做，无则新建
+      let rec = null;
+      try { rec = await getStudentRecord(id); }
+      catch (e) { console.warn('读取云端记录失败：', e); toast('云端读取失败，将以本机缓存继续'); rec = rankMap[id] || null; }
+      if (rec) {
+        rec.name = name;        // 允许同名学号刷新姓名
+        record = rec;
+      } else {
+        record = newRecord(name, id);
+        await persistRecord(record);   // 首次创建
+      }
+      rankMap[id] = record;
+    } else {
+      // 单机模式
+      if (!rankMap[id]) { rankMap[id] = newRecord(name, id); }
+      else { rankMap[id].name = name; }
+      record = rankMap[id];
+    }
+    identity = { name, id };
+    saveIdentity();
+    saveRank();
+    postLogin();
+    toast(cloudReady
+      ? '欢迎，' + name + '！成绩将实时共享到班级榜单'
+      : '欢迎，' + name + '！（当前为单机模式，配置 Firebase 后可全班共享）');
+  } finally {
+    _loginBusy = false;
+  }
+}
+async function doLogout() {
+  try { await flushCloudSaves(); } catch (e) {}
+  identity = null; record = null;
+  saveIdentity();
+  resetDemo();
+  showLogin();
+  // 清空登录输入框，防止下次进来残留
+  const inpN = document.getElementById('inp-name'); if (inpN) inpN.value = '';
+  const inpI = document.getElementById('inp-id');   if (inpI) inpI.value = '';
+  renderStudentBar();
+  renderNav();
+}
+
+// ---------- 排行榜 ----------
+function fmtDuration(sec) {
+  if (sec == null || isNaN(sec)) return '—';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return (m > 0 ? m + '分' : '') + s + '秒';
+}
+function getFinishedRecords() {
+  return Object.values(rankMap)
+    .filter(r => r.endAt)
+    .map(r => {
+      const st = computeStats(r);
+      return {
+        name: r.name, id: r.id, score: st.score, correctRate: st.correctRate,
+        durationSec: Math.max(0, Math.round((r.endAt - r.startAt) / 1000)), wrongList: st.wrongList,
+      };
+    })
+    .sort((a, b) => (b.score - a.score) || (a.durationSec - b.durationSec));
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+async function deleteStudent(id, btn) {
+  if (!isTeacher()) { toast('无删除权限：仅教师可删除'); return; }
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = '确认删除？';
+    btn.classList.add('armed');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { delete btn.dataset.armed; btn.textContent = '删除'; btn.classList.remove('armed'); }, 3000);
+    return;
+  }
+  clearTimeout(btn._t);
+  try {
+    if (cloudReady) await deleteStudentCloud(id);
+    delete rankMap[id];
+    saveRank();
+    const isSelf = identity && String(identity.id) === String(id);
+    if (isSelf) {
+      identity = null; record = null;
+      saveIdentity();
+      resetDemo();
+      hideLeaderboard();
+      showLogin();
+      const inpN = document.getElementById('inp-name'); if (inpN) inpN.value = '';
+      const inpI = document.getElementById('inp-id');   if (inpI) inpI.value = '';
+      renderStudentBar();
+      renderNav();
+      toast('已删除本人答题记录，请重新登录');
+    } else {
+      toast('已删除「' + esc(id) + '」的答题记录');
+      showLeaderboard();
+    }
+  } catch (e) {
+    console.warn(e);
+    toast('删除失败：' + (e.message || '权限不足或网络错误'));
+    btn.textContent = '删除'; btn.classList.remove('armed'); delete btn.dataset.armed;
+  }
+}
+
+// 教师一键清空：分批 delete（Firestore 每批上限 500）
+async function clearAllScores(btn) {
+  if (!isTeacher()) { toast('仅教师可执行此操作'); return; }
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = '⚠ 再次点击确认：清空全班全部成绩（不可恢复）';
+    btn.classList.add('armed');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { delete btn.dataset.armed; btn.textContent = '一键清空全部成绩榜单'; btn.classList.remove('armed'); }, 4000);
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '清空中…';
+  try {
+    if (cloudReady) {
+      const snap = await db.collection(STUDENT_COLLECTION).get();
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += 400) {
+        const batch = db.batch();
+        docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    rankMap = {};
+    saveRank();
+    toast('已清空全班 ' + (cloudReady ? '云端' : '本机') + '成绩榜单');
+    // 当前若是学生身份，强制重新登录
+    if (identity) { identity = null; record = null; saveIdentity(); }
+    showLogin();
+    hideLeaderboard();
+    renderStudentBar(); renderNav();
+  } catch (e) {
+    console.warn(e);
+    toast('清空失败：' + (e.message || '权限不足或网络错误'));
+    btn.disabled = false;
+    delete btn.dataset.armed; btn.classList.remove('armed');
+    btn.textContent = '一键清空全部成绩榜单';
+  }
+}
+
+let _rankLoading = false;
+async function showLeaderboard() {
+  const mask = document.getElementById('rank-mask');
+  const sub = document.getElementById('rank-sub');
+  const body = document.getElementById('rank-body');
+  mask.classList.add('show');
+
+  // 打开即渲染：先确保自己刚提交的成绩已上云，再拉取全班最新数据
+  if (cloudReady) {
+    sub.textContent = '正在同步云端数据…';
+    body.innerHTML = '<div class="rank-empty">加载中…</div>';
+    renderRankActions(false);
+    if (_rankLoading) return;
+    _rankLoading = true;
+    try {
+      await flushCloudSaves();
+      await fetchAllStudents();
+    } catch (e) {
+      console.warn('云端榜单拉取失败，使用本机缓存：', e);
+      sub.textContent = '云端拉取失败，以下为本机缓存数据';
+    } finally {
+      _rankLoading = false;
+    }
+  }
+
+  const list = getFinishedRecords();
+  const teacher = isTeacher();
+  const totalQ = allQuestions().length, fullScore = POINTS_PER_Q * totalQ;
+  sub.textContent = '共 ' + list.length + ' 名同学完成闯关 · 满分 ' + fullScore + ' 分（' + totalQ + ' 题）' +
+    (cloudReady ? ' · 数据云端实时共享' : ' · 单机模式') +
+    (teacher ? '　·　教师模式：可删除 / 清空' : '');
+
+  let html = '';
+  if (!list.length) {
+    html += '<div class="rank-empty">暂无已完成闯关的记录，快来做第一个吧！</div>';
+  } else {
+    // 名次：总分降序，同分并列（标准竞赛排名 1,2,2,4），总分相同按用时升序排列
+    html += '<table class="rank-table"><thead><tr><th>名次</th><th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th>';
+    if (teacher) html += '<th>操作</th>';
+    html += '</tr></thead><tbody>';
+    let rankNo = 0;
+    list.forEach((r, i) => {
+      if (i === 0 || r.score !== list[i - 1].score) rankNo = i + 1;
+      const isMe = identity && String(r.id) === String(identity.id);
+      const rankCls = rankNo === 1 ? 'top1' : '';
+      html += '<tr' + (isMe ? ' class="me"' : '') + '><td class="' + rankCls + '">' + rankNo + '</td>' +
+        '<td>' + esc(r.name) + '</td><td>' + esc(r.id) + '</td><td><b>' + r.score + '</b></td><td>' + r.correctRate + '%</td><td>' + fmtDuration(r.durationSec) + '</td>';
+      if (teacher) html += '<td class="op"><button class="del-btn" data-id="' + esc(r.id) + '">删除</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  // 进行中名单与学情错题：仅教师可见（保护其他学生作答明细）
+  if (teacher) {
+    const unfinished = Object.values(rankMap).filter(r => !r.endAt);
+    if (unfinished.length) {
+      html += '<div class="unfinished-title">进行中 / 未完成记录（' + unfinished.length + ' 人）</div>' +
+        '<table class="unfinished-table"><thead><tr><th>姓名</th><th>学号</th><th>已答题</th><th>当前得分</th><th>操作</th></tr></thead><tbody>';
+      unfinished.forEach(r => {
+        const st = computeStats(r);
+        html += '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.id) + '</td><td>' + st.answered + '/' + st.total + '</td><td>' + st.score + '</td>' +
+          '<td class="op"><button class="del-btn" data-id="' + esc(r.id) + '">删除</button></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    const wrongAll = [];
+    list.forEach(r => r.wrongList.forEach(w => wrongAll.push({ name: r.name, id: r.id, ...w })));
+    if (wrongAll.length) {
+      html += '<div class="wrong-title">学情错题记录（' + wrongAll.length + ' 题）</div>';
+      wrongAll.forEach(w => {
+        html += '<div class="wrong-item">' +
+          '<div class="wname">' + esc(w.name) + '（' + esc(w.id) + '） · 第' + w.level + '关 · ' + w.type + '</div>' +
+          '<div class="wstem">' + esc(w.stem) + '</div>' +
+          '<div class="wans">作答：<b class="w">' + esc(w.options[w.pick]) + '</b>　正确答案：<b class="c">' + esc(w.options[w.answer]) + '</b></div>' +
+          '</div>';
+      });
+    }
+  }
+
+  body.innerHTML = html;
+  renderRankActions(teacher);
+  if (teacher) {
+    body.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteStudent(btn.dataset.id, btn));
+    });
+  }
+}
+
+// 排行榜底部操作区：学生只见低调的「教师入口」；教师可见清空按钮
+function renderRankActions(teacher) {
+  const box = document.getElementById('rank-actions');
+  let html = '<button class="rank-close" id="rank-close">关闭</button>';
+  if (teacher) {
+    html += '<div class="teacher-bar">' +
+      '<div class="tb-title">教师模式已开启 · 操作将直接作用于云端数据库</div>' +
+      '<button class="clear-btn" id="btn-clear-all">一键清空全部成绩榜单</button>' +
+      (IS_CLOUD ? '<button class="teacher-logout" id="btn-teacher-off">退出教师模式</button>' : '') +
+      '</div>';
+  } else {
+    html += '<button class="teacher-entry" id="btn-teacher-entry">教师入口</button>';
+  }
+  box.innerHTML = html;
+  document.getElementById('rank-close').addEventListener('click', hideLeaderboard);
+  if (teacher) {
+    document.getElementById('btn-clear-all').addEventListener('click', e => clearAllScores(e.currentTarget));
+    const off = document.getElementById('btn-teacher-off');
+    if (off) off.addEventListener('click', teacherSignOut);
+  } else {
+    const entry = document.getElementById('btn-teacher-entry');
+    if (entry) entry.addEventListener('click', openTeacherDialog);
+  }
+}
+
+function hideLeaderboard() { document.getElementById('rank-mask').classList.remove('show'); }
+
+// ---------- 教师身份（云端：邮箱密码认证；单机：旧 1/1 后门） ----------
+function openTeacherDialog() {
+  if (!IS_CLOUD) {
+    // 单机模式提示用旧管理员账号登录
+    toast('单机模式：请用姓名「1」、学号「1」登录即为管理员');
+    return;
+  }
+  // 若 Firebase 仍保持教师登录会话，点击入口即恢复（仍需教师手动点击开启）
+  const u = auth && auth.currentUser;
+  if (u && (u.email || '').toLowerCase() === TEACHER_EMAIL.toLowerCase()) {
+    teacherMode = true;
+    toast('教师会话有效，已开启教师模式');
+    showLeaderboard();
+    return;
+  }
+  document.getElementById('teacher-err').textContent = '';
+  document.getElementById('inp-temail').value = '';
+  document.getElementById('inp-tpwd').value = '';
+  document.getElementById('teacher-mask').classList.add('show');
+  setTimeout(() => document.getElementById('inp-temail').focus(), 50);
+}
+function closeTeacherDialog() { document.getElementById('teacher-mask').classList.remove('show'); }
+
+let _teacherBusy = false;
+async function doTeacherLogin() {
+  if (_teacherBusy) return;
+  const email = document.getElementById('inp-temail').value.trim().toLowerCase();
+  const pwd = document.getElementById('inp-tpwd').value;
+  const errEl = document.getElementById('teacher-err');
+  if (!email || !pwd) { errEl.textContent = '请输入教师邮箱和密码'; return; }
+  _teacherBusy = true;
+  try {
+    const cred = await auth.signInWithEmailAndPassword(email, pwd);
+    const mail = (cred.user.email || '').toLowerCase();
+    if (mail !== TEACHER_EMAIL.toLowerCase()) {
+      errEl.textContent = '该账号不是本课件登记的教师账号';
+      await auth.signOut();
+      await auth.signInAnonymously();
+      return;
+    }
+    teacherMode = true;
+    closeTeacherDialog();
+    toast('教师身份验证通过，删除/清空已解锁');
+    showLeaderboard();
+  } catch (e) {
+    console.warn(e);
+    errEl.textContent = '验证失败：' + (e.code === 'auth/invalid-credential' ? '邮箱或密码错误' : (e.message || '请重试'));
+  } finally {
+    _teacherBusy = false;
+  }
+}
+async function teacherSignOut() {
+  teacherMode = false;
+  try { await auth.signOut(); await auth.signInAnonymously(); } catch (e) {}
+  toast('已退出教师模式');
+  showLeaderboard();
+}
+
+// ---------- 其他 ----------
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function goFullscreen() {
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+
+function renderHead() {
+  const meta = LEVEL_META[currentLevel];
+  document.getElementById('lv-title').textContent = meta.title;
+  document.getElementById('lv-desc').innerHTML = formatSubscriptHTML(meta.desc);
+  const box = document.getElementById('cards-box');
+  box.innerHTML =
+    '<div class="card"><div class="t">核心要点</div><div class="c">' + formatSubscriptHTML(meta.cards.key) + '</div></div>' +
+    '<div class="card"><div class="t">关键条件</div><div class="c">' + formatSubscriptHTML(meta.cards.cond) + '</div></div>' +
+    '<div class="card"><div class="t">结果属性</div><div class="c">' + formatSubscriptHTML(meta.cards.result) + '</div></div>';
+}
+
+// 构建单道题目的可作答元素（页面习题区与闯关弹窗共用）
+function buildQuestionEl(q, gid) {
+  const item = document.createElement('div');
+  item.className = 'q-item';
+  const optHTML = q.options.map((o, oi) =>
+    '<div class="opt" data-oi="' + oi + '">' + String.fromCharCode(65 + oi) + '. ' + formatSubscriptHTML(o) + '</div>'
+  ).join('');
+  item.innerHTML =
+    '<div class="q-stem"><span class="tag">' + q.type + '</span>' + formatSubscriptHTML(q.stem) + '</div>' +
+    '<div>' + optHTML + '</div>' +
+    '<div class="check"><button class="btn btn-play submit" disabled>提交答案</button><span class="hint"></span></div>' +
+    '<div class="feedback"></div>';
+
+  const opts = item.querySelectorAll('.opt');
+  const submit = item.querySelector('.submit');
+  const fb = item.querySelector('.feedback');
+
+  const showResult = (pick) => {
+    const ok = pick === q.answer;
+    opts.forEach((el, oi) => {
+      if (oi === q.answer) el.classList.add('right');
+      if (oi === pick && !ok) el.classList.add('wrong');
+      if (oi === pick) el.classList.add('sel');
+    });
+    fb.className = 'feedback ' + (ok ? 'ok' : 'bad');
+    fb.innerHTML = (ok ? '✔ 回答正确！' : '✘ 回答错误。') + '<div class="exp">解析：' + formatSubscriptHTML(q.exp) + '</div>';
+    submit.disabled = true;
+  };
+
+  const saved = record ? record.answers[gid] : undefined;
+  if (saved !== undefined) { showResult(saved); return item; }
+
+  opts.forEach((el, oi) => {
+    el.addEventListener('click', () => {
+      opts.forEach(e => e.classList.remove('sel'));
+      el.classList.add('sel');
+      item.dataset.pick = oi;
+      submit.disabled = false;
+    });
+  });
+  submit.addEventListener('click', () => {
+    if (!record) return;
+    const pick = parseInt(item.dataset.pick);
+    if (isNaN(pick)) return;
+    record.answers[gid] = pick;
+    saveRank();
+    showResult(pick);
+    const submittedFromModal = !!item.closest('#qm-quiz');
+    renderNav();
+    updateLearnStatus();
+    // 页面下方内嵌习题已移除；弹窗题目重新渲染后检查是否完成本关
+    renderQuiz();
+    renderModalQuiz();
+    checkFinish();
+    if (submittedFromModal) updateModalNextButton(currentLevel);
+  });
+  return item;
+}
+
+function renderQuiz() {
+  const box = document.getElementById('quiz-box');
+  // 页面下方内嵌习题已移除，仅保留弹窗习题
+  if (!box) return;
+  box.innerHTML = '';
+  QUESTIONS[currentLevel].forEach((q, qi) => {
+    box.appendChild(buildQuestionEl(q, 'lv' + currentLevel + 'q' + qi));
+  });
+}
+
+function updateModalNextButton(levelAtModal) {
+  const btn = document.getElementById('qm-next-btn');
+  const hint = document.getElementById('qm-next-hint');
+  if (!btn || !hint) return;
+  const done = levelQuizDone(levelAtModal);
+  btn.disabled = !done;
+  btn.classList.toggle('done', done && levelAtModal >= TOTAL_LEVELS);
+  if (!done) {
+    hint.textContent = '请完成本关全部题目后继续';
+    btn.textContent = '答完题后进入下一关';
+  } else if (levelAtModal < TOTAL_LEVELS) {
+    hint.textContent = '本关题目已完成，可以继续学习下一关';
+    btn.textContent = '答完题后进入下一关';
+  } else {
+    hint.textContent = '全部关卡题目已完成';
+    btn.textContent = '完成全部闯关';
+  }
+}
+
+function advanceAfterPopupQuiz(levelAtSubmit) {
+  if (!levelQuizDone(levelAtSubmit)) return;
+  closeQuizModal();
+  if (levelAtSubmit < TOTAL_LEVELS && levelComplete(levelAtSubmit)) {
+    toast('本关习题完成，正在进入下一关');
+    setTimeout(() => setLevel(levelAtSubmit + 1), 450);
+  } else if (levelAtSubmit >= TOTAL_LEVELS) {
+    toast('全部关卡完成');
+  }
+}
+
+// ---------- 闯关习题弹窗（左：梁结构原图快照；右：2 道计算题） ----------
+function renderModalQuiz() {
+  const box = document.getElementById('qm-quiz');
+  if (!box) return;
+  box.innerHTML = '';
+  QUESTIONS[currentLevel].forEach((q, qi) => {
+    box.appendChild(buildQuestionEl(q, 'lv' + currentLevel + 'q' + qi));
+  });
+}
+
+// 临时在画布上绘制「纯净结构+荷载图」并导出为图片（不含答案/讲师）
+function captureStructureShot() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawBeam();
+  drawSupport(0, 'pin');
+  drawSupport(8, 'roller');
+  drawDims();
+  drawLoads(1);
+  const url = canvas.toDataURL('image/png');
+  render();   // 恢复当前动画画面
+  return url;
+}
+
+function openQuizModal() {
+  clearPopTimers();
+  hideStepBubble();
+  const mask = document.getElementById('quiz-mask');
+  if (!mask || mask.classList.contains('show')) return;
+  document.getElementById('qm-shot').src = captureStructureShot();
+  renderModalQuiz();
+  updateModalNextButton(currentLevel);
+  mask.classList.add('show');
+}
+function closeQuizModal() {
+  const mask = document.getElementById('quiz-mask');
+  if (mask) mask.classList.remove('show');
+}
+
+document.getElementById('qm-next-btn')?.addEventListener('click', () => {
+  if (!levelQuizDone(currentLevel)) return;
+  const levelAtSubmit = currentLevel;
+  closeQuizModal();
+  if (levelAtSubmit < TOTAL_LEVELS && levelComplete(levelAtSubmit)) {
+    toast('本关习题完成，正在进入下一关');
+    setTimeout(() => setLevel(levelAtSubmit + 1), 450);
+  } else if (levelAtSubmit >= TOTAL_LEVELS) {
+    toast('全部关卡完成');
+  }
+});
+
+function setLevel(lv) {
+  if (!identity) return;
+  if (!isUnlocked(lv)) { toast('请先完成上一关的「学习 + 习题」再进入本关'); return; }
+  closeQuizModal();
+   currentLevel = lv;
+   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.level) === lv));
+   renderHead();
+   resetDemo();
+   updateResultUI();
+   renderQuiz();
+   renderModalQuiz();
+   updateLearnStatus();
+   renderNav();
+}
+
+// ---------- 事件绑定 ----------
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => setLevel(parseInt(tab.dataset.level)));
+});
+document.getElementById('btn-play').addEventListener('click', play);
+document.getElementById('btn-step').addEventListener('click', () => { if (!identity) return; if (step < maxStep(currentLevel)) goStep(step + 1); });
+document.getElementById('btn-reset').addEventListener('click', () => { if (!identity) return; resetDemo(); });
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('inp-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('inp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('btn-rank').addEventListener('click', showLeaderboard);
+document.getElementById('btn-full').addEventListener('click', goFullscreen);
+document.getElementById('btn-logout').addEventListener('click', doLogout);
+document.getElementById('rank-mask').addEventListener('click', e => { if (e.target === e.currentTarget) hideLeaderboard(); });
+
+// 闯关习题弹窗：关闭按钮 + 点击遮罩关闭
+document.getElementById('qm-close').addEventListener('click', closeQuizModal);
+document.getElementById('quiz-mask').addEventListener('click', e => { if (e.target === e.currentTarget) closeQuizModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQuizModal(); });
+
+// 教师弹窗
+document.getElementById('teacher-login-btn').addEventListener('click', doTeacherLogin);
+document.getElementById('teacher-cancel').addEventListener('click', closeTeacherDialog);
+document.getElementById('teacher-mask').addEventListener('click', e => { if (e.target === e.currentTarget) closeTeacherDialog(); });
+document.getElementById('inp-temail').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-tpwd').focus(); });
+document.getElementById('inp-tpwd').addEventListener('keydown', e => { if (e.key === 'Enter') doTeacherLogin(); });
+
+// 部署指南
+document.getElementById('btn-deploy-guide').addEventListener('click', showDeployGuide);
+document.getElementById('deploy-close').addEventListener('click', hideDeployGuide);
+document.getElementById('deploy-mask').addEventListener('click', e => { if (e.target === e.currentTarget) hideDeployGuide(); });
+
+// ---------- 启动 ----------
+async function boot() {
+  loadIdentity();
+  resize();
+  // 初始化第1关讲师待机姿态，并启动持续渲染（眨眼/呼吸/走动）
+  stepEnterAt = performance.now();
+  syncTeacher(0, stepEnterAt);
+  ensureRAF();
+  renderStudentBar();
+  renderNav();
+  showLogin();
+
+  if (IS_CLOUD) {
+    await initCloud();   // 成功后 rankMap 已为全班云端数据；失败自动回退单机
+  } else {
+    loadRank();
+    setCloudStatus('', '单机模式');
+  }
+
+  // 仅单机模式保留旧管理员自动恢复；云端模式一律先显示学生登录
+  if (!IS_CLOUD && identity && String(identity.id) === ADMIN.id && String(identity.name) === ADMIN.name) {
+    record = rankMap[identity.id];
+    if (!record) { record = newRecord(identity.name, identity.id); rankMap[identity.id] = record; saveRank(); }
+    postLogin();
+  } else {
+    identity = null; record = null;
+    localStorage.removeItem(LS_ID);
+    showLogin();
+    const inpN = document.getElementById('inp-name'); if (inpN) inpN.value = '';
+    const inpI = document.getElementById('inp-id');   if (inpI) inpI.value = '';
+    renderStudentBar();
+    renderNav();
+  }
+}
+boot();
+
+// ---------- 部署指南内容 ----------
+const FIRESTORE_RULES =
+'rules_version = \'2\';\n' +
+'service cloud.firestore {\n' +
+'  match /databases/{database}/documents {\n' +
+'    // 学生成绩集合：文档ID = 学号\n' +
+'    match /students/{sid} {\n' +
+'      // 1) 榜单公开：匿名登录后的所有学生均可读取\n' +
+'      allow read: if request.auth != null;\n' +
+'\n' +
+'      // 2) 学生只能新建/更新【本人学号】对应的文档：\n' +
+'      //    - 文档ID必须与提交的学号一致（不能写到别人的学号下）\n' +
+'      //    - 姓名为字符串、分数为 0~' + FULL_SCORE + ' 的整数、finished 为布尔值（防写入异常数据）\n' +
+'      allow create, update: if request.auth != null\n' +
+'        && request.resource.data.id == sid\n' +
+'        && request.resource.data.name is string\n' +
+'        && request.resource.data.name.size() >= 1\n' +
+'        && request.resource.data.name.size() <= 60\n' +
+'        && request.resource.data.score is int\n' +
+'        && request.resource.data.score >= 0\n' +
+'        && request.resource.data.score <= ' + FULL_SCORE + '\n' +
+'        && request.resource.data.finished is bool;\n' +
+'\n' +
+'      // 3) 学生禁止删除任何记录；仅认证教师邮箱可删除（单条/清空）\n' +
+'      allow delete: if request.auth != null\n' +
+'        && request.auth.token.email == "teacher@your-school.com";\n' +
+'    }\n' +
+'  }\n' +
+'}\n';
+
+function showDeployGuide() {
+  const body = document.getElementById('deploy-body');
+  body.innerHTML =
+    '<div class="warn">本课件为纯静态 HTML，无需自建服务器。按下列步骤配置后，把同一份文件发给学生 / 放到 GitHub Pages，' +
+    '所有设备的成绩自动汇聚到同一个云端榜单。当前文件未替换配置时运行在「单机模式」，原有功能不受影响。</div>' +
+
+    '<h3>第一步：创建 Firebase 项目</h3>' +
+    '<ol>' +
+    '<li>打开 <code>https://console.firebase.google.com</code>，用 Google 账号登录。</li>' +
+    '<li>点击「添加项目」→ 输入名称（如 <code>jiegou-lixue</code>）→ 可关闭 Google Analytics → 创建项目。</li>' +
+    '</ol>' +
+
+    '<h3>第二步：注册 Web 应用，复制配置</h3>' +
+    '<ol>' +
+    '<li>项目概览页点击「添加应用」→ 选择 <b>&lt;/&gt; Web</b>。</li>' +
+    '<li>应用昵称随意（如 <code>courseware</code>），无需勾选 Hosting，点击注册。</li>' +
+    '<li>复制给出的 <code>firebaseConfig</code> 对象，粘贴替换本文件 JS 中的 <code>FIREBASE_CONFIG</code> 占位值（共 6 项：apiKey / authDomain / projectId / storageBucket / messagingSenderId / appId）。</li>' +
+    '<li>同时把 <code>TEACHER_EMAIL</code> 改为你的教师邮箱（必须与下面安全规则里的邮箱一致）。</li>' +
+    '</ol>' +
+
+    '<h3>第三步：开启登录方式（匿名 + 教师邮箱）</h3>' +
+    '<ol>' +
+    '<li>左侧菜单「Build / 构建」→ <b>Authentication</b> → 点击「Get started / 开始使用」。</li>' +
+    '<li>Sign-in method 标签页，启用两个提供程序：<b>Anonymous（匿名）</b> 和 <b>Email/Password（电子邮件/密码）</b>，均保存。</li>' +
+    '<li>切到 Users 标签 →「Add user / 添加用户」→ 填入教师邮箱和密码（该邮箱即 <code>TEACHER_EMAIL</code>，用于教师登录、删除与清空）。</li>' +
+    '</ol>' +
+
+    '<h3>第四步：创建 Firestore 数据库</h3>' +
+    '<ol>' +
+    '<li>左侧「Build / 构建」→ <b>Firestore Database</b> →「Create database / 创建数据库」。</li>' +
+    '<li>选择「以生产模式启动」（权限稍后由规则配置）→ 区域选 <code>asia-southeast1 (新加坡)</code> 或 nearest → 启用。</li>' +
+    '<li>集合会在学生第一次提交成绩时自动创建：集合名 <code>students</code>，文档ID=学号，无需手动建。</li>' +
+    '</ol>' +
+
+    '<h3>第五步：发布安全规则</h3>' +
+    '<ol>' +
+    '<li>Firestore 页面 →「Rules / 规则」标签。</li>' +
+    '<li>清空默认内容，粘贴下方规则（如修改了教师邮箱/满分上限，同步修改规则对应位置）→「Publish / 发布」。</li>' +
+    '</ol>' +
+    '<pre>' + esc(FIRESTORE_RULES) + '</pre>' +
+    '<div class="warn">规则含义：① 登录后所有人可读榜单；② 学生只能写「文档ID = 本人学号」且字段合法的成绩，同一学号重复提交自动覆盖更新、不会产生重复记录；③ 学生无 delete 权限，只有教师邮箱能删除/清空成绩。<br>' +
+    '说明：学号由学生本人填写（课堂场景的身份标识），规则已保证无法删除他人成绩；若后续需要更强防冒名，可改为「学号+个人口令」二次校验。</div>' +
+
+    '<h3>第六步：部署到 GitHub Pages（获得全网可访问网址）</h3>' +
+    '<ol>' +
+    '<li>登录 <code>https://github.com</code>，新建一个 Public 仓库（如 <code>lixue-courseware</code>）。</li>' +
+    '<li>把本 HTML 文件（可重命名为 <code>index.html</code>）上传到仓库根目录：Add file → Upload files → Commit。</li>' +
+    '<li>仓库「Settings」→ 左侧「Pages」→ Source 选择 <code>Deploy from a branch</code>，Branch 选 <code>main</code> / <code>root</code> → Save。</li>' +
+    '<li>等待 1~2 分钟，页面顶部出现网址：<code>https://你的用户名.github.io/lixue-courseware/</code>，学生用任意设备浏览器打开即可，成绩实时云端共享。</li>' +
+    '</ol>' +
+
+    '<h3>第七步：把 GitHub Pages 域名加入 Firebase 授权域名</h3>' +
+    '<ol>' +
+    '<li>Firebase 控制台 → Authentication → Settings →「Authorized domains / 授权网域」。</li>' +
+    '<li>添加 <code>你的用户名.github.io</code>（GitHub Pages 默认域名，不添加会导致匿名登录被拒绝）。</li>' +
+    '</ol>' +
+
+    '<h3>第八步：验证与日常使用</h3>' +
+    '<ul>' +
+    '<li>两台设备分别用同学号 A 作答提交 → Firestore 中 <code>students/A</code> 只有 1 条文档，分数为最新成绩。</li>' +
+    '<li>不同设备用不同学号提交 → 排行榜按总分降序、同分并列，所有设备打开「查看排行榜」均能看到同一榜单。</li>' +
+    '<li>教师：打开排行榜 → 底部「教师入口」→ 输入教师邮箱密码 → 出现删除按钮与「一键清空全部成绩榜单」（二次确认）。</li>' +
+    '<li>顶栏状态灯：绿色「云端共享中」=已连上 Firestore；红色「云端不可用·单机」=自动回退本机存储，联网后刷新即可。</li>' +
+    '</ul>';
+  document.getElementById('deploy-mask').classList.add('show');
+}
+function hideDeployGuide() { document.getElementById('deploy-mask').classList.remove('show'); }
+</script>
+<!-- 云端成绩提交（QuickForm）：完成闯关时上报最终总分/正确率/用时；页面右上角有上传状态徽标 -->
+<script>
+(function(){
+  var QF_URL="https://quickform.cn/api/6ivostlhav";
+  var VER='v3';   // 版本标记：页面右上角徽标出现即代表当前文件含云端收集功能
+  var CFG={course:"求解伸臂梁弯矩的闯关课件",key:"sm_cantilever_rank_v1",kind:"objectMap"};
+  var REG_KEY='qf_submitted_v1', OUT_KEY='qf_outbox_v1';
+  var timer=null;
+  function rj(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+  function wj(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  function pad(n){return (n<10?'0':'')+n}
+  function hm(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
+  function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  function fmtTs(t){if(!t)return '';var d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+  /* ============ 可见状态徽标（右上角）：让"新文件/已连接/已上传/失败原因"一目了然 ============ */
+  var badge=null;
+  function ensureBadge(){
+    if(badge)return badge;
+    try{
+      badge=document.createElement('div'); badge.id='qf-badge';
+      badge.style.cssText='position:fixed;top:8px;right:8px;z-index:2147483001;padding:5px 10px;border-radius:14px;font:12px/1.4 sans-serif;color:#fff;background:rgba(100,116,139,.92);box-shadow:0 1px 6px rgba(0,0,0,.25);cursor:pointer;max-width:46%;text-align:right';
+      badge.textContent='☁ 云成绩'+VER+' 检测中…';
+      badge.onclick=function(){ var ob=rj(OUT_KEY,[]); alert('云端成绩收集 '+VER+'\n课件：'+CFG.course+'\n状态：'+badge._state+'\n待补传：'+ob.length+' 条\n\n若一直显示"未连接"，请检查手机网络（可用浏览器打开 quickform.cn 测试），完成闯关后成绩会在联网时自动补传。'); };
+      (document.body||document.documentElement).appendChild(badge);
+    }catch(e){}
+    return badge;
+  }
+  function setBadge(state,txt,ok){ try{ ensureBadge(); badge._state=state; badge.textContent=txt;
+    badge.style.background=ok?'rgba(22,163,74,.92)':(ok===false?'rgba(220,38,38,.92)':'rgba(100,116,139,.92)'); }catch(e){} }
+  function toast(msg,ok){
+    try{
+      var t=document.getElementById('qf-toast');
+      if(!t){ t=document.createElement('div'); t.id='qf-toast';
+        t.style.cssText='position:fixed;left:14px;bottom:14px;z-index:2147483000;padding:8px 14px;border-radius:8px;font-size:13px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:opacity .4s;pointer-events:none;font-family:sans-serif';
+        document.body.appendChild(t); }
+      t.style.background=ok?'rgba(22,163,74,.92)':'rgba(107,114,128,.92)';
+      t.textContent=msg; t.style.opacity='1';
+      clearTimeout(t._tm); t._tm=setTimeout(function(){ t.style.opacity='0'; },2600);
+    }catch(e){}
+  }
+  /* ============ 网络可达性自检（打开课件即检测，不依赖完成答题） ============ */
+  function ping(){
+    var done=false;
+    var to=setTimeout(function(){ if(!done){done=true;setBadge('未连接','☁ 云端未连接（点我）',false);} },8000);
+    try{
+      fetch(QF_URL+'/count',{method:'GET',cache:'no-store'}).then(function(r){
+        clearTimeout(to); if(done)return; done=true;
+        if(r.ok)setBadge('就绪','☁ 云成绩'+VER+' 已就绪',true);
+        else setBadge('未连接','☁ 云端异常'+r.status, false);
+      }).catch(function(e){ clearTimeout(to); if(!done){done=true;setBadge('未连接','☁ 未连接（点我）',false);} });
+    }catch(e){ clearTimeout(to); setBadge('未连接','☁ 不支持fetch',false); }
+  }
+  function statsOf(r){
+    if(r&&r.finalScore!=null&&r.correctRate!=null) return {score:r.finalScore,correctRate:r.correctRate,correct:r.correct,total:r.total};
+    try{ if(typeof computeStats==='function'){ var st=computeStats(r); if(st)return st; } }catch(e){}
+    return null;
+  }
+  function payload(name,sid,score,acc,dur,fin,detail){
+    return {course:CFG.course,name:name||'',studentId:(sid==null?'':String(sid)),
+      score:(score==null||score==='')?'':score,accuracy:(acc==null||acc==='')?'':acc,
+      durationSec:(dur==null||dur==='')?'':Math.round(dur),status:'已完成',
+      finishedAt:fmtTs(fin),detail:detail||''};
+  }
+  function collect(){
+    var raw=rj(CFG.key,null); if(raw==null)return [];
+    var out=[];
+    if(CFG.kind==='objectMap'){
+      for(var id in raw){ var r=raw[id]||{}; if(!r.endAt)continue;
+        var st=statsOf(r);
+        var dur=(r.durationSec!=null)?r.durationSec:((r.endAt&&r.startAt)?(r.endAt-r.startAt)/1000:null);
+        out.push({rk:String(r.id||id),
+          p:payload(r.name,r.id, st?st.score:null, st?st.correctRate:null, dur, r.endAt, st?('答对'+st.correct+'/'+st.total):''),
+          fh:JSON.stringify([r.endAt, st?st.score:null])});
+      }
+    } else if(CFG.kind==='arraySimple'){
+      (raw||[]).forEach(function(r){ if(!r.finishAt)return;
+        out.push({rk:(r.name||'')+'|'+(r.id||''),
+        p:payload(r.name,r.id,r.score,r.acc,(typeof r.time==='number')?r.time/1000:null,r.finishAt||null,(r.acc!=null?('正确率'+r.acc+'%'):'')),
+        fh:JSON.stringify([r.score,r.acc,r.time,r.finishAt])}); });
+    } else if(CFG.kind==='arrayFinished'){
+      (raw||[]).forEach(function(r){ if(!r.finished)return;
+        out.push({rk:(r.studentId||'')+'|'+(r.name||''),
+        p:payload(r.name,r.studentId,r.totalScore,r.accuracy,r.durationSec, r.endTime||null, (r.correctCount!=null?('答对'+r.correctCount+'/6'):'')),
+        fh:JSON.stringify([r.totalScore,r.accuracy,r.durationSec,r.endTime])}); });
+    } else if(CFG.kind==='fruitTree'){
+      for(var uid in raw){ var fr=raw[uid]||{}; var sc=0,pk=0,at=0,k2;
+        for(k2 in (fr.scores||{}))sc+=(fr.scores[k2]||0);
+        for(k2 in (fr.picked||{}))if(fr.picked[k2])pk++;
+        for(k2 in (fr.attempts||{}))at+=(fr.attempts[k2]||0);
+        if(pk<=0)continue;
+        out.push({rk:String(uid),
+          p:payload(fr.name,uid,sc,null,null,null,'摘果'+pk+'/8·练习'+at+'次·'+today()+'快照'),
+          fh:today()}); }
+    }
+    return out;
+  }
+  function queueOutbox(p){ var ob=rj(OUT_KEY,[]); ob.push({p:p,t:Date.now()}); wj(OUT_KEY,ob.slice(-50)); }
+  function postFetch(p){ return fetch(QF_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),keepalive:true}); }
+  function beacon(p){
+    /* 关闭页面兜底：不用 navigator.sendBeacon（跨域带凭证与 ACAO:* 冲突，且 text/plain 服务端不解析），
+       改用 keepalive fetch：页面关闭后请求仍继续，凭证默认 same-origin 与通配 CORS 兼容 */
+    try{ postFetch(p); return true; }catch(e){ return false; }
+  }
+  function submit(p){ postFetch(p).then(function(r){ if(!r.ok)throw new Error('HTTP'+r.status);
+      setBadge('已上传','☁ 成绩已上传 '+hm(),true); toast('☁️ 最终成绩已上传：'+CFG.course,true); })
+    .catch(function(e){ setBadge('待补传','☁ 将自动补传（点我）',false); toast('⏳ 网络不佳，成绩已暂存，联网后自动补传',false); queueOutbox(p); }); }
+  function flushOutbox(){ var ob=rj(OUT_KEY,[]); if(!ob.length)return;
+    var rest=[]; (function next(i){ if(i>=ob.length){wj(OUT_KEY,rest);if(!rest.length)setBadge('就绪','☁ 云成绩'+VER+' 已就绪',true);return;}
+      postFetch(ob[i].p).then(function(){ next(i+1); }).catch(function(){ rest.push(ob[i]); next(i+1); });
+    })(0);
+  }
+  function sync(){
+    try{
+      var reg=rj(REG_KEY,{}); var c=reg[CFG.course]||(reg[CFG.course]={}); var changed=false; var pending=[];
+      collect().forEach(function(r){ if(c[r.rk]===r.fh)return; pending.push(r); c[r.rk]=r.fh; changed=true; });
+      if(changed){ wj(REG_KEY,reg); pending.forEach(function(r){ submit(r.p); }); }
+    }catch(e){}
+  }
+  /* 页面关闭/切后台：未确认的最终成绩用 keepalive fetch 兜底（手机 WebView 关闭页面时请求仍能发出） */
+  function syncBeacon(){
+    try{
+      var reg=rj(REG_KEY,{}); var c=reg[CFG.course]||(reg[CFG.course]={}); var changed=false;
+      collect().forEach(function(r){ if(c[r.rk]===r.fh)return;
+        c[r.rk]=r.fh; changed=true;   // 乐观标记；keepalive 请求失败时入发件箱，下次打开补传
+        try{ beacon(r.p).catch(function(){ queueOutbox(r.p); }); }catch(e){ queueOutbox(r.p); } });
+      if(changed)wj(REG_KEY,reg);
+      rj(OUT_KEY,[]).forEach(function(it){ try{ beacon(it.p); }catch(e){} });  // 尽力补传，不清空（下次联网由 flushOutbox 确认后清空）
+    }catch(e){}
+  }
+  function schedule(){ if(timer)return; timer=setTimeout(function(){ timer=null; sync(); },500); }
+  try{
+    var _set=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){ try{ _set.call(this,k,v); }catch(e){} if(k===CFG.key)schedule(); };
+  }catch(e){}
+  try{ ensureBadge(); ping(); }catch(e){}
+  flushOutbox();
+  sync();
+  setInterval(sync,15000);
+  window.addEventListener('online',function(){ flushOutbox(); sync(); });
+  window.addEventListener('pagehide',syncBeacon);
+  window.addEventListener('beforeunload',syncBeacon);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden')syncBeacon(); else sync(); });
+})();
+</script>
+</body>
+</html>

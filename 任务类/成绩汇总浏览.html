@@ -150,19 +150,66 @@
     .stats { grid-template-columns: repeat(2, 1fr); }
     main { padding: 16px; }
   }
+
+  /* 登录遮罩 */
+  #loginGate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #loginGate.hidden { display: none; }
+  .login-card {
+    background: #fff; border-radius: 14px; padding: 34px 36px;
+    width: 320px; box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    text-align: center;
+  }
+  .login-card h2 { font-size: 19px; color: #1e293b; margin-bottom: 4px; }
+  .login-card .tip { font-size: 12.5px; color: #94a3b8; margin-bottom: 20px; }
+  .login-card input {
+    width: 100%; padding: 10px 12px; margin-bottom: 12px;
+    border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;
+    outline: none; box-sizing: border-box;
+  }
+  .login-card input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  .login-card button {
+    width: 100%; padding: 10px; border: none; border-radius: 8px;
+    background: #2563eb; color: #fff; font-size: 14.5px; cursor: pointer;
+  }
+  .login-card button:hover { background: #1d4ed8; }
+  .login-err { color: #dc2626; font-size: 12.5px; min-height: 18px; margin-top: 8px; }
+
+  /* 行内删除按钮 */
+  .del-btn {
+    border: none; background: #fee2e2; color: #dc2626;
+    border-radius: 6px; padding: 2px 10px; font-size: 12px; cursor: pointer;
+  }
+  .del-btn:hover { background: #fecaca; }
 </style>
 </head>
 <body>
 
+<!-- 登录遮罩：账号/密码均为 1 -->
+<div id="loginGate">
+  <div class="login-card">
+    <h2>🔐 成绩汇总管理登录</h2>
+    <div class="tip">仅限教师使用 · 登录后可查看与删除成绩</div>
+    <input id="lg-user" type="text" placeholder="账号" autocomplete="off">
+    <input id="lg-pass" type="password" placeholder="密码" autocomplete="off">
+    <button onclick="doLogin()">登 录</button>
+    <div class="login-err" id="lg-err"></div>
+  </div>
+</div>
+
 <div class="topbar">
   <div>
     <h1>📊 闯关成绩汇总浏览</h1>
-    <div class="sub">实时读取各闯关任务本地存储的学生成绩 · 仅展示，不做任何写入修改</div>
+    <div class="sub">本地 + 云端（学生手机端提交）成绩汇总 · 登录后可删除任意成绩</div>
   </div>
   <div class="actions">
     <button class="btn btn-ghost" onclick="loadAll()">🔄 刷新数据</button>
     <button class="btn btn-export" onclick="exportAll()">⬇️ 一键导出 Excel</button>
     <button class="btn btn-danger" onclick="clearAllScores()">🗑️ 清空全部成绩数据</button>
+    <button class="btn btn-ghost" onclick="doLogout()">🔒 退出登录</button>
   </div>
 </div>
 
@@ -187,6 +234,7 @@
             <th>完成关卡</th>
             <th>累计总得分</th>
             <th>平均正确率</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody id="overview-body"></tbody>
@@ -198,7 +246,10 @@
 
   <div class="notes">
     <b>📌 数据来源说明：</b><br>
-    本页面<b>只读取</b>各闯关课件中已存在的 <code>localStorage</code> 成绩数据，与各关卡本地存储<b>完全一致</b>，未做任何加工或修改。<br>
+    ① <b>☁️ 云端数据</b>：学生<b>完成整个闯关课件时</b>自动以 POST 方式将<b>最终总分、正确率与总用时</b>提交到 <code>quickform.cn</code> 收集接口（<code>/api/6ivostlhav</code>），每人每个课件仅在完成时产生一条最终记录（重玩会产生新的一条，本页按最新计入总览），答题过程不上报；本页通过其 <code>/all</code> 接口拉取全量记录。<br>
+    ② <b>💻 本地数据</b>：读取各闯关课件在本机 <code>localStorage</code> 中的成绩（同一学生同一课件<b>已有云端数据时不再重复计入</b>，避免双计）。<br>
+    ③ 学生手机端提交依赖网络；若提交失败，课件会将记录暂存本机发件箱并在下次打开时自动补传。<br>
+    ④ <b>🗑️ 删除</b>：本机记录删除后即刻清除；云端提交记录删除后在本页隐藏（不再统计/导出），服务器端的彻底删除需到 quickform.cn 后台操作。<br>
     <b>📦 Excel 导出依赖：</b><code>SheetJS (xlsx) 0.18.5</code>，通过 <code>cdn.jsdelivr.net</code> CDN 加载。安装命令（如需本地部署）：
     <code>npm install xlsx@0.18.5</code> · 国内镜像：<code>npm install xlsx@0.18.5 --registry=https://registry.npmmirror.com</code>
   </div>
@@ -214,10 +265,10 @@
  * （仅复用原课件的存储位置，禁止修改原课件）
  * ===================================================================== */
 
-// 1) 伸臂梁求解内力图闯关课件：Object{[id]: {name,id,startAt,endAt,learnDone,answers}}
+// 1) 求解伸臂梁弯矩的闯关课件：Object{[id]: {name,id,startAt,endAt,learnDone,answers}}
 const SRC_CANTILEVER = {
   key: 'sm_cantilever_rank_v1',
-  name: '伸臂梁求解内力图闯关课件',
+  name: '求解伸臂梁弯矩的闯关课件',
   kind: 'objectMap'
 };
 
@@ -258,6 +309,10 @@ const SRC_FRUIT = {
 
 const SOURCES = [SRC_CANTILEVER, SRC_INTERNAL, SRC_GEO, SRC_SP, SRC_JOINT, SRC_FRUIT];
 
+/* 云端提交数据源（QuickForm）：各闯关课件完成/更新作答后自动 POST 到此接口，
+   本页通过 /all 接口拉取全量提交记录并与本地 localStorage 数据合并展示 */
+const QF_URL = 'https://quickform.cn/api/6ivostlhav';
+
 /* =====================================================================
  * 工具函数
  * ===================================================================== */
@@ -295,6 +350,51 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
 }
 
+function num(v) {
+  const x = parseFloat(v);
+  return isNaN(x) ? null : x;
+}
+
+/* 拉取云端提交记录（QuickForm /all），失败回调 null */
+function fetchCloudRows(cb) {
+  try {
+    fetch(QF_URL + '/all', { method: 'GET' })
+      .then(r => r.json())
+      .then(j => cb(Array.isArray(j.submissions) ? j.submissions : []))
+      .catch(() => cb(null));
+  } catch (e) { cb(null); }
+}
+
+/* ============ 登录鉴权（账号/密码均为 1） ============ */
+const AUTH_KEY = 'score_hub_auth_v1';
+function isAuthed() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch (e) { return false; } }
+function doLogin() {
+  const u = (document.getElementById('lg-user').value || '').trim();
+  const p = (document.getElementById('lg-pass').value || '').trim();
+  if (u === '1' && p === '1') {
+    try { sessionStorage.setItem(AUTH_KEY, '1'); } catch (e) {}
+    document.getElementById('loginGate').classList.add('hidden');
+    loadAll();
+  } else {
+    document.getElementById('lg-err').textContent = '账号或密码错误，请重试';
+  }
+}
+function doLogout() {
+  try { sessionStorage.removeItem(AUTH_KEY); } catch (e) {}
+  location.reload();
+}
+
+/* ============ 云端删除屏蔽名单（服务端删除需在 quickform.cn 后台操作） ============ */
+const QF_DEL_KEY = 'qf_deleted_v1';
+function cloudKey(cr) {
+  return [cr.submitted_at || '', cr.course || '', cr.studentId || '', cr.name || ''].join('|');
+}
+function getDelMasks() { try { return JSON.parse(localStorage.getItem(QF_DEL_KEY)) || []; } catch (e) { return []; } }
+function maskCloudRow(key) {
+  const m = getDelMasks();
+  if (!m.includes(key)) { m.push(key); try { localStorage.setItem(QF_DEL_KEY, JSON.stringify(m)); } catch (e) {} }
+}
+
 /* =====================================================================
  * 各关卡数据解析（统一输出为标准化记录列表）
  * 标准化字段：{ source, name, id, finished, score, accuracy, duration, extra }
@@ -305,7 +405,7 @@ function parseSource(src) {
   if (raw == null) return { rows: [], totalRaw: 0 };
 
   if (src.kind === 'objectMap') {
-    // 伸臂梁 / 弯矩叠加法
+    // 伸臂梁 / 弯矩叠加法：优先读取完成时固化的 finalScore/correctRate/durationSec（每题10分口径）
     const rows = [];
     Object.keys(raw).forEach(id => {
       const r = raw[id];
@@ -316,10 +416,18 @@ function parseSource(src) {
         name: r.name || '(未填写)',
         id: r.id || id,
         finished: !!r.endAt,
-        score: null,         // 需原课件 QUESTIONS，无法本地换算
-        accuracy: null,
-        duration: r.endAt && r.startAt ? (r.endAt - r.startAt) / 1000 : null,
-        extra: { answered: answered, learnDone: learnDone, endAt: r.endAt || null }
+        score: (typeof r.finalScore === 'number') ? r.finalScore : null,
+        accuracy: (typeof r.correctRate === 'number') ? r.correctRate : null,
+        duration: (typeof r.durationSec === 'number')
+          ? r.durationSec
+          : (r.endAt && r.startAt ? (r.endAt - r.startAt) / 1000 : null),
+        extra: {
+          answered: answered,
+          learnDone: learnDone,
+          endAt: r.endAt || null,
+          correct: r.correct != null ? r.correct : null,
+          total: r.total != null ? r.total : null
+        }
       });
     });
     return { rows, totalRaw: rows.length };
@@ -384,12 +492,22 @@ function parseSource(src) {
  * 渲染
  * ===================================================================== */
 
-let CACHE = {};   // 缓存：{ srcName: rows }
+let CACHE = {};    // 缓存：{ srcName: rows }
 let OVERVIEW = []; // 总览用：每个学生一条聚合行
+let CLOUD_RAW = null;   // 云端拉取到的原始记录（含已被屏蔽的）
+let CLOUD_ROWS = [];    // 屏蔽后用于展示的云端记录
 
 function loadAll() {
+  /* 先拉取云端提交记录（QuickForm），再与本地 localStorage 合并渲染 */
+  fetchCloudRows(function (cloud) { CLOUD_RAW = cloud; renderAll(cloud); });
+}
+
+function renderAll(cloud) {
   CACHE = {};
   OVERVIEW = [];
+  // 应用删除屏蔽名单：被教师删除的云端提交不再展示/统计
+  const masks = getDelMasks();
+  CLOUD_ROWS = Array.isArray(cloud) ? cloud.filter(cr => !masks.includes(cloudKey(cr))) : null;
   const studentMap = new Map(); // key=name+id → aggregate
 
   let totalStudents = 0;
@@ -397,37 +515,62 @@ function loadAll() {
   let totalAccuracySum = 0;
   let totalAccuracyCount = 0;
 
+  // 云端记录：同一学生同一课件取最新一条提交（多次闯关=多次提交，汇总取最新）
+  const cloudLatest = {};
+  (CLOUD_ROWS || []).forEach(cr => {
+    const k = (cr.name || '') + '||' + (cr.studentId || '') + '||' + (cr.course || '');
+    const prev = cloudLatest[k];
+    if (!prev || String(cr.submitted_at) > String(prev.submitted_at)) cloudLatest[k] = cr;
+  });
+
+  function aggRow(course, r) {
+    const k = (r.name || '') + '||' + (r.id || '');
+    if (!studentMap.has(k)) {
+      studentMap.set(k, {
+        name: r.name, id: r.id,
+        courseSet: new Set(), finishedCourses: [], totalScore: 0,
+        accSum: 0, accCount: 0
+      });
+    }
+    const agg = studentMap.get(k);
+    if (agg.courseSet.has(course)) return;   // 同一学生同一课件只计一次
+    agg.courseSet.add(course);
+    if (r.finished) {
+      agg.finishedCourses.push(course);
+      totalCompletedRuns++;
+    }
+    if (typeof r.score === 'number') agg.totalScore += r.score;
+    if (typeof r.accuracy === 'number') {
+      agg.accSum += r.accuracy;
+      agg.accCount++;
+      totalAccuracySum += r.accuracy;
+      totalAccuracyCount++;
+    }
+  }
+
+  // 先聚合云端最新记录（学生手机端提交）
+  Object.keys(cloudLatest).forEach(k => {
+    const cr = cloudLatest[k];
+    aggRow(cr.course || '（云端未注明课件）', {
+      name: cr.name || '(未填写)', id: cr.studentId || '(无)',
+      finished: cr.status === '已完成',
+      score: num(cr.score), accuracy: num(cr.accuracy)
+    });
+  });
+  // 再聚合本地记录（同一学生同一课件已有云端数据时跳过，避免重复计数）
   SOURCES.forEach(src => {
     const { rows } = parseSource(src);
     CACHE[src.name] = rows;
-
     rows.forEach(r => {
-        const k = (r.name || '') + '||' + (r.id || '');
-        if (!studentMap.has(k)) {
-          studentMap.set(k, {
-            name: r.name, id: r.id,
-            courseCount: 0, finishedCourses: [], totalScore: 0,
-            accSum: 0, accCount: 0
-          });
-        }
-        const agg = studentMap.get(k);
-        agg.courseCount++;
-        if (r.finished) {
-          agg.finishedCourses.push(src.name);
-          totalCompletedRuns++;
-        }
-        if (typeof r.score === 'number') agg.totalScore += r.score;
-        if (typeof r.accuracy === 'number') {
-          agg.accSum += r.accuracy;
-          agg.accCount++;
-          totalAccuracySum += r.accuracy;
-          totalAccuracyCount++;
-        }
-      });
+      const ck = (r.name || '') + '||' + (r.id || '') + '||' + src.name;
+      if (ck in cloudLatest) return;
+      aggRow(src.name, r);
+    });
   });
 
   OVERVIEW = Array.from(studentMap.values()).map(a => ({
     ...a,
+    courseCount: a.courseSet.size,
     avgAccuracy: a.accCount ? Math.round(a.accSum / a.accCount) : null
   }));
   // 按累计总得分降序
@@ -448,7 +591,7 @@ function loadAll() {
   document.getElementById('badge-overview').textContent = OVERVIEW.length + ' 名学生';
   document.getElementById('badge-overview').classList.remove('empty');
   if (OVERVIEW.length === 0) {
-    overviewBody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无学生成绩记录，请先在各个闯关课件中完成作答</td></tr>';
+    overviewBody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无学生成绩记录，请先在各个闯关课件中完成作答</td></tr>';
   } else {
     overviewBody.innerHTML = OVERVIEW.map(a => {
       const acc = a.avgAccuracy == null ? '-' : (a.avgAccuracy + '%');
@@ -460,6 +603,7 @@ function loadAll() {
         '<td>' + esc(courseList) + '</td>' +
         '<td class="num">' + (a.totalScore || 0) + '</td>' +
         '<td class="num">' + acc + '</td>' +
+        '<td class="center"><button class="del-btn" onclick="delStudent(\'' + encodeURIComponent(a.name) + '\',\'' + encodeURIComponent(a.id) + '\')">删除</button></td>' +
         '</tr>';
     }).join('');
   }
@@ -467,6 +611,7 @@ function loadAll() {
   // 各关卡
   const wrap = document.getElementById('sections');
   wrap.innerHTML = '';
+  wrap.appendChild(buildCloudSection());   // 云端提交记录（QuickForm）
   SOURCES.forEach((src, idx) => {
     const rows = CACHE[src.name];
     const sec = document.createElement('div');
@@ -490,7 +635,7 @@ function loadAll() {
       bodyHtml = '<div class="section-body"><table><tbody><tr class="empty-row"><td>本关卡暂无 localStorage 记录（key=<code>' +
         esc(src.key) + '</code>）</td></tr></tbody></table></div>';
     } else {
-      bodyHtml = renderSectionBody(src, rows);
+      bodyHtml = renderSectionBody(src, rows, idx);
     }
 
     sec.innerHTML = headHtml + bodyHtml;
@@ -500,11 +645,13 @@ function loadAll() {
   document.getElementById('updTime').textContent = fmtTime(Date.now());
 }
 
-function renderSectionBody(src, rows) {
+function renderSectionBody(src, rows, srcIdx) {
+  const delCol = r => '<td class="center"><button class="del-btn" onclick="delLocal(' + srcIdx + ',\'' +
+    encodeURIComponent(r.name) + '\',\'' + encodeURIComponent(r.id) + '\')">删除</button></td>';
   // 不同关卡的列结构略有不同
   if (src.kind === 'objectMap') {
     return '<div class="section-body"><table><thead><tr>' +
-      '<th>姓名</th><th>学号</th><th>状态</th><th>已答题数</th><th>已完成学习关</th><th>完成时间</th>' +
+      '<th>姓名</th><th>学号</th><th>状态</th><th>总分</th><th>正确率</th><th>已答题数</th><th>已完成学习关</th><th>完成时间</th><th>操作</th>' +
       '</tr></thead><tbody>' +
       rows.map(r => {
         const pill = r.finished ? '<span class="pill ok">已完成</span>' :
@@ -513,9 +660,12 @@ function renderSectionBody(src, rows) {
           '<td>' + esc(r.name) + '</td>' +
           '<td>' + esc(r.id) + '</td>' +
           '<td class="center">' + pill + '</td>' +
+          '<td class="num">' + (r.score == null ? '-' : (r.score + ' / 60')) + '</td>' +
+          '<td class="num">' + (r.accuracy == null ? '-' : r.accuracy + '%') + '</td>' +
           '<td class="num">' + r.extra.answered + '</td>' +
           '<td class="num">' + r.extra.learnDone + ' / 3</td>' +
           '<td>' + fmtTime(r.extra.endAt) + '</td>' +
+          delCol(r) +
           '</tr>';
       }).join('') +
       '</tbody></table></div>';
@@ -523,7 +673,7 @@ function renderSectionBody(src, rows) {
 
   if (src.kind === 'arraySimple') {
     return '<div class="section-body"><table><thead><tr>' +
-      '<th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th>' +
+      '<th>姓名</th><th>学号</th><th>总分</th><th>正确率</th><th>完成用时</th><th>操作</th>' +
       '</tr></thead><tbody>' +
       rows.map(r => '<tr>' +
         '<td>' + esc(r.name) + '</td>' +
@@ -531,13 +681,14 @@ function renderSectionBody(src, rows) {
         '<td class="num">' + (r.score == null ? '-' : r.score) + '</td>' +
         '<td class="num">' + (r.accuracy == null ? '-' : r.accuracy + '%') + '</td>' +
         '<td>' + fmtDuration(r.duration) + '</td>' +
+        delCol(r) +
         '</tr>').join('') +
       '</tbody></table></div>';
   }
 
   if (src.kind === 'arrayFinished') {
     return '<div class="section-body"><table><thead><tr>' +
-      '<th>姓名</th><th>学号</th><th>状态</th><th>总分</th><th>正确率</th><th>完成用时</th><th>完成时间</th>' +
+      '<th>姓名</th><th>学号</th><th>状态</th><th>总分</th><th>正确率</th><th>完成用时</th><th>完成时间</th><th>操作</th>' +
       '</tr></thead><tbody>' +
       rows.map(r => {
         const pill = r.finished ? '<span class="pill ok">已完成</span>' : '<span class="pill ing">进行中</span>';
@@ -549,6 +700,7 @@ function renderSectionBody(src, rows) {
           '<td class="num">' + (r.accuracy == null ? '-' : r.accuracy + '%') + '</td>' +
           '<td>' + fmtDuration(r.duration) + '</td>' +
           '<td>' + fmtTime(r.extra.endTime) + '</td>' +
+          delCol(r) +
           '</tr>';
       }).join('') +
       '</tbody></table></div>';
@@ -556,7 +708,7 @@ function renderSectionBody(src, rows) {
 
   if (src.kind === 'fruitTree') {
     return '<div class="section-body"><table><thead><tr>' +
-      '<th>姓名</th><th>学号</th><th>累计得分</th><th>已采摘果实数</th><th>累计答题次数</th><th>状态</th>' +
+      '<th>姓名</th><th>学号</th><th>累计得分</th><th>已采摘果实数</th><th>累计答题次数</th><th>状态</th><th>操作</th>' +
       '</tr></thead><tbody>' +
       rows.map(r => {
         const pill = r.finished ? '<span class="pill ok">已开始</span>' : '<span class="pill none">未开始</span>';
@@ -567,6 +719,7 @@ function renderSectionBody(src, rows) {
           '<td class="num">' + r.extra.picked + '</td>' +
           '<td class="num">' + r.extra.attempts + '</td>' +
           '<td class="center">' + pill + '</td>' +
+          delCol(r) +
           '</tr>';
       }).join('') +
       '</tbody></table></div>';
@@ -578,6 +731,132 @@ function renderSectionBody(src, rows) {
 function toggleSection(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle('collapsed');
+}
+
+/* ============ 删除成绩 ============ */
+
+/* 删除某关卡本机记录（按 姓名+学号 匹配） */
+function delLocal(srcIdx, nameEnc, idEnc) {
+  const src = SOURCES[srcIdx];
+  const name = decodeURIComponent(nameEnc), id = decodeURIComponent(idEnc);
+  if (!confirm('确定删除【' + name + '（' + id + '）】在「' + src.name + '」的本机成绩记录吗？')) return;
+  try {
+    const raw = safeRead(src.key);
+    if (raw != null) {
+      if (src.kind === 'objectMap' || src.kind === 'fruitTree') {
+        Object.keys(raw).forEach(k => {
+          const r = raw[k] || {};
+          const rid = String(r.id || k);
+          const rname = r.name || '(未填写)';
+          if (rid === id && rname === name) delete raw[k];
+        });
+      } else {
+        // 数组型：删除所有匹配该学生的条目
+        for (let i = raw.length - 1; i >= 0; i--) {
+          const r = raw[i] || {};
+          const rid = String(r.id || r.studentId || '(无)');
+          const rname = r.name || '(未填写)';
+          if (rid === id && rname === name) raw.splice(i, 1);
+        }
+      }
+      localStorage.setItem(src.key, JSON.stringify(raw));
+    }
+  } catch (e) {}
+  renderAll(CLOUD_RAW);
+}
+
+/* 删除（屏蔽）一条云端提交记录 */
+function delCloud(keyEnc) {
+  const key = decodeURIComponent(keyEnc);
+  if (!confirm('确定删除这条云端提交记录吗？\n（本页将永久隐藏该记录；服务器端的彻底删除需到 quickform.cn 后台操作）')) return;
+  maskCloudRow(key);
+  renderAll(CLOUD_RAW);
+}
+
+/* 删除某学生的全部成绩：本机各关卡记录 + 屏蔽其全部云端提交 */
+function delStudent(nameEnc, idEnc) {
+  const name = decodeURIComponent(nameEnc), id = decodeURIComponent(idEnc);
+  if (!confirm('确定删除学生【' + name + '（' + id + '）】的全部成绩吗？\n\n将删除本机所有关卡中的该生记录，并屏蔽其全部云端提交。')) return;
+  // 本机各关卡
+  SOURCES.forEach(src => {
+    try {
+      const raw = safeRead(src.key);
+      if (raw == null) return;
+      if (src.kind === 'objectMap' || src.kind === 'fruitTree') {
+        Object.keys(raw).forEach(k => {
+          const r = raw[k] || {};
+          const rid = String(r.id || k);
+          const rname = r.name || '(未填写)';
+          if (rid === id && rname === name) delete raw[k];
+        });
+      } else {
+        for (let i = raw.length - 1; i >= 0; i--) {
+          const r = raw[i] || {};
+          const rid = String(r.id || r.studentId || '(无)');
+          const rname = r.name || '(未填写)';
+          if (rid === id && rname === name) raw.splice(i, 1);
+        }
+      }
+      localStorage.setItem(src.key, JSON.stringify(raw));
+    } catch (e) {}
+  });
+  // 云端该生全部提交
+  (CLOUD_ROWS || []).forEach(cr => {
+    if ((cr.name || '') === name && (cr.studentId || '') === id) maskCloudRow(cloudKey(cr));
+  });
+  renderAll(CLOUD_RAW);
+}
+
+/* 云端提交记录区块（QuickForm） */
+function buildCloudSection() {
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  sec.id = 'sec-cloud';
+
+  const head =
+    '<div class="section-head" onclick="toggleSection(\'sec-cloud\')">' +
+      '<div class="ttl">' +
+        '<h2>☁️ 云端提交记录（学生手机端）</h2>' +
+        '<span class="badge' + (CLOUD_ROWS && CLOUD_ROWS.length ? '' : ' empty') + '">' +
+          (CLOUD_ROWS === null ? '获取失败' : (CLOUD_ROWS.length === 0 ? '暂无数据' : CLOUD_ROWS.length + ' 条提交')) +
+        '</span>' +
+      '</div>' +
+      '<span class="arrow">▼</span>' +
+    '</div>';
+
+  let body;
+  const maskedN = Array.isArray(CLOUD_RAW) ? CLOUD_RAW.length - (CLOUD_ROWS ? CLOUD_ROWS.length : 0) : 0;
+  if (CLOUD_ROWS === null) {
+    body = '<div class="section-body"><table><tbody><tr class="empty-row"><td>⚠️ 云端数据获取失败，请检查网络后点击"刷新数据"重试</td></tr></tbody></table></div>';
+  } else if (CLOUD_ROWS.length === 0) {
+    body = '<div class="section-body"><table><tbody><tr class="empty-row"><td>云端暂无提交记录（学生完成闯关后会自动上传）' +
+      (maskedN > 0 ? ' · 已隐藏 ' + maskedN + ' 条被删除记录' : '') +
+      '</td></tr></tbody></table></div>';
+  } else {
+    const rows = CLOUD_ROWS.slice().sort((a, b) => String(b.submitted_at).localeCompare(String(a.submitted_at)));
+    body = '<div class="section-body">' +
+      (maskedN > 0 ? '<div style="padding:6px 14px;font-size:12px;color:#94a3b8">已隐藏 ' + maskedN + ' 条被删除的提交记录（彻底删除需到 quickform.cn 后台操作）</div>' : '') +
+      '<table><thead><tr>' +
+      '<th>提交时间</th><th>课件</th><th>姓名</th><th>学号</th><th>状态</th><th>得分</th><th>正确率</th><th>用时(秒)</th><th>完成时间</th><th>明细</th><th>操作</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(cr => '<tr>' +
+        '<td>' + esc(cr.submitted_at) + '</td>' +
+        '<td>' + esc(cr.course) + '</td>' +
+        '<td>' + esc(cr.name) + '</td>' +
+        '<td>' + esc(cr.studentId) + '</td>' +
+        '<td class="center">' + (cr.status === '已完成' ? '<span class="pill ok">已完成</span>' : '<span class="pill ing">' + esc(cr.status || '进行中') + '</span>') + '</td>' +
+        '<td class="num">' + esc(cr.score == null || cr.score === '' ? '-' : cr.score) + '</td>' +
+        '<td class="num">' + esc(cr.accuracy == null || cr.accuracy === '' ? '-' : cr.accuracy + '%') + '</td>' +
+        '<td class="num">' + esc(cr.durationSec == null || cr.durationSec === '' ? '-' : cr.durationSec) + '</td>' +
+        '<td>' + esc(cr.finishedAt || '-') + '</td>' +
+        '<td>' + esc(cr.detail || '-') + '</td>' +
+        '<td class="center"><button class="del-btn" onclick="delCloud(\'' + encodeURIComponent(cloudKey(cr)) + '\')">删除</button></td>' +
+        '</tr>').join('') +
+      '</tbody></table></div>';
+  }
+
+  sec.innerHTML = head + body;
+  return sec;
 }
 
 /* =====================================================================
@@ -610,15 +889,30 @@ function exportAll() {
   ];
   XLSX.utils.book_append_sheet(wb, wsOverview, '总览');
 
-  // Sheet 2..N：各关卡明细
+  // Sheet 2：云端提交记录（QuickForm，学生手机端上传）
+  const cloudAoA = [['提交时间', '课件', '姓名', '学号', '状态', '得分', '正确率(%)', '用时(秒)', '完成时间', '明细']];
+  (CLOUD_ROWS || []).forEach(cr => cloudAoA.push([
+    cr.submitted_at || '', cr.course || '', cr.name || '', cr.studentId || '',
+    cr.status || '', cr.score == null || cr.score === '' ? '' : cr.score,
+    cr.accuracy == null || cr.accuracy === '' ? '' : cr.accuracy,
+    cr.durationSec == null || cr.durationSec === '' ? '' : cr.durationSec,
+    cr.finishedAt || '', cr.detail || ''
+  ]));
+  const wsCloud = XLSX.utils.aoa_to_sheet(cloudAoA);
+  wsCloud['!cols'] = cloudAoA[0].map(() => ({ wch: 16 }));
+  XLSX.utils.book_append_sheet(wb, wsCloud, '云端提交记录');
+
+  // Sheet 3..N：各关卡本地明细
   SOURCES.forEach(src => {
     const rows = CACHE[src.name] || [];
     let aoa;
     if (src.kind === 'objectMap') {
-      aoa = [['姓名', '学号', '状态', '已答题数', '已完成学习关', '完成时间']];
+      aoa = [['姓名', '学号', '状态', '总分', '正确率(%)', '已答题数', '已完成学习关', '完成时间']];
       rows.forEach(r => aoa.push([
         r.name, r.id,
         r.finished ? '已完成' : (r.extra.answered > 0 ? '进行中' : '未开始'),
+        r.score == null ? '' : r.score,
+        r.accuracy == null ? '' : r.accuracy,
         r.extra.answered, r.extra.learnDone + ' / 3',
         fmtTime(r.extra.endAt)
       ]));
@@ -680,7 +974,9 @@ function clearAllScores() {
     'courseware_joints_supports_session',
     'fruit_tree_current_user_v1',
     'fruit_tree_user_session_v1',
-    'sm_shared_admin_v1'
+    'sm_shared_admin_v1',
+    'qf_submitted_v1',
+    'qf_outbox_v1'
   ]);
   allKeys.forEach(function(k){
     try { localStorage.removeItem(k); } catch(e) {}
@@ -689,8 +985,21 @@ function clearAllScores() {
   alert('已清空全部成绩数据，共清除 ' + allKeys.length + ' 个本地存储键。\n点击"刷新数据"可确认数据已同步清空。');
 }
 
-/* 启动加载 */
-window.addEventListener('DOMContentLoaded', loadAll);
+/* 启动加载：仅登录后拉取数据；密码框回车提交 */
+window.addEventListener('DOMContentLoaded', function () {
+  if (isAuthed()) {
+    document.getElementById('loginGate').classList.add('hidden');
+    loadAll();
+  } else {
+    document.getElementById('lg-user').focus();
+  }
+  document.getElementById('lg-pass').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('lg-user').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doLogin();
+  });
+});
 </script>
 
 </body>
